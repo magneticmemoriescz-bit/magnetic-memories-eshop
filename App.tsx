@@ -738,7 +738,7 @@ const PrivacyPage: React.FC = () => (
 const AppLayout: React.FC = () => {
     const [isCartOpen, setIsCartOpen] = useState(false);
     const location = useLocation();
-    const isAdminPage = location.pathname === '/admin';
+    const isAdminPage = location.hash === '#/admin';
 
     if (isAdminPage) {
         return <AdminPage />;

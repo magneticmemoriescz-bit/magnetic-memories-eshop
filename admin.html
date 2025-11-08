@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magnetic Memories - Administrace</title>
+  <style>
+    body, html { margin: 0; padding: 0; height: 100%; }
+    #sanity-studio-container { height: 100vh; width: 100vw; }
+    .loader-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        font-family: sans-serif;
+        flex-direction: column;
+    }
+    .loader {
+        border: 8px solid #f3f3f3;
+        border-top: 8px solid #8D7EEF;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        animation: spin 2s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="sanity-studio-container">
+    <div class="loader-container">
+        <div class="loader"></div>
+        <p>Načítání administrace...</p>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@sanity/studio"></script>
+
+  <script>
+    (function() {
+      const LS_PROJECT_ID = 'sanityProjectId';
+      const LS_DATASET = 'sanityDataset';
+
+      function getCredentials() {
+        let projectId = localStorage.getItem(LS_PROJECT_ID);
+        let dataset = localStorage.getItem(LS_DATASET);
+
+        if (!projectId) {
+          projectId = prompt("Prosím, zadejte vaše Sanity Project ID:", "a299n7va");
+          if (projectId) localStorage.setItem(LS_PROJECT_ID, projectId);
+        }
+        
+        if (!dataset) {
+          dataset = prompt("Prosím, zadejte váš Sanity Dataset:", "production");
+          if (dataset) localStorage.setItem(LS_DATASET, dataset);
+        }
+
+        if (!projectId || !dataset) {
+          alert("Project ID a Dataset jsou povinné pro spuštění administrace.");
+          return null;
+        }
+        
+        return { projectId, dataset };
+      }
+
+      const credentials = getCredentials();
+
+      if (credentials) {
+        // --- Product Schema Definition ---
+        const productSchema = {
+            name: 'product',
+            title: 'Produkt',
+            type: 'document',
+            fields: [
+                { name: 'name', title: 'Název produktu', type: 'string', validation: Rule => Rule.required() },
+                { name: 'orderRank', title: 'Pořadí zobrazení', type: 'string' },
+                {
+                    name: 'slug', title: 'URL (slug)', type: 'slug',
+                    options: { source: 'name', maxLength: 96 },
+                    validation: Rule => Rule.required()
+                },
+                { name: 'mainImage', title: 'Hlavní obrázek', type: 'image', options: { hotspot: true }, validation: Rule => Rule.required() },
+                { name: 'gallery', title: 'Galerie obrázků', type: 'array', of: [{ type: 'image', options: { hotspot: true } }] },
+                { name: 'price', title: 'Výchozí cena (Kč)', type: 'number', validation: Rule => Rule.required() },
+                { name: 'shortDescription', title: 'Krátký popis', type: 'string', validation: Rule => Rule.required() },
+                { name: 'description', title: 'Dlouhý popis', type: 'text', validation: Rule => Rule.required() },
+                { name: 'requiredPhotos', title: 'Počet fotek (pokud nejsou varianty)', type: 'number' },
+                {
+                    name: 'variants',
+                    title: 'Varianty produktu',
+                    type: 'array',
+                    of: [{
+                        type: 'object',
+                        fields: [
+                            { name: 'name', title: 'Název varianty (např. A5, 6 ks)', type: 'string', validation: Rule => Rule.required() },
+                            { name: 'price', title: 'Cena varianty (Kč)', type: 'number' },
+                            { name: 'photoCount', title: 'Požadovaný počet fotek', type: 'number', validation: Rule => Rule.required() },
+                            { name: 'image', title: 'Obrázek varianty (volitelné)', type: 'image', options: { hotspot: true } },
+                        ]
+                    }]
+                }
+            ],
+            orderings: [{ title: 'Podle pořadí', name: 'orderRankAsc', by: [{ field: 'orderRank', direction: 'asc' }] }]
+        };
+
+        const sanityConfig = {
+          projectId: credentials.projectId,
+          dataset: credentials.dataset,
+          title: 'Magnetic Memories - Správa obsahu',
+          basePath: '/',
+          plugins: [
+            window.SanityStudio.deskTool(),
+            window.SanityStudio.visionTool(),
+          ],
+          schema: {
+            types: [productSchema],
+          },
+        };
+
+        const studio = window.SanityStudio.createStudio({
+            ...sanityConfig,
+            render: (element, props) => {
+                ReactDOM.render(React.createElement(element, props), document.getElementById('sanity-studio-container'));
+            }
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
