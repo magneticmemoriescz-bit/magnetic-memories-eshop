@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { HashRouter, Routes, Route, Link, useParams, useLocation, useNavigate } from 'react-router-dom';
 import { CartProvider, useCart } from './context/CartContext';
@@ -9,6 +10,7 @@ import { Footer } from './components/Footer';
 import { ProductCard } from './components/ProductCard';
 import { FileUpload } from './components/FileUpload';
 import { Cart } from './components/Cart';
+import AdminPage from './components/AdminPage';
 
 // Declare Packeta for TypeScript
 declare const Packeta: any;
@@ -61,7 +63,7 @@ const HomePage: React.FC = () => {
             <section className="py-16 sm:py-24">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <h2 className="text-3xl font-extrabold text-center text-dark-gray">Naše Produkty</h2>
-                    {loading ? <LoadingSpinner /> : error ? <p className="text-center text-red-500">Chyba při načítání produktů.</p> : (
+                    {loading ? <LoadingSpinner /> : error ? <p className="text-center text-red-500">Chyba při načítání produktů.</p> : products.length === 0 ? <p className="text-center text-gray-500 mt-8">Zatím zde nejsou žádné produkty. Přidejte je prosím v administraci.</p> : (
                         <div className="mt-12 grid gap-y-12 sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-3 lg:gap-x-8">
                             {products.map((product, index) => (
                                 <ProductCard 
@@ -102,7 +104,7 @@ const ProductsPage: React.FC = () => {
         <div className="bg-white">
             <div className="max-w-7xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8">
                 <h1 className="text-4xl font-extrabold tracking-tight text-dark-gray text-center">Všechny produkty</h1>
-                {loading ? <LoadingSpinner /> : error ? <p className="text-center text-red-500">Chyba při načítání produktů.</p> : (
+                {loading ? <LoadingSpinner /> : error ? <p className="text-center text-red-500">Chyba při načítání produktů.</p> : products.length === 0 ? <p className="text-center text-gray-500 mt-8">Zatím zde nejsou žádné produkty. Přidejte je prosím v administraci.</p> : (
                     <div className="mt-12 grid gap-y-12 sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-3 lg:gap-x-8">
                         {products.map((product, index) => (
                             <ProductCard 
@@ -735,6 +737,12 @@ const PrivacyPage: React.FC = () => (
 
 const AppLayout: React.FC = () => {
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const location = useLocation();
+    const isAdminPage = location.pathname === '/admin';
+
+    if (isAdminPage) {
+        return <AdminPage />;
+    }
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -751,6 +759,7 @@ const AppLayout: React.FC = () => {
                     <Route path="/potvrzeni/:orderId" element={<ConfirmationPage />} />
                     <Route path="/obchodni-podminky" element={<TermsPage />} />
                     <Route path="/zasady-ochrany-udaju" element={<PrivacyPage />} />
+                    <Route path="/admin" element={<AdminPage />} />
                 </Routes>
             </main>
             <Footer />

@@ -12,7 +12,8 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.5",
-    "@sanity/client": "^6.15.7"
+    "@sanity/client": "^6.15.7",
+    "@sanity/studio": "^3.41.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
