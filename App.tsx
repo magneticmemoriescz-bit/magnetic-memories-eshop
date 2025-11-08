@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { HashRouter, Routes, Route, Link, useParams, useLocation, useNavigate } from 'react-router-dom';
 import { CartProvider, useCart } from './context/CartContext';
@@ -561,7 +562,7 @@ const CheckoutPage: React.FC = () => {
                                 {state.items.map(item => (
                                     <div key={item.id} className="flex justify-between items-center">
                                         <div className="flex items-center min-w-0">
-                                            <img src={item.product.imageUrl} className="h-16 w-16 rounded-md object-cover mr-4" />
+                                            <img src={item.product.imageUrl} className="h-16 w-16 rounded-md object-cover mr-4" alt={item.product.name} />
                                             <div className="min-w-0">
                                                 <p className="font-medium truncate">{item.product.name}</p>
                                                 <p className="text-sm text-gray-500 truncate">{item.variant?.name}</p>
@@ -738,15 +739,13 @@ const PrivacyPage: React.FC = () => (
 const AppLayout: React.FC = () => {
     const [isCartOpen, setIsCartOpen] = useState(false);
     const location = useLocation();
+    
+    // Správná detekce pro HashRouter
     const isAdminPage = location.hash === '#/admin';
-
-    if (isAdminPage) {
-        return <AdminPage />;
-    }
 
     return (
         <div className="flex flex-col min-h-screen">
-            <Header onCartClick={() => setIsCartOpen(true)} />
+            {!isAdminPage && <Header onCartClick={() => setIsCartOpen(true)} />}
             <main className="flex-grow">
                 <ScrollToTop />
                 <Routes>
@@ -762,22 +761,8 @@ const AppLayout: React.FC = () => {
                     <Route path="/admin" element={<AdminPage />} />
                 </Routes>
             </main>
-            <Footer />
+            {!isAdminPage && <Footer />}
             <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
         </div>
     );
-}
-
-function App() {
-  return (
-    <CartProvider>
-      <ProductProvider>
-        <HashRouter>
-          <AppLayout />
-        </HashRouter>
-      </ProductProvider>
-    </CartProvider>
-  );
-}
-
-export default App;
+};
