@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { HashRouter, Routes, Route, Link, useParams, useLocation, useNavigate } from 'react-router-dom';
 import { CartProvider, useCart } from './context/CartContext';
@@ -10,6 +9,7 @@ import { Footer } from './components/Footer';
 import { ProductCard } from './components/ProductCard';
 import { FileUpload } from './components/FileUpload';
 import { Cart } from './components/Cart';
+import AdminPage from './components/AdminPage';
 
 // Declare Packeta for TypeScript
 declare const Packeta: any;
@@ -342,398 +342,445 @@ const CheckoutPage: React.FC = () => {
     const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({ firstName: '', lastName: '', email: '', street: '', city: '', zip: '', country: 'Česká republika' });
     const [selectedShipping, setSelectedShipping] = useState<ShippingOption>(SHIPPING_OPTIONS[0]);
     const [selectedPayment, setSelectedPayment] = useState<PaymentOption>(PAYMENT_OPTIONS[0]);
-    const [zasilkovnaPoint, setZasilkovnaPoint] = useState('');
+    const [zasilkovnaPoint, setZasilkovnaPoint] = useState<any>(null);
     const [notes, setNotes] = useState('');
     const [agreedToTerms, setAgreedToTerms] = useState(false);
 
+    const subtotal = useMemo(() => state.items.reduce((sum, item) => sum + item.price * item.quantity, 0), [state.items]);
+    const shippingCost = useMemo(() => selectedShipping.price, [selectedShipping]);
+    const codFee = useMemo(() => selectedPayment.id === 'cod' ? selectedPayment.codFee ?? 0 : 0, [selectedPayment]);
+    const total = useMemo(() => subtotal + shippingCost + codFee, [subtotal, shippingCost, codFee]);
+
     useEffect(() => {
         if (state.items.length === 0) {
-            navigate('/');
+            navigate('/produkty');
         }
     }, [state.items, navigate]);
 
-    const subtotal = state.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const codFee = selectedPayment.id === 'cod' ? selectedPayment.codFee || 0 : 0;
-    const total = subtotal + selectedShipping.price + codFee;
-
-    const availablePaymentOptions = useMemo(() => {
-        if (selectedShipping.id === 'personal') {
-            return PAYMENT_OPTIONS.filter(p => p.id === 'cash' || p.id === 'transfer');
-        }
-        return PAYMENT_OPTIONS.filter(p => p.id !== 'cash');
-    }, [selectedShipping]);
-
-     useEffect(() => {
-        if (!availablePaymentOptions.find(p => p.id === selectedPayment.id)) {
-            setSelectedPayment(availablePaymentOptions[0]);
-        }
-    }, [availablePaymentOptions, selectedPayment.id]);
-
-    const openPacketaWidget = () => {
-        const apiKey = 'e630e635109b5559'; // Demo API key from Packeta documentation
-        Packeta.Widget.pick(apiKey, (point: any) => {
-            if (point) {
-                setZasilkovnaPoint(`${point.name} (ID: ${point.id})`);
-            }
-        });
+    const handleCustomerInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setCustomerInfo({ ...customerInfo, [e.target.name]: e.target.value });
     };
 
-
-    const handleCustomerInfoSubmit = (e: React.FormEvent) => {
+    const handleFormSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        setStep(2);
-    }
-     const handleShippingSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (selectedShipping.id === 'zasilkovna' && !zasilkovnaPoint) {
-            alert('Prosím, vyberte výdejní místo Zásilkovny.');
-            return;
+        if (step === 1) {
+            setStep(2);
+        } else if (step === 2) {
+             if (selectedShipping.id === 'zasilkovna' && !zasilkovnaPoint) {
+                alert('Prosím, vyberte výdejní místo Zásilkovny.');
+                return;
+            }
+             if (!agreedToTerms) {
+                alert('Musíte souhlasit s obchodními podmínkami.');
+                return;
+            }
+            const order: Order = {
+                id: `MM-${Date.now()}`,
+                customerInfo,
+                shipping: selectedShipping,
+                payment: selectedPayment,
+                items: state.items,
+                total, subtotal, shippingCost, codFee,
+                notes,
+                zasilkovnaPoint: zasilkovnaPoint ? `${zasilkovnaPoint.name}, ${zasilkovnaPoint.street}, ${zasilkovnaPoint.city}` : undefined,
+            };
+            navigate(`/potvrzeni/${order.id}`, { state: { order } });
+            dispatch({ type: 'CLEAR_CART' });
         }
-        setStep(3);
-    }
-
-    const handleSubmitOrder = () => {
-        if (!agreedToTerms) {
-            alert('Musíte souhlasit s obchodními podmínkami a GDPR.');
-            return;
-        }
-
-        const orderId = `MM-${Date.now()}`;
-        const order: Order = {
-            id: orderId,
-            customerInfo,
-            shipping: selectedShipping,
-            payment: selectedPayment,
-            items: state.items,
-            subtotal,
-            shippingCost: selectedShipping.price,
-            codFee,
-            total,
-            notes,
-            zasilkovnaPoint: selectedShipping.id === 'zasilkovna' ? zasilkovnaPoint : undefined
-        };
-
-        console.log("SIMULATING ORDER SUBMISSION:", order);
-        
-        dispatch({ type: 'CLEAR_CART' });
-        navigate(`/potvrzeni/${orderId}`, { state: { order } });
+    };
+    
+    const openPacketaWidget = () => {
+        Packeta.Widget.pick(
+            "5d969b88a8731385", // API klíč Zásilkovny
+            (point: any) => {
+                if (point) {
+                    setZasilkovnaPoint(point);
+                }
+            },
+            {
+                language: 'cs',
+                country: 'cz',
+            }
+        );
     };
 
     return (
-        <div className="bg-light-gray">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <h1 className="text-3xl font-extrabold text-center text-dark-gray mb-12">Pokladna</h1>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                    <div className="lg:col-span-2">
-                        {step === 1 && (
-                            <form onSubmit={handleCustomerInfoSubmit}>
-                                <div className="bg-white p-8 shadow rounded-lg">
-                                    <h2 className="text-xl font-semibold mb-6">Doručovací údaje</h2>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                        <input required className="w-full border-gray-300 rounded-md shadow-sm bg-white text-dark-gray p-3" type="text" placeholder="Jméno" value={customerInfo.firstName} onChange={e => setCustomerInfo({...customerInfo, firstName: e.target.value})} />
-                                        <input required className="w-full border-gray-300 rounded-md shadow-sm bg-white text-dark-gray p-3" type="text" placeholder="Příjmení" value={customerInfo.lastName} onChange={e => setCustomerInfo({...customerInfo, lastName: e.target.value})} />
-                                        <input required className="sm:col-span-2 w-full border-gray-300 rounded-md shadow-sm bg-white text-dark-gray p-3" type="email" placeholder="Email" value={customerInfo.email} onChange={e => setCustomerInfo({...customerInfo, email: e.target.value})} />
-                                        <input required className="sm:col-span-2 w-full border-gray-300 rounded-md shadow-sm bg-white text-dark-gray p-3" type="text" placeholder="Ulice a č.p." value={customerInfo.street} onChange={e => setCustomerInfo({...customerInfo, street: e.target.value})} />
-                                        <input required className="w-full border-gray-300 rounded-md shadow-sm bg-white text-dark-gray p-3" type="text" placeholder="Město" value={customerInfo.city} onChange={e => setCustomerInfo({...customerInfo, city: e.target.value})} />
-                                        <input required className="w-full border-gray-300 rounded-md shadow-sm bg-white text-dark-gray p-3" type="text" placeholder="PSČ" value={customerInfo.zip} onChange={e => setCustomerInfo({...customerInfo, zip: e.target.value})} />
+        <div className="bg-gray-50">
+            <main className="max-w-7xl mx-auto pt-16 pb-24 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-2xl mx-auto lg:max-w-none">
+                    <h1 className="sr-only">Pokladna</h1>
+
+                    <form onSubmit={handleFormSubmit} className="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
+                        <div>
+                           {/* Formulář */}
+                           <div>
+                                <h2 className="text-lg font-medium text-gray-900">Kontaktní údaje</h2>
+
+                                <div className="mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4">
+                                    <div>
+                                        <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">Jméno</label>
+                                        <div className="mt-1"><input required type="text" id="firstName" name="firstName" value={customerInfo.firstName} onChange={handleCustomerInfoChange} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-purple focus:border-brand-purple sm:text-sm bg-white text-dark-gray" /></div>
                                     </div>
-                                    <button type="submit" className="mt-8 w-full bg-brand-purple text-white py-3 rounded-md hover:opacity-90">Pokračovat na dopravu</button>
-                                </div>
-                            </form>
-                        )}
-                        {step === 2 && (
-                             <form onSubmit={handleShippingSubmit}>
-                                <div className="bg-white p-8 shadow rounded-lg">
-                                    <h2 className="text-xl font-semibold mb-6">Způsob dopravy</h2>
-                                    <div className="space-y-4">
-                                        {SHIPPING_OPTIONS.map(option => (
-                                            <label key={option.id} className={`flex items-center p-4 border rounded-lg cursor-pointer ${selectedShipping.id === option.id ? 'border-brand-purple ring-2 ring-brand-purple' : 'border-gray-200'}`}>
-                                                <input type="radio" name="shipping" value={option.id} checked={selectedShipping.id === option.id} onChange={() => setSelectedShipping(option)} className="h-4 w-4 text-brand-purple border-gray-300 focus:ring-brand-purple"/>
-                                                <div className="ml-4 flex justify-between w-full">
-                                                    <div>
-                                                        <p className="font-medium">{option.name}</p>
-                                                        <p className="text-sm text-gray-500">{option.description}</p>
-                                                    </div>
-                                                    <p className="font-semibold">{option.price > 0 ? `${option.price} Kč` : 'Zdarma'}</p>
-                                                </div>
-                                            </label>
-                                        ))}
+                                    <div>
+                                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Příjmení</label>
+                                        <div className="mt-1"><input required type="text" id="lastName" name="lastName" value={customerInfo.lastName} onChange={handleCustomerInfoChange} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-purple focus:border-brand-purple sm:text-sm bg-white text-dark-gray" /></div>
                                     </div>
-                                    {selectedShipping.id === 'zasilkovna' && (
-                                        <div className="mt-6">
-                                            <button
-                                                type="button"
-                                                onClick={openPacketaWidget}
-                                                className="mt-1 w-full text-left p-3 border border-gray-300 rounded-md shadow-sm bg-white text-dark-gray hover:bg-gray-50 flex justify-between items-center"
-                                            >
-                                                <span>{zasilkovnaPoint || 'Klikněte pro výběr výdejního místa'}</span>
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                                </svg>
-                                            </button>
-                                             {zasilkovnaPoint && <p className="mt-2 text-sm text-green-600 font-medium">Vybráno: {zasilkovnaPoint}</p>}
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between mt-8">
-                                        <button type="button" onClick={() => setStep(1)} className="text-gray-600 hover:text-black">Zpět</button>
-                                        <button type="submit" className="bg-brand-purple text-white py-3 px-6 rounded-md hover:opacity-90">Pokračovat na platbu</button>
+                                    <div className="sm:col-span-2">
+                                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+                                        <div className="mt-1"><input required type="email" id="email" name="email" value={customerInfo.email} onChange={handleCustomerInfoChange} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-purple focus:border-brand-purple sm:text-sm bg-white text-dark-gray" /></div>
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <label htmlFor="street" className="block text-sm font-medium text-gray-700">Ulice a č. p.</label>
+                                        <div className="mt-1"><input required type="text" name="street" id="street" value={customerInfo.street} onChange={handleCustomerInfoChange} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-purple focus:border-brand-purple sm:text-sm bg-white text-dark-gray" /></div>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="city" className="block text-sm font-medium text-gray-700">Město</label>
+                                        <div className="mt-1"><input required type="text" name="city" id="city" value={customerInfo.city} onChange={handleCustomerInfoChange} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-purple focus:border-brand-purple sm:text-sm bg-white text-dark-gray" /></div>
+                                    </div>
+                                    <div>
+                                        <label htmlFor="zip" className="block text-sm font-medium text-gray-700">PSČ</label>
+                                        <div className="mt-1"><input required type="text" name="zip" id="zip" value={customerInfo.zip} onChange={handleCustomerInfoChange} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-purple focus:border-brand-purple sm:text-sm bg-white text-dark-gray" /></div>
                                     </div>
                                 </div>
-                             </form>
-                        )}
-                        {step === 3 && (
-                             <div>
-                                <div className="bg-white p-8 shadow rounded-lg">
-                                    <h2 className="text-xl font-semibold mb-6">Způsob platby</h2>
-                                     <div className="space-y-4">
-                                        {availablePaymentOptions.map(option => (
-                                            <label key={option.id} className={`flex items-center p-4 border rounded-lg cursor-pointer ${selectedPayment.id === option.id ? 'border-brand-purple ring-2 ring-brand-purple' : 'border-gray-200'}`}>
-                                                <input type="radio" name="payment" value={option.id} checked={selectedPayment.id === option.id} onChange={() => setSelectedPayment(option)} className="h-4 w-4 text-brand-purple border-gray-300 focus:ring-brand-purple"/>
-                                                <div className="ml-4 flex justify-between w-full">
-                                                    <div>
-                                                        <p className="font-medium">{option.name}</p>
-                                                        <p className="text-sm text-gray-500">{option.description}</p>
-                                                    </div>
-                                                    {option.codFee && <p className="font-semibold">+ {option.codFee} Kč</p>}
-                                                </div>
-                                            </label>
-                                        ))}
-                                    </div>
-                                    <div className="mt-6">
-                                        <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Vaše poznámky k objednávce (volitelné)</label>
-                                        <textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} rows={3} className="mt-1 w-full border-gray-300 rounded-md shadow-sm bg-white text-dark-gray p-3"></textarea>
-                                    </div>
-                                    <div className="mt-6">
-                                        <label className="flex items-start">
-                                            <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} className="h-4 w-4 text-brand-purple border-gray-300 rounded focus:ring-brand-purple mt-1" />
-                                            <span className="ml-2 text-sm text-gray-600">Souhlasím s <Link to="/obchodni-podminky" target="_blank" rel="noopener noreferrer" className="underline text-brand-purple">obchodními podmínkami</Link> a <Link to="/zasady-ochrany-udaju" target="_blank" rel="noopener noreferrer" className="underline text-brand-purple">GDPR</Link>.</span>
-                                        </label>
-                                    </div>
-                                     <div className="flex justify-between mt-8">
-                                        <button type="button" onClick={() => setStep(2)} className="text-gray-600 hover:text-black">Zpět</button>
-                                        <button type="button" onClick={handleSubmitOrder} disabled={!agreedToTerms} className="w-1/2 bg-brand-pink text-white py-3 rounded-md hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">Objednat s povinností platby</button>
-                                    </div>
-                                </div>
-                             </div>
-                        )}
-                    </div>
-                    {/* Order Summary */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-white p-8 shadow rounded-lg sticky top-24">
-                            <h2 className="text-xl font-semibold mb-6">Souhrn objednávky</h2>
-                            <div className="space-y-4">
-                                {state.items.map(item => (
-                                    <div key={item.id} className="flex justify-between items-center">
-                                        <div className="flex items-center min-w-0">
-                                            <img src={item.photos[0] || item.product.imageUrl} className="h-16 w-16 rounded-md object-cover mr-4" alt={item.product.name} />
-                                            <div className="min-w-0">
-                                                <p className="font-medium truncate">{item.product.name}</p>
-                                                <p className="text-sm text-gray-500 truncate">{item.variant?.name}</p>
-                                            </div>
-                                        </div>
-                                        <p className="flex-shrink-0 ml-4">{item.price} Kč</p>
-                                    </div>
-                                ))}
                             </div>
-                            <div className="border-t my-6"></div>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between"><span>Mezisoučet</span><span>{subtotal} Kč</span></div>
-                                <div className="flex justify-between"><span>Doprava ({selectedShipping.name})</span><span>{selectedShipping.price} Kč</span></div>
-                                {codFee > 0 && <div className="flex justify-between"><span>Dobírka</span><span>{codFee} Kč</span></div>}
-                                <div className="border-t my-2"></div>
-                                <div className="flex justify-between font-bold text-lg"><span>Celkem</span><span>{total} Kč</span></div>
+                            
+                            <div className="mt-10 border-t border-gray-200 pt-10">
+                                {/* Doprava a platba */}
+                                <fieldset>
+                                    <legend className="text-lg font-medium text-gray-900">Způsob dopravy</legend>
+                                    <div className="mt-4 grid grid-cols-1 gap-y-6">
+                                        {SHIPPING_OPTIONS.map((option) => (
+                                            <label key={option.id} className="relative bg-white border rounded-lg p-4 flex cursor-pointer focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple">
+                                                <input type="radio" name="shipping-method" value={option.id} checked={selectedShipping.id === option.id} onChange={() => setSelectedShipping(option)} className="sr-only" />
+                                                <div className="flex-1 flex">
+                                                    <div className="flex flex-col">
+                                                        <span className="block text-sm font-medium text-gray-900">{option.name}</span>
+                                                        <span className="mt-1 flex items-center text-sm text-gray-500">{option.description}</span>
+                                                        <span className="mt-6 text-sm font-medium text-gray-900">{option.price} Kč</span>
+                                                    </div>
+                                                </div>
+                                                {selectedShipping.id === option.id && <div className="absolute border-2 border-brand-purple rounded-lg inset-0 pointer-events-none"></div>}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </fieldset>
+
+                                {selectedShipping.id === 'zasilkovna' && (
+                                    <div className="mt-6">
+                                        <button type="button" onClick={openPacketaWidget} className="w-full bg-gray-100 border border-gray-300 rounded-md py-2 px-4 text-sm font-medium text-gray-700 hover:bg-gray-200">
+                                            {zasilkovnaPoint ? "Změnit výdejní místo" : "Vybrat výdejní místo"}
+                                        </button>
+                                        {zasilkovnaPoint && <p className="mt-2 text-sm text-gray-600">Vybráno: {zasilkovnaPoint.name}</p>}
+                                    </div>
+                                )}
+
+                                <fieldset className="mt-10">
+                                    <legend className="text-lg font-medium text-gray-900">Způsob platby</legend>
+                                    <div className="mt-4 grid grid-cols-1 gap-y-6">
+                                        {PAYMENT_OPTIONS.map((option) => (
+                                            <label key={option.id} className="relative bg-white border rounded-lg p-4 flex cursor-pointer focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple">
+                                                <input type="radio" name="payment-method" value={option.id} checked={selectedPayment.id === option.id} onChange={() => setSelectedPayment(option)} className="sr-only" />
+                                                <div className="flex-1 flex">
+                                                    <div className="flex flex-col">
+                                                        <span className="block text-sm font-medium text-gray-900">{option.name}</span>
+                                                        <span className="mt-1 flex items-center text-sm text-gray-500">{option.description}</span>
+                                                    </div>
+                                                </div>
+                                                {selectedPayment.id === option.id && <div className="absolute border-2 border-brand-purple rounded-lg inset-0 pointer-events-none"></div>}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </fieldset>
+                            </div>
+
+                            <div className="mt-10 border-t border-gray-200 pt-10">
+                               <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Poznámka k objednávce (volitelné)</label>
+                               <div className="mt-1"><textarea id="notes" name="notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-purple focus:border-brand-purple sm:text-sm bg-white text-dark-gray"></textarea></div>
+                            </div>
+
+                            <div className="mt-10 border-t border-gray-200 pt-6">
+                                <div className="relative flex items-start">
+                                    <div className="flex items-center h-5">
+                                        <input id="terms" name="terms" type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} className="focus:ring-brand-purple h-4 w-4 text-brand-purple border-gray-300 rounded" />
+                                    </div>
+                                    <div className="ml-3 text-sm">
+                                        <label htmlFor="terms" className="font-medium text-gray-700">Souhlasím s <Link to="/obchodni-podminky" target="_blank" className="text-brand-purple hover:underline">obchodními podmínkami</Link> a <Link to="/zasady-ochrany-udaju" target="_blank" className="text-brand-purple hover:underline">zásadami ochrany osobních údajů</Link>.</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+
+                        {/* Order summary */}
+                        <div className="mt-10 lg:mt-0">
+                            <h2 className="text-lg font-medium text-gray-900">Souhrn objednávky</h2>
+
+                            <div className="mt-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <h3 className="sr-only">Items in your cart</h3>
+                                <ul role="list" className="divide-y divide-gray-200">
+                                    {state.items.map((item) => (
+                                        <li key={item.id} className="flex py-6 px-4 sm:px-6">
+                                            <div className="flex-shrink-0">
+                                                <img src={item.product.imageUrl} alt={item.product.name} className="w-20 rounded-md" />
+                                            </div>
+                                            <div className="ml-6 flex-1 flex flex-col">
+                                                <div className="flex">
+                                                    <div className="min-w-0 flex-1">
+                                                        <h4 className="text-sm">
+                                                            <a href="#" className="font-medium text-gray-700 hover:text-gray-800">{item.product.name}</a>
+                                                        </h4>
+                                                        {item.variant && <p className="mt-1 text-sm text-gray-500">{item.variant.name}</p>}
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1 pt-2 flex items-end justify-between">
+                                                    <p className="mt-1 text-sm font-medium text-gray-900">{item.price} Kč</p>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <dl className="border-t border-gray-200 py-6 px-4 space-y-6 sm:px-6">
+                                    <div className="flex items-center justify-between">
+                                        <dt className="text-sm">Mezisoučet</dt>
+                                        <dd className="text-sm font-medium text-gray-900">{subtotal} Kč</dd>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <dt className="text-sm">Doprava</dt>
+                                        <dd className="text-sm font-medium text-gray-900">{shippingCost} Kč</dd>
+                                    </div>
+                                    {codFee > 0 && (
+                                        <div className="flex items-center justify-between">
+                                            <dt className="text-sm">Dobírka</dt>
+                                            <dd className="text-sm font-medium text-gray-900">{codFee} Kč</dd>
+                                        </div>
+                                    )}
+                                    <div className="flex items-center justify-between border-t border-gray-200 pt-6">
+                                        <dt className="text-base font-medium">Celkem</dt>
+                                        <dd className="text-base font-medium text-gray-900">{total} Kč</dd>
+                                    </div>
+                                </dl>
+
+                                <div className="border-t border-gray-200 py-6 px-4 sm:px-6">
+                                    <button type="submit" disabled={!agreedToTerms} className="w-full bg-brand-pink border border-transparent rounded-md shadow-sm py-3 px-4 text-base font-medium text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-50 focus:ring-brand-pink disabled:bg-gray-300 disabled:cursor-not-allowed">
+                                        Dokončit objednávku
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-            </div>
+            </main>
         </div>
     );
 };
 
 const ConfirmationPage: React.FC = () => {
-    const { orderId } = useParams<{ orderId: string }>();
-    const location = useLocation();
-    const order = location.state?.order as Order;
-
-    const generateQrCodeUrl = () => {
-        if (!order || order.payment.id !== 'transfer') return '';
-        const vs = order.id.split('-')[1];
-        const amount = order.total.toFixed(2);
-        const iban = 'CZ5830300000001562224019'; // IBAN pro 1562224019/3030
-        const spayd = `SPD*1.0*ACC:${iban}*AM:${amount}*X-VS:${vs}*MSG:Objednavka ${order.id}`;
-        return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(spayd)}`;
-    };
+    const { state } = useLocation();
+    const order: Order = state?.order;
 
     if (!order) {
         return (
-             <div className="bg-white text-center py-20">
-                <h1 className="text-2xl font-bold">Objednávka nenalezena</h1>
-                <p className="mt-4 text-gray-600">Zdá se, že tato objednávka neexistuje nebo vypršela. Zkuste prosím objednat znovu.</p>
-                <Link to="/" className="mt-6 inline-block text-brand-purple">Zpět na hlavní stránku</Link>
+            <div className="text-center py-20">
+                <h1 className="text-2xl font-bold">Objednávka nenalezena.</h1>
+                <p className="mt-4">Vraťte se prosím na <Link to="/" className="text-brand-purple hover:underline">hlavní stránku</Link>.</p>
             </div>
-        );
+        )
     }
+
+    const { id, customerInfo, shipping, payment, items, total, subtotal, shippingCost, codFee, notes, zasilkovnaPoint } = order;
+    
+    // Generování QR kódu pro platbu
+    const qrCodeValue = `SPD*1.0*ACC:CZ3930300000001562224019*AM:${total}*CC:CZK*MSG:Objednavka ${id}*X-VS:${id.replace('MM-', '')}`;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrCodeValue)}`;
 
     return (
         <div className="bg-white">
-            <div className="max-w-4xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8">
-                 <div className="text-center">
-                    <div className="flex items-center justify-center h-20 w-20 mx-auto rounded-full bg-green-100 text-green-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                    </div>
-                    <h1 className="mt-8 text-4xl font-extrabold tracking-tight text-dark-gray">Děkujeme za vaši objednávku!</h1>
-                    <p className="mt-4 text-lg text-gray-600">Brzy vás budeme kontaktovat s potvrzením. Číslo vaší objednávky je <span className="font-semibold text-brand-purple">#{order.id}</span>.</p>
-                </div>
-                
-                <div className="mt-12 bg-light-gray p-8 rounded-lg border">
-                     <h2 className="text-2xl font-semibold text-dark-gray mb-6">Souhrn objednávky</h2>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                         <div>
-                             <h3 className="text-lg font-semibold text-dark-gray mb-3 border-b pb-2">Doručovací adresa</h3>
-                             <div className="text-gray-600 space-y-1 mt-3">
-                                <p>{order.customerInfo.firstName} {order.customerInfo.lastName}</p>
-                                <p>{order.customerInfo.street}</p>
-                                <p>{order.customerInfo.zip} {order.customerInfo.city}</p>
-                                <p>{order.customerInfo.email}</p>
-                             </div>
-                         </div>
-                          <div>
-                             <h3 className="text-lg font-semibold text-dark-gray mb-3 border-b pb-2">Doprava a platba</h3>
-                             <div className="text-gray-600 space-y-1 mt-3">
-                                <p><strong>Doprava:</strong> {order.shipping.name} {order.zasilkovnaPoint ? `(${order.zasilkovnaPoint})` : ''}</p>
-                                <p><strong>Platba:</strong> {order.payment.name}</p>
-                             </div>
-                         </div>
-                     </div>
-                     <div className="border-t my-6"></div>
-                      <div className="space-y-4">
-                        {order.items.map(item => (
-                            <div key={item.id} className="flex justify-between items-center">
-                                <div className="flex items-center min-w-0">
-                                    <img src={item.photos[0] || item.product.imageUrl} className="h-16 w-16 rounded-md object-cover mr-4" alt={item.product.name} />
-                                    <div className="min-w-0">
-                                        <p className="font-medium truncate">{item.product.name}</p>
-                                        <p className="text-sm text-gray-500 truncate">{item.variant?.name}</p>
-                                    </div>
-                                </div>
-                                <p className="flex-shrink-0 ml-4">{item.price} Kč</p>
-                            </div>
-                        ))}
-                    </div>
-                     <div className="border-t my-6"></div>
-                      <div className="space-y-2 text-right">
-                        <p>Mezisoučet: <span className="font-medium">{order.subtotal} Kč</span></p>
-                        <p>Doprava: <span className="font-medium">{order.shippingCost} Kč</span></p>
-                        {order.codFee > 0 && <p>Dobírka: <span className="font-medium">{order.codFee} Kč</span></p>}
-                        <p className="font-bold text-lg mt-2 pt-2 border-t">Celkem: <span className="text-brand-purple">{order.total} Kč</span></p>
-                    </div>
+            <main className="max-w-3xl mx-auto pt-16 pb-24 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-xl">
+                    <p className="text-sm font-semibold uppercase tracking-wide text-brand-purple">Děkujeme!</p>
+                    <h1 className="mt-2 text-4xl font-extrabold tracking-tight sm:text-5xl">Vaše objednávka byla přijata</h1>
+                    <p className="mt-2 text-base text-gray-500">Číslo vaší objednávky je <span className="font-medium text-dark-gray">{id}</span>. Brzy vás budeme kontaktovat s potvrzením.</p>
                 </div>
 
-                <div className="mt-12 p-6 border rounded-lg text-left bg-light-gray">
-                    <h2 className="text-xl font-semibold text-dark-gray text-center mb-4">Platební instrukce</h2>
-                    {order.payment.id === 'transfer' && (
-                        <div className="sm:flex sm:items-center sm:space-x-8">
-                                <div className="flex-1 space-y-2">
-                                <p><strong>Číslo účtu:</strong> 1562224019/3030</p>
-                                <p><strong>Částka:</strong> {order.total} Kč</p>
-                                <p><strong>Variabilní symbol:</strong> {order.id.split('-')[1]}</p>
-                            </div>
-                            <div className="flex-shrink-0 mt-4 sm:mt-0">
-                                <img src={generateQrCodeUrl()} alt="QR kód pro platbu" title="Naskenujte pro rychlou platbu" className="mx-auto"/>
-                                <p className="text-xs text-center mt-1 text-gray-500">Naskenujte pro platbu</p>
+                <section aria-labelledby="order-heading" className="mt-10 border-t border-gray-200">
+                    <h2 id="order-heading" className="sr-only">Vaše objednávka</h2>
+
+                    <h3 className="sr-only">Položky</h3>
+                    {items.map((item) => (
+                        <div key={item.id} className="py-10 border-b border-gray-200 flex space-x-6">
+                            <img src={item.product.imageUrl} alt={item.product.name} className="flex-none w-20 h-20 object-center object-cover bg-gray-100 rounded-lg sm:w-40 sm:h-40" />
+                            <div className="flex-auto flex flex-col">
+                                <div>
+                                    <h4 className="font-medium text-gray-900">{item.product.name}</h4>
+                                    {item.variant && <p className="text-sm text-gray-600">{item.variant.name}</p>}
+                                </div>
                             </div>
                         </div>
-                    )}
-                     {order.payment.id === 'cod' && (
-                        <p className="text-center text-gray-700">Objednávku zaplatíte v hotovosti nebo kartou dopravci při převzetí zásilky.</p>
-                    )}
-                     {order.payment.id === 'cash' && (
-                        <p className="text-center text-gray-700">Objednávku zaplatíte v hotovosti při osobním převzetí v Turnově po předchozí domluvě.</p>
-                    )}
-                </div>
+                    ))}
 
-                <div className="text-center">
-                    <Link to="/" className="mt-12 inline-block bg-brand-pink text-white font-bold py-3 px-8 rounded-md hover:opacity-90">
-                        Zpět na hlavní stránku
-                    </Link>
-                </div>
-            </div>
+                    <div className="sm:ml-40 sm:pl-6">
+                        <dl className="grid grid-cols-2 gap-x-6 py-10 text-sm">
+                            <div>
+                                <dt className="font-medium text-gray-900">Doručovací adresa</dt>
+                                <dd className="mt-2 text-gray-700">
+                                    <address className="not-italic">
+                                        <span className="block">{customerInfo.firstName} {customerInfo.lastName}</span>
+                                        <span className="block">{customerInfo.street}</span>
+                                        <span className="block">{customerInfo.zip} {customerInfo.city}</span>
+                                    </address>
+                                </dd>
+                                {zasilkovnaPoint && <dd className="mt-2 text-gray-700"><b>Výdejní místo:</b> {zasilkovnaPoint}</dd>}
+                            </div>
+                            <div>
+                                <dt className="font-medium text-gray-900">Informace o platbě</dt>
+                                <dd className="mt-2 text-gray-700">
+                                    <p>{payment.name}</p>
+                                    <p>{shipping.name}</p>
+                                </dd>
+                            </div>
+                        </dl>
+
+                        <dl className="space-y-6 border-t border-gray-200 pt-10 text-sm">
+                            <div className="flex justify-between"><dt>Mezisoučet</dt><dd>{subtotal} Kč</dd></div>
+                            <div className="flex justify-between"><dt>Doprava</dt><dd>{shippingCost} Kč</dd></div>
+                            {codFee > 0 && <div className="flex justify-between"><dt>Dobírka</dt><dd>{codFee} Kč</dd></div>}
+                            <div className="flex justify-between"><dt className="font-medium text-lg">Celkem</dt><dd className="font-medium text-lg">{total} Kč</dd></div>
+                        </dl>
+                        
+                        <div className="mt-10 border-t border-gray-200 pt-10">
+                            <h3 className="text-xl font-medium text-dark-gray">Platební instrukce</h3>
+                            {payment.id === 'transfer' && (
+                                <div className="mt-4 p-6 bg-gray-50 rounded-lg">
+                                    <p>Prosím, uhraďte částku <b>{total} Kč</b> na následující účet:</p>
+                                    <ul className="mt-2 list-disc list-inside space-y-1">
+                                        <li>Číslo účtu: <b>1562224019/3030</b></li>
+                                        <li>Variabilní symbol: <b>{id.replace('MM-', '')}</b></li>
+                                    </ul>
+                                    <p className="mt-4">Pro snadnou platbu můžete naskenovat tento QR kód:</p>
+                                    <img src={qrCodeUrl} alt="QR kód pro platbu" className="mt-2" />
+                                </div>
+                            )}
+                             {payment.id === 'cod' && <p className="mt-4">Částku <b>{total} Kč</b> uhradíte hotově nebo kartou dopravci při převzetí zásilky.</p>}
+                             {payment.id === 'cash' && <p className="mt-4">Částku <b>{total} Kč</b> uhradíte v hotovosti při osobním odběru.</p>}
+                        </div>
+
+                    </div>
+                </section>
+            </main>
         </div>
     );
 };
 
-const LegalPage: React.FC<{title: string; children: React.ReactNode}> = ({title, children}) => (
-    <div className="bg-white py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 prose lg:prose-xl">
-            <h1>{title}</h1>
-            {children}
+const TermsPage: React.FC = () => (
+    <div className="bg-white py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto prose lg:prose-lg">
+            <h1>Obchodní podmínky</h1>
+            <p>Platné od 1. 1. 2024</p>
+            
+            <h2>1. Úvodní ustanovení</h2>
+            <p>Tyto obchodní podmínky (dále jen „podmínky“) platí pro nákup v internetovém obchodě Magnetic Memories. Podmínky blíže vymezují a upřesňují práva a povinnosti prodávajícího, kterým je [DOPLNIT JMÉNO A ADRESU], IČO: [DOPLNIT IČO], a kupujícího (dále jen „zákazník“).</p>
+
+            <h2>2. Objednávka a uzavření kupní smlouvy</h2>
+            <p>Veškeré objednávky podané prostřednictvím internetového obchodu jsou závazné. Odesláním objednávky zákazník potvrzuje, že se seznámil s těmito podmínkami a že s nimi souhlasí. Kupní smlouva vzniká v okamžiku potvrzení objednávky prodávajícím.</p>
+            
+            <h2>3. Cena a platba</h2>
+            <p>Ceny zboží jsou uvedeny včetně DPH. Zákazník může uhradit cenu zboží bankovním převodem, na dobírku nebo v hotovosti při osobním odběru. Podrobné informace jsou uvedeny v sekci pokladny.</p>
+
+            <h2>4. Dodací podmínky</h2>
+            <p>Zboží je vyráběno na zakázku. Obvyklá doba dodání je 5-10 pracovních dnů od přijetí platby (v případě bankovního převodu) nebo od potvrzení objednávky (v případě dobírky). Osobní odběr je možný po předchozí domluvě.</p>
+
+            <h2>5. Odstoupení od smlouvy</h2>
+            <p>Vzhledem k tomu, že se jedná o zboží upravené podle přání spotřebitele (zakázková výroba z dodaných fotografií), v souladu s § 1837 písm. d) občanského zákoníku nelze od kupní smlouvy odstoupit ve 14denní lhůtě bez udání důvodu.</p>
+
+            <h2>6. Reklamace a odpovědnost za vady</h2>
+            <p>Případné reklamace budou vyřízeny v souladu s platným právním řádem České republiky. Zákazník je povinen zboží po jeho převzetí prohlédnout a případné vady neprodleně oznámit prodávajícímu.</p>
+
+            <h2>7. Ochrana osobních údajů</h2>
+            <p>Ochrana osobních údajů zákazníka je zajištěna v souladu s platnou legislativou. Podrobné informace naleznete na stránce Zásady ochrany osobních údajů.</p>
         </div>
     </div>
 );
 
-const TermsPage: React.FC = () => (
-    <LegalPage title="Obchodní podmínky">
-        <p>Tyto obchodní podmínky platí pro nákup v internetovém obchodě Magnetic Memories. Podmínky blíže vymezují a upřesňují práva a povinnosti prodávajícího (provozovatel) a kupujícího (zákazník).</p>
-        <h2>1. Objednávka a uzavření kupní smlouvy</h2>
-        <p>Veškeré objednávky podané prostřednictvím internetového obchodu Magnetic Memories jsou závazné. Podáním objednávky kupující stvrzuje, že se seznámil s těmito obchodními podmínkami, jakož i s reklamačním řádem, a že s nimi souhlasí.</p>
-        <h2>2. Reklamace a záruka</h2>
-        <p>Případné reklamace budou vyřízeny v souladu s reklamačním řádem internetového obchodu Magnetic Memories a právním řádem platným v ČR. Zboží lze reklamovat u provozovatele dle podmínek reklamačního řádu na adrese uvedené v kontaktech.</p>
-        <h2>3. Ochrana osobních údajů</h2>
-        <p>Informace o zákaznících jsou uchovávány v souladu s platnými zákony České republiky, zejména se zákonem o ochraně osobních údajů č. 101/2000 Sb. ve znění pozdějších dodatků a předpisů. Více informací naleznete na stránce Zásady ochrany osobních údajů.</p>
-    </LegalPage>
+const PrivacyPolicyPage: React.FC = () => (
+    <div className="bg-white py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto prose lg:prose-lg">
+            <h1>Zásady ochrany osobních údajů (GDPR)</h1>
+            <p>Platné od 1. 1. 2024</p>
+            
+            <h2>1. Správce osobních údajů</h2>
+            <p>Správcem vašich osobních údajů je [DOPLNIT JMÉNO A ADRESU], IČO: [DOPLNIT IČO] (dále jen „správce“).</p>
+
+            <h2>2. Jaké údaje zpracováváme</h2>
+            <p>Pro účely vyřízení vaší objednávky a plnění smlouvy zpracováváme následující údaje: jméno, příjmení, doručovací adresa, e-mail, telefonní číslo a fotografie, které nám poskytnete pro výrobu produktů.</p>
+            
+            <h2>3. Účel zpracování</h2>
+            <p>Vaše osobní údaje zpracováváme za účelem:
+                <ul>
+                    <li>Vyřízení objednávky a výkonu práv a povinností vyplývajících ze smluvního vztahu mezi vámi a správcem.</li>
+                    <li>Komunikace týkající se stavu vaší objednávky.</li>
+                    <li>Plnění zákonných povinností (např. účetnictví).</li>
+                </ul>
+            </p>
+
+            <h2>4. Doba uchovávání údajů</h2>
+            <p>Vaše osobní údaje uchováváme po dobu nezbytně nutnou k výkonu práv a povinností vyplývajících ze smluvního vztahu a uplatňování nároků z těchto smluvních vztahů (po dobu 10 let od ukončení smluvního vztahu). Fotografie poskytnuté pro výrobu jsou po zhotovení a odeslání objednávky mazány.</p>
+            
+            <h2>5. Vaše práva</h2>
+            <p>Máte právo na přístup ke svým osobním údajům, jejich opravu, výmaz, omezení zpracování, a právo vznést námitku proti zpracování. V případě dotazů nás neváhejte kontaktovat.</p>
+        </div>
+    </div>
 );
 
-const PrivacyPage: React.FC = () => (
-    <LegalPage title="Zásady ochrany osobních údajů (GDPR)">
-        <h2>1. Správce údajů</h2>
-        <p>Správcem Vašich osobních údajů je provozovatel tohoto e-shopu, Magnetic Memories (dále jen „správce“).</p>
-        <h2>2. Rozsah zpracování osobních údajů</h2>
-        <p>Zpracováváme pouze osobní údaje, které nám poskytnete v souvislosti s využíváním našich služeb (např. v rámci objednávky), a to: jméno, příjmení, e-mailová adresa, telefonní číslo, doručovací adresa.</p>
-        <h2>3. Účel zpracování osobních údajů</h2>
-        <p>Vaše osobní údaje zpracováváme za účelem vyřízení Vaší objednávky a řešení případných reklamací. Dále pro marketingové účely, pokud nám k tomu udělíte souhlas.</p>
-        <h2>4. Vaše práva</h2>
-        <p>Máte právo na přístup k Vašim osobním údajům, jejich opravu, výmaz, omezení zpracování, a právo vznést námitku proti zpracování.</p>
-    </LegalPage>
-);
 
+const AppLayout: React.FC<{ children: React.ReactNode; openCart: () => void }> = ({ children, openCart }) => {
+    const location = useLocation();
+    
+    // Zkontroluje, zda je aktuální cesta /admin
+    // Používáme location.hash pro HashRouter
+    const isAdminPage = location.hash === '#/admin';
 
-const AppLayout: React.FC = () => {
-    const [isCartOpen, setIsCartOpen] = useState(false);
+    if (isAdminPage) {
+        return <>{children}</>;
+    }
     
     return (
-        <div className="flex flex-col min-h-screen">
-            <Header onCartClick={() => setIsCartOpen(true)} />
-            <main className="flex-grow">
-                <ScrollToTop />
-                <Routes>
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/produkty" element={<ProductsPage />} />
-                    <Route path="/produkty/:id" element={<ProductDetailPage openCart={() => setIsCartOpen(true)} />} />
-                    <Route path="/jak-to-funguje" element={<HowItWorksPage />} />
-                    <Route path="/kontakt" element={<ContactPage />} />
-                    <Route path="/pokladna" element={<CheckoutPage />} />
-                    <Route path="/potvrzeni/:orderId" element={<ConfirmationPage />} />
-                    <Route path="/obchodni-podminky" element={<TermsPage />} />
-                    <Route path="/zasady-ochrany-udaju" element={<PrivacyPage />} />
-                </Routes>
-            </main>
+        <>
+            <Header onCartClick={openCart} />
+            <main>{children}</main>
             <Footer />
-            <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-        </div>
+        </>
     );
 };
 
-const App: React.FC = () => (
-    <ProductProvider>
-        <CartProvider>
-            <HashRouter>
-                <AppLayout />
-            </HashRouter>
-        </CartProvider>
-    </ProductProvider>
-);
+
+const App: React.FC = () => {
+    const [isCartOpen, setIsCartOpen] = useState(false);
+    const openCart = () => setIsCartOpen(true);
+    const closeCart = () => setIsCartOpen(false);
+
+    return (
+        <ProductProvider>
+            <CartProvider>
+                <HashRouter>
+                    <ScrollToTop />
+                    <Cart isOpen={isCartOpen} onClose={closeCart} />
+                    <AppLayout openCart={openCart}>
+                        <Routes>
+                            <Route path="/" element={<HomePage />} />
+                            <Route path="/produkty" element={<ProductsPage />} />
+                            <Route path="/produkty/:id" element={<ProductDetailPage openCart={openCart} />} />
+                            <Route path="/jak-to-funguje" element={<HowItWorksPage />} />
+                            <Route path="/kontakt" element={<ContactPage />} />
+                            <Route path="/pokladna" element={<CheckoutPage />} />
+                            <Route path="/potvrzeni/:orderId" element={<ConfirmationPage />} />
+                            <Route path="/obchodni-podminky" element={<TermsPage />} />
+                            <Route path="/zasady-ochrany-udaju" element={<PrivacyPolicyPage />} />
+                            <Route path="/admin" element={<AdminPage />} />
+                        </Routes>
+                    </AppLayout>
+                </HashRouter>
+            </CartProvider>
+        </ProductProvider>
+    );
+};
 
 export default App;
