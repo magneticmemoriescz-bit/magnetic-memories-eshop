@@ -46,8 +46,11 @@ export const Footer: React.FC = () => {
                 </ul>
             </div>
         </div>
-        <div className="mt-12 border-t border-gray-800 pt-8">
-            <p className="text-base text-gray-500 xl:text-center">&copy; {new Date().getFullYear()} Magnetic Memories. Všechna práva vyhrazena.</p>
+        <div className="mt-12 border-t border-gray-800 pt-8 flex flex-col sm:flex-row justify-between items-center">
+            <p className="text-base text-gray-500 text-center sm:text-left">&copy; {new Date().getFullYear()} Magnetic Memories. Všechna práva vyhrazena.</p>
+             <div className="text-center sm:text-right mt-4 sm:mt-0">
+                <Link to="/admin" className="text-sm text-gray-600 hover:text-gray-400 transition-colors">Administrace</Link>
+            </div>
         </div>
       </div>
     </footer>
