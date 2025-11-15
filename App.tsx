@@ -9,11 +9,10 @@ import { Footer } from './components/Footer';
 import { ProductCard } from './components/ProductCard';
 import { FileUpload } from './components/FileUpload';
 
-// Tell TypeScript that Packeta and QRCode widget exists on the window object
+// Tell TypeScript that Packeta widget exists on the window object
 declare global {
     interface Window {
         Packeta: any;
-        QRCode: any;
     }
 }
 
@@ -54,7 +53,7 @@ const HomePage: React.FC = () => {
             {/* Hero Section */}
             <section className="relative bg-white">
                 <div className="absolute inset-0">
-                    <img className="w-full h-full object-cover" src="https://i.imgur.com/kY8d3vA.jpeg" alt="Lednice s magnety" />
+                    <img className="w-full h-full object-cover" src="https://i.imgur.com/vH40Y4d.jpg" alt="Lednice s magnety" />
                     <div className="absolute inset-0 bg-gray-900 opacity-60"></div>
                 </div>
                 <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 lg:py-48 text-center">
@@ -371,30 +370,6 @@ const ContactPage: React.FC = () => {
     );
 };
 
-/**
- * Helper function to wait for an external library to be available on the window object.
- * It polls for the library and resolves a promise when it's found.
- * @param libraryName The name of the library on the window object (e.g., 'QRCode').
- * @param retries Number of times to check for the library.
- * @param interval Milliseconds between checks.
- * @returns A promise that resolves with the library object.
- */
-const waitForLibrary = (libraryName: string, retries = 20, interval = 250): Promise<any> => {
-  return new Promise((resolve, reject) => {
-    const check = (retryCount: number) => {
-      const lib = (window as any)[libraryName];
-      if (lib) {
-        resolve(lib);
-      } else if (retryCount > 0) {
-        setTimeout(() => check(retryCount - 1), interval);
-      } else {
-        reject(new Error(`Library ${libraryName} is not available after multiple attempts.`));
-      }
-    };
-    check(retries);
-  });
-};
-
 const FormInput = ({ name, label, error, value, onChange, ...props }: any) => (
     <div>
         <label htmlFor={name} className="block text-sm font-medium text-gray-700">{label}</label>
@@ -414,7 +389,6 @@ const CheckoutPage: React.FC = () => {
     const { state, dispatch } = useCart();
     const { items } = state;
     const [submittedOrder, setSubmittedOrder] = useState<OrderDetails | null>(null);
-    const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
     
     const [formData, setFormData] = useState({
         firstName: '',
@@ -433,31 +407,6 @@ const CheckoutPage: React.FC = () => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
-
-    useEffect(() => {
-        if (submittedOrder && submittedOrder.payment === 'prevodem') {
-            const generateQrCode = async () => {
-                try {
-                    const QRCode = await waitForLibrary('QRCode');
-                    
-                    const iban = 'CZ5530300000001562224019'; // 1562224019/3030
-                    const amount = submittedOrder.total;
-                    const vs = submittedOrder.orderNumber.replace(/\D/g, '');
-                    const message = `Objednavka ${submittedOrder.orderNumber}`;
-                    const spdString = `SPD*1.0*ACC:${iban}*AM:${amount}*VS:${vs}*MSG:${message}`;
-
-                    const url = await QRCode.toDataURL(spdString, { width: 256, margin: 1 });
-                    setQrCodeDataUrl(url);
-
-                } catch (err) {
-                    console.error(err);
-                }
-            };
-
-            generateQrCode();
-        }
-    }, [submittedOrder]);
-
 
     const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
@@ -495,68 +444,74 @@ const CheckoutPage: React.FC = () => {
     };
     
     const sendEmailNotifications = (order: OrderDetails) => {
-        const ownerEmail = 'provozovatel@magneticmemories.cz'; // Váš email
-    
-        const itemsHtml = order.items.map(item => `
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd;">${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.price} Kč</td>
-            </tr>
-        `).join('');
-    
-        const customerEmailBody = `
-            <div style="font-family: Arial, sans-serif; color: #333;">
-                <h1>Děkujeme za Vaši objednávku!</h1>
-                <p>Dobrý den ${order.contact.firstName},</p>
-                <p>Vaše objednávka č. <strong>${order.orderNumber}</strong> byla přijata a brzy se pustíme do její výroby.</p>
-                <h2>Souhrn objednávky</h2>
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead><tr>
-                        <th style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; text-align: left;">Produkt</th>
-                        <th style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; text-align: center;">Množství</th>
-                        <th style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; text-align: right;">Cena</th>
-                    </tr></thead>
-                    <tbody>${itemsHtml}</tbody>
-                </table>
-                <p style="text-align: right; margin-top: 10px;">Mezisoučet: ${order.subtotal} Kč</p>
-                <p style="text-align: right;">Doprava: ${order.shippingCost} Kč</p>
-                <p style="text-align: right;">Platba: ${order.paymentCost} Kč</p>
-                <h3 style="text-align: right; margin-top: 10px;">Celkem: ${order.total} Kč</h3>
-                ${order.payment === 'prevodem' ? `
-                <h2>Platební údaje</h2>
-                <p>Prosíme, uhraďte částku na účet <strong>1562224019/3030</strong> s variabilním symbolem <strong>${order.orderNumber.replace(/\D/g, '')}</strong>.</p>
-                ` : ''}
-                <p>S pozdravem,<br>Váš tým Magnetic Memories</p>
-            </div>
+      const ownerEmail = 'provozovatel@magneticmemories.cz'; // Váš email
+
+      let paymentDetailsHtml = '';
+      if (order.payment === 'prevodem') {
+        const vs = order.orderNumber.replace(/\D/g, '');
+        paymentDetailsHtml = `
+            <h2>Platební údaje</h2>
+            <p>Prosíme, uhraďte částku <strong>${order.total} Kč</strong> na účet <strong>1562224019/3030</strong> s variabilním symbolem <strong>${vs}</strong>.</p>
         `;
-    
-        const ownerEmailBody = `
-            <h1>Nová objednávka č. ${order.orderNumber}</h1>
-            <h2>Zákazník:</h2>
-            <p>${order.contact.firstName} ${order.contact.lastName}<br>${order.contact.email}</p>
-            <h2>Doručovací adresa:</h2>
-            <p>${order.contact.street}<br>${order.contact.zip} ${order.contact.city}</p>
-            <h2>Doprava a platba:</h2>
-            <p>Doprava: ${order.shipping}</p>
-            ${order.shipping === 'zasilkovna' && order.packetaPoint ? `<p>Výdejní místo: ${order.packetaPoint.name}, ${order.packetaPoint.street}, ${order.packetaPoint.city}</p>` : ''}
-            <p>Platba: ${order.payment}</p>
-            <h2>Položky:</h2>
-            ${customerEmailBody.split('<h2>Souhrn objednávky</h2>')[1]}`
-        ;
-    
-        console.log("--- SIMULACE ODESLÁNÍ EMAILU ZÁKAZNÍKOVI ---");
-        console.log("Příjemce:", order.contact.email);
-        console.log("Předmět:", `Potvrzení objednávky č. ${order.orderNumber}`);
-        console.log("Tělo:", customerEmailBody);
-        console.log("----------------------------------------------");
-    
-        console.log("--- SIMULACE ODESLÁNÍ EMAILU PROVOZOVATELI ---");
-        console.log("Příjemce:", ownerEmail);
-        console.log("Předmět:", `Nová objednávka č. ${order.orderNumber}`);
-        console.log("Tělo:", ownerEmailBody);
-        console.log("--------------------------------------------");
-    };
+      }
+
+      const itemsHtml = order.items.map(item => `
+          <tr>
+              <td style="padding: 8px; border: 1px solid #ddd;">${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}</td>
+              <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+              <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.price} Kč</td>
+          </tr>
+      `).join('');
+
+      const customerEmailBody = `
+          <div style="font-family: Arial, sans-serif; color: #333;">
+              <h1>Děkujeme za Vaši objednávku!</h1>
+              <p>Dobrý den ${order.contact.firstName},</p>
+              <p>Vaše objednávka č. <strong>${order.orderNumber}</strong> byla přijata a brzy se pustíme do její výroby.</p>
+              <h2>Souhrn objednávky</h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                  <thead><tr>
+                      <th style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; text-align: left;">Produkt</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; text-align: center;">Množství</th>
+                      <th style="padding: 8px; border: 1px solid #ddd; background-color: #f2f2f2; text-align: right;">Cena</th>
+                  </tr></thead>
+                  <tbody>${itemsHtml}</tbody>
+              </table>
+              <p style="text-align: right; margin-top: 10px;">Mezisoučet: ${order.subtotal} Kč</p>
+              <p style="text-align: right;">Doprava: ${order.shippingCost} Kč</p>
+              <p style="text-align: right;">Platba: ${order.paymentCost} Kč</p>
+              <h3 style="text-align: right; margin-top: 10px;">Celkem: ${order.total} Kč</h3>
+              ${paymentDetailsHtml}
+              <p>S pozdravem,<br>Váš tým Magnetic Memories</p>
+          </div>
+      `;
+
+      const ownerEmailBody = `
+          <h1>Nová objednávka č. ${order.orderNumber}</h1>
+          <h2>Zákazník:</h2>
+          <p>${order.contact.firstName} ${order.contact.lastName}<br>${order.contact.email}</p>
+          <h2>Doručovací adresa:</h2>
+          <p>${order.contact.street}<br>${order.contact.zip} ${order.contact.city}</p>
+          <h2>Doprava a platba:</h2>
+          <p>Doprava: ${order.shipping}</p>
+          ${order.shipping === 'zasilkovna' && order.packetaPoint ? `<p>Výdejní místo: ${order.packetaPoint.name}, ${order.packetaPoint.street}, ${order.packetaPoint.city}</p>` : ''}
+          <p>Platba: ${order.payment}</p>
+          <h2>Položky:</h2>
+          ${customerEmailBody.split('<h2>Souhrn objednávky</h2>')[1]}`
+      ;
+
+      console.log("--- SIMULACE ODESLÁNÍ EMAILU ZÁKAZNÍKOVI ---");
+      console.log("Příjemce:", order.contact.email);
+      console.log("Předmět:", `Potvrzení objednávky č. ${order.orderNumber}`);
+      console.log("Tělo:", customerEmailBody);
+      console.log("----------------------------------------------");
+
+      console.log("--- SIMULACE ODESLÁNÍ EMAILU PROVOZOVATELI ---");
+      console.log("Příjemce:", ownerEmail);
+      console.log("Předmět:", `Nová objednávka č. ${order.orderNumber}`);
+      console.log("Tělo:", ownerEmailBody);
+      console.log("--------------------------------------------");
+  };
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -606,14 +561,14 @@ const CheckoutPage: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <h3 className="mt-4 text-3xl font-semibold text-dark-gray">Děkujeme za Váš nákup!</h3>
-                    <p className="mt-2 text-gray-600 max-w-lg mx-auto">Vaše objednávka č. <strong className="text-dark-gray">{submittedOrder.orderNumber}</strong> byla úspěšně přijata. Potvrzení jsme Vám (simulovaně) odeslali na email.</p>
+                    <p className="mt-2 text-gray-600 max-w-lg mx-auto">Vaše objednávka č. <strong className="text-dark-gray">{submittedOrder.orderNumber}</strong> byla úspěšně přijata. Potvrzení jsme Vám odeslali na email.</p>
                 </div>
 
                 {submittedOrder.payment === 'prevodem' && (
                     <div className="mt-10 max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
                         <h3 className="text-2xl font-bold text-dark-gray text-center mb-6">Platební údaje</h3>
                         <div className="space-y-4 text-center">
-                            <p>Pro dokončení objednávky, prosím, proveďte platbu:</p>
+                            <p>Pro dokončení objednávky, prosím, proveďte platbu. Všechny potřebné informace jsme Vám zaslali do emailu.</p>
                             <div>
                                 <p className="text-sm text-gray-500">Číslo účtu:</p>
                                 <p className="text-lg font-semibold text-dark-gray">1562224019/3030</p>
@@ -626,16 +581,6 @@ const CheckoutPage: React.FC = () => {
                                 <p className="text-sm text-gray-500">Variabilní symbol:</p>
                                 <p className="text-lg font-semibold text-dark-gray">{submittedOrder.orderNumber.replace(/\D/g, '')}</p>
                             </div>
-                            {qrCodeDataUrl ? (
-                                <div className="mt-6">
-                                    <p className="font-semibold mb-2">Nebo jednoduše naskenujte QR kód:</p>
-                                    <img src={qrCodeDataUrl} alt="QR kód pro platbu" className="mx-auto" />
-                                </div>
-                            ) : (
-                                <div className="mt-6">
-                                    <p className="font-semibold mb-2">QR kód se generuje...</p>
-                                </div>
-                            )}
                         </div>
                     </div>
                 )}
