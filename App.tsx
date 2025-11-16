@@ -554,6 +554,7 @@ const CheckoutPage: React.FC = () => {
 
         const customerParams = {
             to_email: order.contact.email,
+            customer_email: order.contact.email,
             to_name: `${order.contact.firstName} ${order.contact.lastName}`,
             reply_to: order.contact.email,
             order_number: order.orderNumber,
