@@ -341,11 +341,13 @@ const HowItWorksPage: React.FC = () => {
 
 const ContactPage: React.FC = () => {
     const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+    const [errorMessage, setErrorMessage] = useState('');
     const formRef = useRef<HTMLFormElement>(null);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setStatus('sending');
+        setErrorMessage('');
 
         if (!formRef.current) {
             console.error("Form reference is not available.");
@@ -353,11 +355,12 @@ const ContactPage: React.FC = () => {
             return;
         }
 
-        window.emailjs.sendForm('service_2pkoish', 'template_ajmxwjd', formRef.current, 'sVd3x5rH1tZu6JGUR')
+        window.emailjs.sendForm('service_2pkoish', 'template_ajmxwjd', formRef.current)
             .then(() => {
                 setStatus('success');
             }, (error: any) => {
                 console.error('FAILED to send contact form:', error);
+                setErrorMessage(`Odeslání zprávy se nezdařilo: ${error.text || 'Zkuste to prosím znovu.'}`);
                 setStatus('error');
             });
     };
@@ -399,7 +402,7 @@ const ContactPage: React.FC = () => {
                                 <div className="mt-1"><textarea id="message" name="message" rows={4} className={inputStyles} required></textarea></div>
                             </div>
                             <div className="sm:col-span-2">
-                                {status === 'error' && <p className="text-red-600 text-sm text-center mb-4">Odeslání zprávy se nezdařilo. Zkuste to prosím znovu.</p>}
+                                {status === 'error' && <p className="text-red-600 text-sm text-center mb-4">{errorMessage}</p>}
                                 <button type="submit" disabled={status === 'sending'} className="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-brand-pink hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink disabled:opacity-50">
                                     {status === 'sending' ? 'Odesílám...' : 'Odeslat zprávu'}
                                 </button>
@@ -432,6 +435,7 @@ const CheckoutPage: React.FC = () => {
     const { items } = state;
     const [submittedOrder, setSubmittedOrder] = useState<OrderDetails | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState('');
     
     const [formData, setFormData] = useState({
         firstName: '',
@@ -586,8 +590,8 @@ const CheckoutPage: React.FC = () => {
             photos_html: photosHtml,
         };
 
-        await window.emailjs.send('service_2pkoish', 'template_1v2vxgh', customerParams, 'sVd3x5rH1tZu6JGUR');
-        await window.emailjs.send('service_2pkoish', 'template_8ax2a2w', ownerParams, 'sVd3x5rH1tZu6JGUR');
+        await window.emailjs.send('service_2pkoish', 'template_1v2vxgh', customerParams);
+        await window.emailjs.send('service_2pkoish', 'template_8ax2a2w', ownerParams);
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -609,6 +613,7 @@ const CheckoutPage: React.FC = () => {
 
         if (Object.keys(errors).length === 0) {
             setIsSubmitting(true);
+            setSubmitError('');
             const now = new Date();
             const orderNumber = `MM${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}-${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
             
@@ -629,9 +634,9 @@ const CheckoutPage: React.FC = () => {
                 await sendEmailNotifications(orderDetails);
                 setSubmittedOrder(orderDetails);
                 dispatch({ type: 'CLEAR_CART' });
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Failed to send emails:", error);
-                alert("Odeslání objednávky se nezdařilo. Zkontrolujte prosím své připojení a zkuste to znovu.");
+                setSubmitError(`Odeslání objednávky se nezdařilo: ${error.text || 'Zkontrolujte prosím své připojení a zkuste to znovu.'}`);
             } finally {
                 setIsSubmitting(false);
             }
@@ -804,6 +809,7 @@ const CheckoutPage: React.FC = () => {
                             </div>
                         </dl>
                         <div className="mt-6">
+                            {submitError && <p className="text-red-600 text-sm text-center mb-4">{submitError}</p>}
                             <button type="submit" disabled={isSubmitting} className="w-full bg-brand-pink border border-transparent rounded-md shadow-sm py-3 px-4 text-base font-medium text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink disabled:opacity-50">
                                 {isSubmitting ? 'Odesílám objednávku...' : 'Odeslat objednávku'}
                             </button>
@@ -1162,6 +1168,14 @@ const AdminProductEditPage: React.FC = () => {
 
 const AppLayout: React.FC = () => {
     const { loading } = useProducts();
+
+    useEffect(() => {
+        if (window.emailjs) {
+            window.emailjs.init({ publicKey: 'sVd3x5rH1tZu6JGUR' });
+        } else {
+            console.error("EmailJS script not loaded.");
+        }
+    }, []);
 
     if (loading) {
         return <div className="flex justify-center items-center min-h-screen">Načítání...</div>;
