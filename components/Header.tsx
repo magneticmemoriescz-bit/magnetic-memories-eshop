@@ -8,7 +8,7 @@ import { Logo } from './Logo';
 
 export const CartIcon: React.FC = () => {
     const { state } = useCart();
-    const itemCount = state.items.length;
+    const itemCount = state.items.reduce((total, item) => total + item.quantity, 0);
   
     return (
       <Link to="/kosik" className="relative text-gray-200 hover:text-white transition-colors">
