@@ -1,9 +1,10 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, Link, useParams, useLocation, useNavigate, Navigate, Outlet } from 'react-router-dom';
 import { CartProvider, useCart } from './context/CartContext';
 import { ProductProvider, useProducts } from './context/ProductContext';
-import { Product, ProductVariant, CartItem } from './types';
+import { Product, ProductVariant, CartItem, UploadedPhoto } from './types';
 import { HOW_IT_WORKS_STEPS } from './constants';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -141,7 +142,7 @@ const ProductDetailPage: React.FC = () => {
     const { dispatch } = useCart();
     const navigate = useNavigate();
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(product?.variants?.[0]);
-    const [uploadedPhotoInfo, setUploadedPhotoInfo] = useState<UploadedFilesInfo>({ urls: [], groupId: null });
+    const [uploadedPhotoInfo, setUploadedPhotoInfo] = useState<UploadedFilesInfo>({ photos: [], groupId: null });
     const [customText, setCustomText] = useState<{ [key: string]: string }>({});
     const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
     const [error, setError] = useState<string | null>(null);
@@ -151,7 +152,7 @@ const ProductDetailPage: React.FC = () => {
     useEffect(() => {
         const currentProduct = products.find(p => p.id === id);
         if (currentProduct) {
-            setUploadedPhotoInfo({ urls: [], groupId: null });
+            setUploadedPhotoInfo({ photos: [], groupId: null });
             setCustomText({});
             setSelectedVariant(currentProduct.variants?.[0]);
             setOrientation('portrait');
@@ -183,13 +184,13 @@ const ProductDetailPage: React.FC = () => {
 
     const handleFilesChange = (filesInfo: UploadedFilesInfo) => {
         setUploadedPhotoInfo(filesInfo);
-        if (filesInfo.urls.length === photoCount) {
+        if (filesInfo.photos.length === photoCount) {
             setError(null);
         }
     };
 
     const handleAddToCart = () => {
-        if (uploadedPhotoInfo.urls.length !== photoCount) {
+        if (uploadedPhotoInfo.photos.length !== photoCount) {
             setError(`Prosím, nahrajte přesně ${photoCount} fotografií.`);
             return;
         }
@@ -201,7 +202,7 @@ const ProductDetailPage: React.FC = () => {
             quantity: quantity,
             price: displayPrice,
             variant: selectedVariant,
-            photos: uploadedPhotoInfo.urls,
+            photos: uploadedPhotoInfo.photos,
             photoGroupId: uploadedPhotoInfo.groupId,
             customText,
             ...(isCalendar && { orientation: orientation })
@@ -216,7 +217,7 @@ const ProductDetailPage: React.FC = () => {
     
     const handleVariantChange = (variant: ProductVariant) => {
         setSelectedVariant(variant);
-        setUploadedPhotoInfo({ urls: [], groupId: null });
+        setUploadedPhotoInfo({ photos: [], groupId: null });
         setError(null);
     }
     
@@ -564,31 +565,34 @@ const CheckoutPage: React.FC = () => {
             unit: 'mm',
             format: 'a4'
         });
-        
-        const fontUrl = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf';
-        try {
-            const response = await fetch(fontUrl);
-            if (!response.ok) throw new Error('Network response was not ok for font.');
-            const fontBlob = await response.blob();
-            const reader = new FileReader();
-            const fontBase64 = await new Promise<string>((resolve, reject) => {
-                reader.onloadend = () => {
-                    if (typeof reader.result === 'string') {
-                        // Get only the base64 part
-                        resolve(reader.result.substring(reader.result.indexOf(',') + 1));
-                    } else {
-                        reject(new Error('Failed to read font as base64 string.'));
-                    }
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(fontBlob);
-            });
 
+        // Helper to convert ArrayBuffer to Base64
+        const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        };
+
+        try {
+            const fontUrl = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf';
+            const response = await fetch(fontUrl);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch font: ${response.statusText}`);
+            }
+            const fontBuffer = await response.arrayBuffer();
+            const fontBase64 = arrayBufferToBase64(fontBuffer);
+            
             doc.addFileToVFS('DejaVuSans.ttf', fontBase64);
             doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
             doc.setFont('DejaVuSans');
         } catch (error) {
-            console.error("Failed to load custom font for PDF, falling back to default. Czech characters might not render correctly.", error);
+            console.error("CRITICAL: Failed to load custom font for PDF.", error);
+            // Re-throw the error to ensure the PDF generation is aborted,
+            // as rendering without the font would create a broken document.
+            throw new Error(`Font loading failed, cannot generate invoice. Reason: ${error instanceof Error ? error.message : String(error)}`);
         }
 
         const pageHeight = doc.internal.pageSize.height;
@@ -796,19 +800,24 @@ const CheckoutPage: React.FC = () => {
         const ownerPhotosHtml = order.items
             .filter(item => item.photos && item.photos.length > 0)
             .map(item => {
+                const photoListHtml = `<ol style="margin-top: 10px; padding-left: 20px; font-size: 13px; color: #555; line-height: 1.6;">` +
+                    item.photos.map((photo, index) => `<li><strong>${index + 1}.</strong> ${photo.name}</li>`).join('') +
+                    `</ol>`;
+
                 const photoManagementHtml = item.photoGroupId 
-                    ? `<p style="margin-top: 5px;">
+                    ? `<p style="margin-top: 15px;">
                         <a href="https://uploadcare.com/app/projects/aa96da339a5d48983ea2/groups/${item.photoGroupId}/" target="_blank" style="display: inline-block; padding: 8px 16px; background-color: #8D7EEF; color: white; text-decoration: none; border-radius: 5px;">
-                            Zobrazit ${item.photos.length} fotografií &raquo;
+                            Zobrazit fotografie v Uploadcare &raquo;
                         </a>
                        </p>`
-                    : `<p style="margin-top: 5px; color: #777;">Počet nahraných fotografií: <strong>${item.photos.length}</strong>. (Nelze zobrazit jako skupinu)</p>`;
+                    : `<p style="margin-top: 15px; color: #777; font-size: 12px;">(Fotografie nebyly nahrány jako skupina)</p>`;
 
                 return `
-                    <div style="padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px;">
-                        <h4 style="margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">
-                            ${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}
+                    <div style="padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; background-color: #fafafa;">
+                        <h4 style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+                            Fotografie pro: ${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}
                         </h4>
+                        ${photoListHtml}
                         ${photoManagementHtml}
                     </div>`;
             }).join('');
@@ -818,7 +827,7 @@ const CheckoutPage: React.FC = () => {
                 <h2 style="border-bottom: 1px solid #eee; padding-bottom: 5px;">Přiložené fotografie</h2>
                 ${ownerPhotosHtml}
                 <p style="font-size: 12px; color: #777; margin-top: 10px;">
-                    Kliknutím na tlačítko "Zobrazit fotografie" se dostanete do administrace, kde si můžete fotografie prohlédnout a stáhnout.
+                    Seznam souborů je v pořadí, v jakém je zákazník nahrál (a seřadil).
                 </p>
              </div>`
             : '';
