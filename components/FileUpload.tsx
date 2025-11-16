@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { UploadedPhoto } from '../types';
 
 // Tell TypeScript that uploadcare widget exists on the window object
 declare global {
@@ -8,7 +9,7 @@ declare global {
 }
 
 export interface UploadedFilesInfo {
-    urls: string[];
+    photos: UploadedPhoto[];
     groupId: string | null;
 }
 
@@ -20,7 +21,7 @@ interface FileUploadProps {
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange, uploadedFilesInfo, isReorderable = false }) => {
-  const { urls } = uploadedFilesInfo;
+  const { photos } = uploadedFilesInfo;
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
 
@@ -30,7 +31,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
         alert("Služba pro nahrávání souborů není k dispozici. Zkuste prosím obnovit stránku.");
         return;
     }
-    const dialog = window.uploadcare.openDialog(urls, {
+    const alreadyUploaded = photos.map(p => p.url);
+    const dialog = window.uploadcare.openDialog(alreadyUploaded, {
         imagesOnly: true,
         multiple: true,
         multipleMax: maxFiles,
@@ -38,15 +40,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
     
     dialog.done((fileGroup: any) => {
         Promise.all(fileGroup.files()).then(files => {
-            const cdnUrls = files.map(file => file.cdnUrl);
-            onFilesChange({ urls: cdnUrls, groupId: fileGroup.uuid });
+            const uploadedPhotos: UploadedPhoto[] = files.map(file => ({ url: file.cdnUrl, name: file.name }));
+            onFilesChange({ photos: uploadedPhotos, groupId: fileGroup.uuid });
         });
     });
   };
 
   const removeFile = (index: number) => {
-    const newUrls = urls.filter((_, i) => i !== index);
-    onFilesChange({ urls: newUrls, groupId: null }); // Invalidate group ID as the set of files has changed
+    const newPhotos = photos.filter((_, i) => i !== index);
+    onFilesChange({ photos: newPhotos, groupId: null }); // Invalidate group ID as the set of files has changed
   };
 
   const handleDragStart = (index: number) => {
@@ -70,11 +72,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
 
   const handleDrop = () => {
     if (!isReorderable || draggedIndex === null || dropIndex === null) return;
-    const newUrls = [...urls];
-    const draggedItem = newUrls[draggedIndex];
-    newUrls.splice(draggedIndex, 1);
-    newUrls.splice(dropIndex, 0, draggedItem);
-    onFilesChange({ urls: newUrls, groupId: uploadedFilesInfo.groupId }); // The group itself hasn't changed, just the local order
+    const newPhotos = [...photos];
+    const draggedItem = newPhotos[draggedIndex];
+    newPhotos.splice(draggedIndex, 1);
+    newPhotos.splice(dropIndex, 0, draggedItem);
+    onFilesChange({ photos: newPhotos, groupId: uploadedFilesInfo.groupId }); // The group itself hasn't changed, just the local order
     setDraggedIndex(null);
     setDropIndex(null);
   };
@@ -91,20 +93,20 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
                     <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <span className="mt-2 block text-sm font-medium text-brand-purple hover:opacity-80">
-                    {urls.length > 0 ? 'Spravovat fotografie' : 'Klikněte pro nahrání souborů'}
+                    {photos.length > 0 ? 'Spravovat fotografie' : 'Klikněte pro nahrání souborů'}
                 </span>
                 <p className="mt-1 text-xs text-gray-500">Můžete nahrát až {maxFiles} obrázků z počítače, Google Drive, Facebooku a dalších.</p>
             </div>
         </button>
         <div className="flex justify-between items-center">
-          <p className="text-sm font-medium text-gray-700">Nahráno {urls.length} z {maxFiles} fotografií</p>
-          {isReorderable && urls.length > 1 && <p className="text-xs text-gray-500">Tip: Fotografie můžete přetáhnout a změnit jejich pořadí.</p>}
+          <p className="text-sm font-medium text-gray-700">Nahráno {photos.length} z {maxFiles} fotografií</p>
+          {isReorderable && photos.length > 1 && <p className="text-xs text-gray-500">Tip: Fotografie můžete přetáhnout a změnit jejich pořadí.</p>}
         </div>
-      {urls.length > 0 && (
+      {photos.length > 0 && (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4" onDragOver={handleDragOver}>
-          {urls.map((fileUrl, index) => (
+          {photos.map((photo, index) => (
             <div 
-              key={fileUrl + index} 
+              key={photo.url + index} 
               className={`relative group ${isReorderable ? 'cursor-move' : ''} ${draggedIndex === index ? 'opacity-50' : ''} ${dropIndex === index ? 'border-2 border-brand-purple rounded-md' : ''}`}
               draggable={isReorderable}
               onDragStart={() => handleDragStart(index)}
@@ -112,7 +114,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
             >
-              <img src={`${fileUrl}-/preview/200x200/`} alt={`Preview ${index}`} className="w-full h-24 object-cover rounded-md pointer-events-none" />
+              <img src={`${photo.url}-/preview/200x200/`} alt={photo.name} className="w-full h-24 object-cover rounded-md pointer-events-none" />
               <button
                 type="button"
                 onClick={() => removeFile(index)}
