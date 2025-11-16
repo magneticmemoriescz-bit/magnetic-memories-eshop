@@ -7,7 +7,7 @@ import { HOW_IT_WORKS_STEPS } from './constants';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { ProductCard } from './components/ProductCard';
-import { FileUpload } from './components/FileUpload';
+import { FileUpload, UploadedFilesInfo } from './components/FileUpload';
 import { Logo } from './components/Logo';
 
 // Tell TypeScript that external library objects exist on the window object
@@ -140,7 +140,7 @@ const ProductDetailPage: React.FC = () => {
     const { dispatch } = useCart();
     const navigate = useNavigate();
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(product?.variants?.[0]);
-    const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+    const [uploadedPhotoInfo, setUploadedPhotoInfo] = useState<UploadedFilesInfo>({ urls: [], groupId: null });
     const [customText, setCustomText] = useState<{ [key: string]: string }>({});
     const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
     const [error, setError] = useState<string | null>(null);
@@ -149,7 +149,7 @@ const ProductDetailPage: React.FC = () => {
     useEffect(() => {
         const currentProduct = products.find(p => p.id === id);
         if (currentProduct) {
-            setUploadedFiles([]);
+            setUploadedPhotoInfo({ urls: [], groupId: null });
             setCustomText({});
             setSelectedVariant(currentProduct.variants?.[0]);
             setOrientation('portrait');
@@ -178,15 +178,15 @@ const ProductDetailPage: React.FC = () => {
         ? (orientation === 'portrait' ? product.gallery_portrait : product.gallery_landscape) || product.gallery
         : product.gallery;
 
-    const handleFilesChange = (files: string[]) => {
-        setUploadedFiles(files);
-        if (files.length === photoCount) {
+    const handleFilesChange = (filesInfo: UploadedFilesInfo) => {
+        setUploadedPhotoInfo(filesInfo);
+        if (filesInfo.urls.length === photoCount) {
             setError(null);
         }
     };
 
     const handleAddToCart = () => {
-        if (uploadedFiles.length !== photoCount) {
+        if (uploadedPhotoInfo.urls.length !== photoCount) {
             setError(`Prosím, nahrajte přesně ${photoCount} fotografií.`);
             return;
         }
@@ -198,7 +198,8 @@ const ProductDetailPage: React.FC = () => {
             quantity: 1,
             price: displayPrice,
             variant: selectedVariant,
-            photos: uploadedFiles,
+            photos: uploadedPhotoInfo.urls,
+            photoGroupId: uploadedPhotoInfo.groupId,
             customText,
             ...(isCalendar && { orientation: orientation })
         };
@@ -212,7 +213,7 @@ const ProductDetailPage: React.FC = () => {
     
     const handleVariantChange = (variant: ProductVariant) => {
         setSelectedVariant(variant);
-        setUploadedFiles([]);
+        setUploadedPhotoInfo({ urls: [], groupId: null });
         setError(null);
     }
     
@@ -292,7 +293,12 @@ const ProductDetailPage: React.FC = () => {
                             <div className="mt-10">
                                 <h3 className="text-sm text-dark-gray font-medium">Nahrajte fotografie</h3>
                                 <div className="mt-4">
-                                    <FileUpload maxFiles={photoCount} onFilesChange={handleFilesChange} uploadedFiles={uploadedFiles} />
+                                    <FileUpload 
+                                        maxFiles={photoCount} 
+                                        onFilesChange={handleFilesChange} 
+                                        uploadedFilesInfo={uploadedPhotoInfo}
+                                        isReorderable={isCalendar}
+                                    />
                                 </div>
                             </div>
                             
@@ -741,11 +747,35 @@ const CheckoutPage: React.FC = () => {
             attachments: pdfAttachment ? [pdfAttachment] : [],
         };
         
-        const photosHtml = order.items.map(item => {
-            if (!item.photos || item.photos.length === 0) return '';
-            const photoLinks = item.photos.map((url, index) => `<li><a href="${url}" target="_blank" style="color: #8D7EEF;">Fotografie ${index + 1}</a></li>`).join('');
-            return `<h3 style="margin-top: 15px;">Fotografie pro: ${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}</h3><ul style="padding-left: 0; list-style-type: none;">${photoLinks}</ul>`;
-        }).join('');
+        const ownerPhotosHtml = order.items
+            .filter(item => item.photos && item.photos.length > 0)
+            .map(item => {
+                const photoManagementHtml = item.photoGroupId 
+                    ? `<p style="margin-top: 5px;">
+                        <a href="https://uploadcare.com/app/projects/aa96da339a5d48983ea2/groups/${item.photoGroupId}/" target="_blank" style="display: inline-block; padding: 8px 16px; background-color: #8D7EEF; color: white; text-decoration: none; border-radius: 5px;">
+                            Zobrazit ${item.photos.length} fotografií &raquo;
+                        </a>
+                       </p>`
+                    : `<p style="margin-top: 5px; color: #777;">Počet nahraných fotografií: <strong>${item.photos.length}</strong>. (Nelze zobrazit jako skupinu)</p>`;
+
+                return `
+                    <div style="padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px;">
+                        <h4 style="margin: 0 0 5px 0; font-size: 14px; font-weight: bold;">
+                            ${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}
+                        </h4>
+                        ${photoManagementHtml}
+                    </div>`;
+            }).join('');
+
+        const ownerPhotosSectionHtml = ownerPhotosHtml ? 
+            `<div style="margin-top: 20px;">
+                <h2 style="border-bottom: 1px solid #eee; padding-bottom: 5px;">Přiložené fotografie</h2>
+                ${ownerPhotosHtml}
+                <p style="font-size: 12px; color: #777; margin-top: 10px;">
+                    Kliknutím na tlačítko "Zobrazit fotografie" se dostanete do administrace, kde si můžete fotografie prohlédnout a stáhnout.
+                </p>
+             </div>`
+            : '';
 
         let ownerShippingDetailsHtml = `<h2 style="border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 20px;">Doručovací údaje</h2>`;
         ownerShippingDetailsHtml += `<p><strong>Způsob dopravy:</strong> ${shippingMethodMap[order.shipping]}</p>`;
@@ -784,7 +814,7 @@ const CheckoutPage: React.FC = () => {
                     <p>Platba: ${order.paymentCost} Kč</p>
                     <h3 style="margin-top: 5px;">Celkem: ${order.total} Kč</h3>
                 </div>`,
-            photos_html: photosHtml,
+            photos_html: ownerPhotosSectionHtml,
             additional_info_html: additionalInfoHtml,
             attachments: pdfAttachment ? [pdfAttachment] : [],
         };
@@ -1444,5 +1474,7 @@ function App() {
     </CartProvider>
   );
 }
+
+export default App;
 
 export default App;
