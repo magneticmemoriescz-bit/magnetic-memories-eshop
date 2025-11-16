@@ -1,4 +1,5 @@
 
+
 export interface ProductVariant {
   id: string;
   name: string;
@@ -31,6 +32,7 @@ export interface CartItem {
   price: number;
   variant?: ProductVariant;
   photos: string[]; // array of base64 data URLs
+  photoGroupId: string | null;
   customText?: { [key: string]: string };
   orientation?: 'portrait' | 'landscape';
 }
