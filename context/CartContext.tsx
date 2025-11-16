@@ -9,7 +9,8 @@ type CartState = {
 type CartAction =
   | { type: 'ADD_ITEM'; payload: CartItem }
   | { type: 'REMOVE_ITEM'; payload: { id: string } }
-  | { type: 'CLEAR_CART' };
+  | { type: 'CLEAR_CART' }
+  | { type: 'UPDATE_QUANTITY'; payload: { id: string; quantity: number } };
 
 const initialState: CartState = {
   items: [],
@@ -22,15 +23,43 @@ const CartContext = createContext<{
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
-    case 'ADD_ITEM':
-      return {
-        ...state,
-        items: [...state.items, action.payload],
-      };
+    case 'ADD_ITEM': {
+      const { product, variant, orientation, photoGroupId, quantity } = action.payload;
+      
+      const existingItemIndex = state.items.findIndex(item => 
+        item.product.id === product.id &&
+        item.variant?.id === variant?.id &&
+        item.orientation === orientation &&
+        item.photoGroupId === photoGroupId
+      );
+
+      if (existingItemIndex > -1) {
+        const updatedItems = [...state.items];
+        updatedItems[existingItemIndex].quantity += quantity;
+        return { ...state, items: updatedItems };
+      } else {
+        return { ...state, items: [...state.items, action.payload] };
+      }
+    }
     case 'REMOVE_ITEM':
       return {
         ...state,
         items: state.items.filter(item => item.id !== action.payload.id),
+      };
+    case 'UPDATE_QUANTITY':
+      if (action.payload.quantity <= 0) {
+        return {
+            ...state,
+            items: state.items.filter(item => item.id !== action.payload.id),
+        };
+      }
+      return {
+        ...state,
+        items: state.items.map(item =>
+          item.id === action.payload.id
+            ? { ...item, quantity: action.payload.quantity }
+            : item
+        ),
       };
     case 'CLEAR_CART':
       return {
