@@ -555,6 +555,7 @@ const CheckoutPage: React.FC = () => {
         const customerParams = {
             to_email: order.contact.email,
             customer_email: order.contact.email,
+            email: order.contact.email,
             to_name: `${order.contact.firstName} ${order.contact.lastName}`,
             reply_to: order.contact.email,
             order_number: order.orderNumber,
@@ -599,6 +600,9 @@ const CheckoutPage: React.FC = () => {
                 </div>`,
             photos_html: photosHtml,
             additional_info_html: additionalInfoHtml,
+            street: order.contact.street,
+            city: order.contact.city,
+            zip: order.contact.zip,
         };
 
         // Send to owner first to ensure order is captured
