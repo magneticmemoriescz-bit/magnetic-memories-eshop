@@ -3,7 +3,7 @@ import { HashRouter, Routes, Route, Link, useParams, useLocation, useNavigate, N
 import { CartProvider, useCart } from './context/CartContext';
 import { ProductProvider, useProducts } from './context/ProductContext';
 import { Product, ProductVariant, CartItem } from './types';
-import { HOW_IT_WORKS_STEPS, DEJAVU_SANS_BASE64 } from './constants';
+import { HOW_IT_WORKS_STEPS } from './constants';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { ProductCard } from './components/ProductCard';
@@ -528,11 +528,34 @@ const CheckoutPage: React.FC = () => {
             unit: 'mm',
             format: 'a4'
         });
+        
+        const fontUrl = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf';
+        try {
+            const response = await fetch(fontUrl);
+            if (!response.ok) throw new Error('Network response was not ok for font.');
+            const fontBlob = await response.blob();
+            const reader = new FileReader();
+            const fontBase64 = await new Promise<string>((resolve, reject) => {
+                reader.onloadend = () => {
+                    if (typeof reader.result === 'string') {
+                        // Get only the base64 part
+                        resolve(reader.result.substring(reader.result.indexOf(',') + 1));
+                    } else {
+                        reject(new Error('Failed to read font as base64 string.'));
+                    }
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(fontBlob);
+            });
 
-        // Add the font for Czech characters support
-        doc.addFileToVFS('DejaVuSans.ttf', DEJAVU_SANS_BASE64);
-        doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
-        doc.setFont('DejaVuSans');
+            doc.addFileToVFS('DejaVuSans.ttf', fontBase64);
+            doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
+            doc.setFont('DejaVuSans');
+        } catch (error) {
+            console.error("Failed to load custom font for PDF, falling back to default. Czech characters might not render correctly.", error);
+            // Continue without custom font
+        }
+
 
         const pageHeight = doc.internal.pageSize.height;
         let y = 20;
@@ -1421,7 +1444,5 @@ function App() {
     </CartProvider>
   );
 }
-
-export default App;
 
 export default App;
