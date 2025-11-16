@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, Link, useParams, useLocation, useNavigate, Navigate, Outlet } from 'react-router-dom';
 import { CartProvider, useCart } from './context/CartContext';
 import { ProductProvider, useProducts } from './context/ProductContext';
 import { Product, ProductVariant, CartItem, UploadedPhoto } from './types';
-// FIX: Added DEJAVU_SANS_BASE64 to imports to use it for PDF generation.
-import { HOW_IT_WORKS_STEPS, DEJAVU_SANS_BASE64 } from './constants';
+import { HOW_IT_WORKS_STEPS } from './constants';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { ProductCard } from './components/ProductCard';
@@ -525,6 +523,29 @@ const FormInput = ({ name, label, error, value, onChange, ...props }: any) => (
     </div>
 );
 
+// Helper function to fetch a font file and convert it to a base64 string
+const fetchFontAsBase64 = async (url: string): Promise<string> => {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch font: ${response.statusText} (status: ${response.status})`);
+    }
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64data = (reader.result as string).split(',')[1];
+            if (base64data) {
+                resolve(base64data);
+            } else {
+                reject(new Error('Failed to read font blob as base64.'));
+            }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+};
+
+
 const CheckoutPage: React.FC = () => {
     const { state, dispatch } = useCart();
     const { items } = state;
@@ -623,15 +644,13 @@ const CheckoutPage: React.FC = () => {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
     
-        // FIX: Reverted to using the reliable base64-encoded font from constants.tsx
-        // instead of fetching from an external URL, which was causing failures.
         try {
-            // Use the base64 font from constants.tsx
-            doc.addFileToVFS('DejaVuSans.ttf', DEJAVU_SANS_BASE64);
+            const fontBase64 = await fetchFontAsBase64('https://cdn.jsdelivr.net/gh/milos-d/fonts/dejavu-sans/DejaVuSans.ttf');
+            doc.addFileToVFS('DejaVuSans.ttf', fontBase64);
             doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
             doc.setFont('DejaVuSans');
         } catch (error) {
-            console.error("CRITICAL: Failed to load custom font for PDF from base64.", error);
+            console.error("CRITICAL: Failed to load custom font for PDF from CDN.", error);
             throw new Error(`Font loading failed, cannot generate invoice. Reason: ${error instanceof Error ? error.message : String(error)}`);
         }
         
