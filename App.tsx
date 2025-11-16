@@ -516,7 +516,9 @@ const CheckoutPage: React.FC = () => {
         let paymentDetailsHtml = '';
         
         if (order.payment === 'prevodem') {
-            const payliboString = `SPD*1.0*ACC:CZ2630300000001562224019*AM:${order.total}*CC:CZK*X-VS:${vs}*MSG:Objednavka ${order.orderNumber}`;
+            const message = `Objednávka ${order.orderNumber}`;
+            // Correctly format the PAY by square string, ensuring UTF-8 is handled by the QR generator.
+            const payliboString = `SPD*1.0*ACC:CZ2630300000001562224019*AM:${order.total}*CC:CZK*X-VS:${vs}*MSG:${message}`;
             try {
                 const qrCodeDataUrl = await getQRCodeDataURL(payliboString);
                 paymentDetailsHtml = `
@@ -549,10 +551,16 @@ const CheckoutPage: React.FC = () => {
         const shippingMethodMap: {[key: string]: string} = { zasilkovna: 'Zásilkovna', posta: 'Česká pošta', osobne: 'Osobní odběr'};
         const paymentMethodMap: {[key: string]: string} = { prevodem: 'Bankovním převodem', dobirka: 'Na dobírku'};
         const additionalInfoHtml = order.contact.additionalInfo ? `<h3 style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">Doplňující informace od zákazníka:</h3><p style="padding: 10px; background-color: #f9f9f9; border-radius: 8px;">${order.contact.additionalInfo.replace(/\n/g, '<br>')}</p>` : '';
-        const packetaPointHtml = order.shipping === 'zasilkovna' && order.packetaPoint ? `<p><strong>Výdejní místo:</strong> ${order.packetaPoint.name}, ${order.packetaPoint.street}, ${order.packetaPoint.city}</p>` : '';
-        const shippingAddressHtml = order.shipping !== 'osobne' ? `<p><strong>Doručovací adresa:</strong><br>${order.contact.street}<br>${order.contact.zip} ${order.contact.city}</p>` : '';
+        
+        let customerShippingAddressHtml = '';
+        if (order.shipping === 'zasilkovna' && order.packetaPoint) {
+            customerShippingAddressHtml = `<p><strong>Výdejní místo:</strong> ${order.packetaPoint.name}, ${order.packetaPoint.street}, ${order.packetaPoint.city}</p>`;
+        } else if (order.shipping !== 'osobne') {
+            customerShippingAddressHtml = `<p><strong>Doručovací adresa:</strong><br>${order.contact.street}<br>${order.contact.zip} ${order.contact.city}</p>`;
+        }
 
         const customerParams = {
+            subject_line: `Potvrzení objednávky č. ${order.orderNumber}`,
             to_email: order.contact.email,
             customer_email: order.contact.email,
             email: order.contact.email,
@@ -568,8 +576,7 @@ const CheckoutPage: React.FC = () => {
             photos_confirmation_html: photosConfirmationHtml,
             payment_details_html: paymentDetailsHtml,
             shipping_method: shippingMethodMap[order.shipping],
-            packeta_point_html: packetaPointHtml,
-            shipping_address_html: shippingAddressHtml,
+            shipping_address_html: customerShippingAddressHtml,
             additional_info_html: additionalInfoHtml,
         };
 
@@ -579,13 +586,33 @@ const CheckoutPage: React.FC = () => {
             return `<h3 style="margin-top: 15px;">Fotografie pro: ${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}</h3><ul style="padding-left: 0; list-style-type: none;">${photoLinks}</ul>`;
         }).join('');
 
+        let ownerShippingDetailsHtml = `<h3 style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">Doručovací údaje</h3>
+                                      <p><strong>Způsob dopravy:</strong> ${shippingMethodMap[order.shipping]}</p>`;
+        if (order.shipping === 'zasilkovna' && order.packetaPoint) {
+            ownerShippingDetailsHtml += `<div style="padding: 10px; background-color: #f9f9f9; border-radius: 8px; margin-top: 10px;">
+                                        <strong>Výdejní místo Zásilkovny:</strong><br>
+                                        ${order.packetaPoint.name}<br>
+                                        ${order.packetaPoint.street || ''}<br>
+                                        ${order.packetaPoint.zip} ${order.packetaPoint.city}
+                                      </div>`;
+        } else if (order.shipping === 'posta') {
+            ownerShippingDetailsHtml += `<div style="padding: 10px; background-color: #f9f9f9; border-radius: 8px; margin-top: 10px;">
+                                        <strong>Doručit na adresu:</strong><br>
+                                        ${order.contact.firstName} ${order.contact.lastName}<br>
+                                        ${order.contact.street}<br>
+                                        ${order.contact.zip} ${order.contact.city}
+                                      </div>`;
+        } else if (order.shipping === 'osobne') {
+             ownerShippingDetailsHtml += `<p>Zákazník si objednávku vyzvedne osobně v Turnově.</p>`;
+        }
+
+
         const ownerParams = {
+            subject_line: `Nová objednávka č. ${order.orderNumber}`,
             order_number: order.orderNumber,
             customer_name: `${order.contact.firstName} ${order.contact.lastName}`,
             customer_email: order.contact.email,
-            shipping_address_html: shippingAddressHtml,
-            shipping_method: shippingMethodMap[order.shipping],
-            packeta_point_html: packetaPointHtml,
+            shipping_details_html: ownerShippingDetailsHtml,
             payment_method: paymentMethodMap[order.payment],
             items_html_with_total: `
                 <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
@@ -600,9 +627,6 @@ const CheckoutPage: React.FC = () => {
                 </div>`,
             photos_html: photosHtml,
             additional_info_html: additionalInfoHtml,
-            street: order.contact.street,
-            city: order.contact.city,
-            zip: order.contact.zip,
         };
 
         // Send to owner first to ensure order is captured
