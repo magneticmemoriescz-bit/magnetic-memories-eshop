@@ -1186,10 +1186,8 @@ const AppLayout: React.FC = () => {
                     {/* Admin Routes */}
                     <Route path="/admin/login" element={<AdminLoginPage />} />
                     <Route path="/admin" element={<ProtectedRoute />}>
-                        <Route path="" element={<AdminDashboardPage />} />
-                    </Route>
-                     <Route path="/admin/product/:id" element={<ProtectedRoute />}>
-                        <Route path="" element={<AdminProductEditPage />} />
+                        <Route index element={<AdminDashboardPage />} />
+                        <Route path="product/:id" element={<AdminProductEditPage />} />
                     </Route>
                 </Routes>
             </main>
