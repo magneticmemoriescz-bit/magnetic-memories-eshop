@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 // Tell TypeScript that uploadcare widget exists on the window object
 declare global {
@@ -7,13 +7,22 @@ declare global {
     }
 }
 
-interface FileUploadProps {
-  maxFiles: number;
-  onFilesChange: (files: string[]) => void;
-  uploadedFiles: string[];
+export interface UploadedFilesInfo {
+    urls: string[];
+    groupId: string | null;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange, uploadedFiles }) => {
+interface FileUploadProps {
+  maxFiles: number;
+  onFilesChange: (filesInfo: UploadedFilesInfo) => void;
+  uploadedFilesInfo: UploadedFilesInfo;
+  isReorderable?: boolean;
+}
+
+export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange, uploadedFilesInfo, isReorderable = false }) => {
+  const { urls } = uploadedFilesInfo;
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
 
   const handleUpload = () => {
     if (!window.uploadcare) {
@@ -21,27 +30,53 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
         alert("Služba pro nahrávání souborů není k dispozici. Zkuste prosím obnovit stránku.");
         return;
     }
-    // Pass existing files to the widget so the user can manage them.
-    const dialog = window.uploadcare.openDialog(uploadedFiles, {
+    const dialog = window.uploadcare.openDialog(urls, {
         imagesOnly: true,
         multiple: true,
         multipleMax: maxFiles,
     });
     
     dialog.done((fileGroup: any) => {
-        // The fileGroup is a promise-like object that resolves with group info.
-        // It also contains an array of file promises.
-        // We wait for all file promises to resolve to get their info.
         Promise.all(fileGroup.files()).then(files => {
             const cdnUrls = files.map(file => file.cdnUrl);
-            onFilesChange(cdnUrls);
+            onFilesChange({ urls: cdnUrls, groupId: fileGroup.uuid });
         });
     });
   };
 
   const removeFile = (index: number) => {
-    const newFiles = uploadedFiles.filter((_, i) => i !== index);
-    onFilesChange(newFiles);
+    const newUrls = urls.filter((_, i) => i !== index);
+    onFilesChange({ urls: newUrls, groupId: null }); // Invalidate group ID as the set of files has changed
+  };
+
+  const handleDragStart = (index: number) => {
+    if (!isReorderable) return;
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnter = (index: number) => {
+    if (!isReorderable || draggedIndex === null) return;
+    setDropIndex(index);
+  };
+  
+  const handleDragLeave = () => {
+      setDropIndex(null);
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!isReorderable) return;
+    e.preventDefault();
+  };
+
+  const handleDrop = () => {
+    if (!isReorderable || draggedIndex === null || dropIndex === null) return;
+    const newUrls = [...urls];
+    const draggedItem = newUrls[draggedIndex];
+    newUrls.splice(draggedIndex, 1);
+    newUrls.splice(dropIndex, 0, draggedItem);
+    onFilesChange({ urls: newUrls, groupId: uploadedFilesInfo.groupId }); // The group itself hasn't changed, just the local order
+    setDraggedIndex(null);
+    setDropIndex(null);
   };
 
   return (
@@ -56,17 +91,28 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
                     <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <span className="mt-2 block text-sm font-medium text-brand-purple hover:opacity-80">
-                    {uploadedFiles.length > 0 ? 'Spravovat fotografie' : 'Klikněte pro nahrání souborů'}
+                    {urls.length > 0 ? 'Spravovat fotografie' : 'Klikněte pro nahrání souborů'}
                 </span>
                 <p className="mt-1 text-xs text-gray-500">Můžete nahrát až {maxFiles} obrázků z počítače, Google Drive, Facebooku a dalších.</p>
             </div>
         </button>
-       <p className="text-sm font-medium text-gray-700">Nahráno {uploadedFiles.length} z {maxFiles} fotografií</p>
-      {uploadedFiles.length > 0 && (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
-          {uploadedFiles.map((fileUrl, index) => (
-            <div key={index} className="relative group">
-              <img src={`${fileUrl}-/preview/200x200/`} alt={`Preview ${index}`} className="w-full h-24 object-cover rounded-md" />
+        <div className="flex justify-between items-center">
+          <p className="text-sm font-medium text-gray-700">Nahráno {urls.length} z {maxFiles} fotografií</p>
+          {isReorderable && urls.length > 1 && <p className="text-xs text-gray-500">Tip: Fotografie můžete přetáhnout a změnit jejich pořadí.</p>}
+        </div>
+      {urls.length > 0 && (
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4" onDragOver={handleDragOver}>
+          {urls.map((fileUrl, index) => (
+            <div 
+              key={fileUrl + index} 
+              className={`relative group ${isReorderable ? 'cursor-move' : ''} ${draggedIndex === index ? 'opacity-50' : ''} ${dropIndex === index ? 'border-2 border-brand-purple rounded-md' : ''}`}
+              draggable={isReorderable}
+              onDragStart={() => handleDragStart(index)}
+              onDragEnter={() => handleDragEnter(index)}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <img src={`${fileUrl}-/preview/200x200/`} alt={`Preview ${index}`} className="w-full h-24 object-cover rounded-md pointer-events-none" />
               <button
                 type="button"
                 onClick={() => removeFile(index)}
