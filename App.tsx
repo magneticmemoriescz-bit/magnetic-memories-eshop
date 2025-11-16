@@ -517,8 +517,7 @@ const CheckoutPage: React.FC = () => {
         
         if (order.payment === 'prevodem') {
             const message = `Objednávka ${order.orderNumber}`;
-            // Correctly format the PAY by square string, ensuring UTF-8 is handled by the QR generator.
-            const payliboString = `SPD*1.0*ACC:CZ2630300000001562224019*AM:${order.total}*CC:CZK*X-VS:${vs}*MSG:${message}`;
+            const payliboString = `SPD*1.0*ACC:CZ2630300000001562224019*AM:${order.total}*CC:CZK*X-VS:${vs}*MSG:${encodeURIComponent(message)}`;
             try {
                 const qrCodeDataUrl = await getQRCodeDataURL(payliboString);
                 paymentDetailsHtml = `
@@ -576,8 +575,7 @@ const CheckoutPage: React.FC = () => {
             photos_confirmation_html: photosConfirmationHtml,
             payment_details_html: paymentDetailsHtml,
             shipping_method: shippingMethodMap[order.shipping],
-            shipping_address_html: customerShippingAddressHtml,
-            additional_info_html: additionalInfoHtml,
+            shipping_address_html: customerShippingAddressHtml
         };
 
         const photosHtml = order.items.map(item => {
@@ -586,8 +584,10 @@ const CheckoutPage: React.FC = () => {
             return `<h3 style="margin-top: 15px;">Fotografie pro: ${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}</h3><ul style="padding-left: 0; list-style-type: none;">${photoLinks}</ul>`;
         }).join('');
 
-        let ownerShippingDetailsHtml = `<h3 style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">Doručovací údaje</h3>
-                                      <p><strong>Způsob dopravy:</strong> ${shippingMethodMap[order.shipping]}</p>`;
+        let ownerShippingDetailsHtml = `<h2 style="border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 20px;">Doručovací údaje</h2>`;
+        
+        ownerShippingDetailsHtml += `<p><strong>Způsob dopravy:</strong> ${shippingMethodMap[order.shipping]}</p>`;
+
         if (order.shipping === 'zasilkovna' && order.packetaPoint) {
             ownerShippingDetailsHtml += `<div style="padding: 10px; background-color: #f9f9f9; border-radius: 8px; margin-top: 10px;">
                                         <strong>Výdejní místo Zásilkovny:</strong><br>
@@ -643,7 +643,7 @@ const CheckoutPage: React.FC = () => {
         if (!data.firstName) errors.firstName = 'Jméno je povinné.';
         if (!data.lastName) errors.lastName = 'Příjmení je povinné.';
         if (!data.email) errors.email = 'Email je povinný.';
-        if (shippingMethod !== 'osobne') {
+        if (shippingMethod === 'posta') {
             if (!data.street) errors.street = 'Ulice je povinná.';
             if (!data.city) errors.city = 'Město je povinné.';
             if (!data.zip) errors.zip = 'PSČ je povinné.';
@@ -764,7 +764,7 @@ const CheckoutPage: React.FC = () => {
                                 <div className="sm:col-span-2">
                                     <FormInput name="email" label="Email" type="email" autoComplete="email" error={formErrors.email} value={formData.email} onChange={handleFormChange} required/>
                                 </div>
-                                {shippingMethod !== 'osobne' && (
+                                {(shippingMethod === 'posta' || !shippingMethod) && (
                                     <>
                                         <div className="sm:col-span-2">
                                             <FormInput name="street" label="Ulice a číslo popisné" type="text" autoComplete="street-address" error={formErrors.street} value={formData.street} onChange={handleFormChange} required/>
