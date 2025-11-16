@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, Link, useParams, useLocation, useNavigate, Navigate, Outlet } from 'react-router-dom';
 import { CartProvider, useCart } from './context/CartContext';
@@ -144,6 +145,7 @@ const ProductDetailPage: React.FC = () => {
     const [customText, setCustomText] = useState<{ [key: string]: string }>({});
     const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
     const [error, setError] = useState<string | null>(null);
+    const [quantity, setQuantity] = useState(1);
 
 
     useEffect(() => {
@@ -153,6 +155,7 @@ const ProductDetailPage: React.FC = () => {
             setCustomText({});
             setSelectedVariant(currentProduct.variants?.[0]);
             setOrientation('portrait');
+            setQuantity(1);
             setError(null);
         }
     }, [id, products]);
@@ -195,7 +198,7 @@ const ProductDetailPage: React.FC = () => {
         const cartItem: CartItem = {
             id: `${product.id}-${selectedVariant?.id}-${isCalendar ? orientation : ''}-${Date.now()}`,
             product,
-            quantity: 1,
+            quantity: quantity,
             price: displayPrice,
             variant: selectedVariant,
             photos: uploadedPhotoInfo.urls,
@@ -302,6 +305,29 @@ const ProductDetailPage: React.FC = () => {
                                 </div>
                             </div>
                             
+                            <div className="mt-10">
+                                <h3 className="text-sm text-dark-gray font-medium">Počet kusů</h3>
+                                <div className="mt-4 flex items-center border border-gray-300 rounded-md w-fit">
+                                    <button
+                                        type="button"
+                                        onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                                        className="px-4 py-2 text-lg font-medium text-gray-600 hover:bg-gray-100 rounded-l-md"
+                                        aria-label="Snížit počet kusů"
+                                    >
+                                        -
+                                    </button>
+                                    <span className="px-5 py-2 text-center text-dark-gray">{quantity}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setQuantity(q => q + 1)}
+                                        className="px-4 py-2 text-lg font-medium text-gray-600 hover:bg-gray-100 rounded-r-md"
+                                        aria-label="Zvýšit počet kusů"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+
                             <div className="mt-10">
                                 {error && <p className="text-red-600 text-sm text-center mb-4">{error}</p>}
                                 <button type="button" onClick={handleAddToCart} className="w-full bg-brand-pink border border-transparent rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink">
@@ -479,6 +505,10 @@ const CheckoutPage: React.FC = () => {
     
     const handleRemoveItem = (id: string) => {
         dispatch({ type: 'REMOVE_ITEM', payload: { id } });
+    };
+
+    const handleUpdateQuantity = (id: string, newQuantity: number) => {
+        dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity: newQuantity } });
     };
 
     const openPacketaWidget = () => {
@@ -1012,19 +1042,39 @@ const CheckoutPage: React.FC = () => {
                         <h2 className="text-lg font-medium text-dark-gray">Souhrn objednávky</h2>
                         <ul role="list" className="divide-y divide-gray-200">
                            {items.map(item => (
-                               <li key={item.id} className="flex py-6">
-                                   <div className="flex-shrink-0">
-                                       <img src={item.product.imageUrl} alt={item.product.name} className="w-24 h-24 rounded-md object-center object-cover" />
-                                   </div>
-                                   <div className="ml-4 flex-1 flex flex-col justify-between">
+                               <li key={item.id} className="flex py-6 space-x-4">
+                                   <img src={item.product.imageUrl} alt={item.product.name} className="flex-none w-24 h-24 rounded-md object-cover" />
+                                   <div className="flex flex-col justify-between flex-auto">
                                        <div>
-                                           <h3 className="text-sm text-dark-gray">{item.product.name}</h3>
-                                           {item.variant && <p className="mt-1 text-sm text-gray-500">{item.variant.name}{item.orientation === 'portrait' ? ' (na výšku)' : item.orientation === 'landscape' ? ' (na šířku)' : ''}</p>}
+                                           <h3 className="font-medium text-dark-gray">{item.product.name}</h3>
+                                           <p className="text-sm text-gray-500">
+                                               {item.variant?.name}
+                                               {item.orientation === 'portrait' ? ' (na výšku)' : item.orientation === 'landscape' ? ' (na šířku)' : ''}
+                                           </p>
                                        </div>
-                                       <div className="flex-1 flex items-end justify-between text-sm">
-                                           <p className="text-gray-800 font-medium">{item.price} Kč</p>
-                                           <div className="flex">
-                                               <button onClick={() => handleRemoveItem(item.id)} type="button" className="font-medium text-brand-purple hover:opacity-80">
+                                       <div className="flex items-baseline justify-between mt-2">
+                                            <div className="flex items-center border border-gray-300 rounded-md">
+                                               <button
+                                                   type="button"
+                                                   onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                                                   className="px-3 py-1 text-base font-medium text-gray-600 hover:bg-gray-100 rounded-l-md"
+                                                   aria-label={`Snížit počet kusů ${item.product.name}`}
+                                               >
+                                                   -
+                                               </button>
+                                               <span className="px-4 py-1 text-center text-dark-gray font-medium">{item.quantity}</span>
+                                               <button
+                                                   type="button"
+                                                   onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                                                   className="px-3 py-1 text-base font-medium text-gray-600 hover:bg-gray-100 rounded-r-md"
+                                                   aria-label={`Zvýšit počet kusů ${item.product.name}`}
+                                               >
+                                                   +
+                                               </button>
+                                           </div>
+                                           <div className="text-right">
+                                               <p className="font-medium text-dark-gray">{item.price * item.quantity} Kč</p>
+                                               <button onClick={() => handleRemoveItem(item.id)} type="button" className="text-sm font-medium text-brand-purple hover:opacity-80">
                                                    Odstranit
                                                </button>
                                            </div>
@@ -1474,7 +1524,5 @@ function App() {
     </CartProvider>
   );
 }
-
-export default App;
 
 export default App;
