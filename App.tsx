@@ -554,7 +554,7 @@ const CheckoutPage: React.FC = () => {
         return `${datePrefix}${sequenceString}`;
     };
 
-    const generateInvoicePdfAsBase64 = async (order: OrderDetails): Promise<string> => {
+    const generateInvoicePdfAsBlob = async (order: OrderDetails): Promise<Blob> => {
         if (!window.jspdf) {
             throw new Error("jsPDF library is not loaded.");
         }
@@ -589,9 +589,7 @@ const CheckoutPage: React.FC = () => {
             doc.setFont('DejaVuSans');
         } catch (error) {
             console.error("Failed to load custom font for PDF, falling back to default. Czech characters might not render correctly.", error);
-            // Continue without custom font
         }
-
 
         const pageHeight = doc.internal.pageSize.height;
         let y = 20;
@@ -706,15 +704,41 @@ const CheckoutPage: React.FC = () => {
         doc.text(`${order.total} Kč`, pageWidth - margin - 2, y, { align: 'right' });
         doc.setFontSize(10);
 
-
-        const pdfData = doc.output('datauristring');
-        return Promise.resolve(pdfData.substring(pdfData.indexOf(',') + 1));
+        return doc.output('blob');
     };
-
+    
+    const uploadPdfToUploadcare = async (pdfBlob: Blob, orderNumber: string): Promise<string> => {
+        if (!window.uploadcare) {
+            throw new Error("Uploadcare widget is not available.");
+        }
+        const file = new File([pdfBlob], `Faktura-${orderNumber}.pdf`, { type: 'application/pdf' });
+        try {
+            const uploadedFile = await window.uploadcare.uploadFile(file);
+            return uploadedFile.cdnUrl;
+        } catch (error) {
+            console.error("Failed to upload PDF to Uploadcare:", error);
+            throw new Error("Nahrání faktury na server selhalo.");
+        }
+    };
 
     const sendEmailNotifications = async (order: OrderDetails) => {
         const vs = order.orderNumber;
         let paymentDetailsHtml = '';
+        let invoiceDownloadLinkHtml = '';
+
+        try {
+            const pdfBlob = await generateInvoicePdfAsBlob(order);
+            const invoiceUrl = await uploadPdfToUploadcare(pdfBlob, order.orderNumber);
+            invoiceDownloadLinkHtml = `
+                <div style="text-align: center; margin-top: 30px; padding: 15px; background-color: #f0f0f0; border-radius: 8px;">
+                    <a href="${invoiceUrl}" target="_blank" style="display: inline-block; padding: 12px 24px; background-color: #8D7EEF; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                        Stáhnout fakturu (PDF)
+                    </a>
+                </div>`;
+        } catch (error) {
+             console.error("Failed to generate or upload invoice PDF:", error);
+             invoiceDownloadLinkHtml = `<p style="margin-top:20px; color: #D8000C; background-color: #FFD2D2; padding: 10px; border-radius: 5px;"><strong>Upozornění:</strong> Fakturu se nepodařilo automaticky vygenerovat. Bude Vám zaslána dodatečně.</p>`;
+        }
         
         if (order.payment === 'prevodem') {
             paymentDetailsHtml = `
@@ -730,7 +754,7 @@ const CheckoutPage: React.FC = () => {
                 </div>`;
         }
 
-        paymentDetailsHtml += `<p style="margin-top: 20px;"><strong>Fakturu - daňový doklad</strong> naleznete v příloze tohoto emailu.</p>`;
+        paymentDetailsHtml += invoiceDownloadLinkHtml;
 
         const itemsHtml = order.items.map(item => `
             <tr>
@@ -748,13 +772,6 @@ const CheckoutPage: React.FC = () => {
         if (order.shipping === 'zasilkovna' && order.packetaPoint) {
             customerShippingAddressHtml = `<p><strong>Výdejní místo:</strong> ${order.packetaPoint.name}, ${order.packetaPoint.street}, ${order.packetaPoint.city}</p><p><strong>Fakturační adresa:</strong><br>${order.contact.street}<br>${order.contact.zip} ${order.contact.city}</p>`;
         }
-
-        const pdfBase64 = await generateInvoicePdfAsBase64(order);
-        const pdfAttachment = pdfBase64 ? {
-            filename: `Faktura-${order.orderNumber}.pdf`,
-            data: pdfBase64,
-            encoding: 'base64',
-        } : null;
         
         const customerParams = {
             subject_line: `Potvrzení objednávky č. ${order.orderNumber}`,
@@ -774,7 +791,6 @@ const CheckoutPage: React.FC = () => {
             payment_details_html: paymentDetailsHtml,
             shipping_method: shippingMethodMap[order.shipping],
             shipping_address_html: customerShippingAddressHtml,
-            attachments: pdfAttachment ? [pdfAttachment] : [],
         };
         
         const ownerPhotosHtml = order.items
@@ -846,7 +862,7 @@ const CheckoutPage: React.FC = () => {
                 </div>`,
             photos_html: ownerPhotosSectionHtml,
             additional_info_html: additionalInfoHtml,
-            attachments: pdfAttachment ? [pdfAttachment] : [],
+            invoice_html: invoiceDownloadLinkHtml,
         };
 
         await window.emailjs.send('service_2pkoish', 'template_8ax2a2w', ownerParams);
@@ -910,7 +926,7 @@ const CheckoutPage: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <h3 className="mt-4 text-3xl font-semibold text-dark-gray">Děkujeme za Váš nákup!</h3>
-                    <p className="mt-2 text-gray-600 max-w-lg mx-auto">Vaše objednávka č. <strong className="text-dark-gray">{submittedOrder.orderNumber}</strong> byla úspěšně přijata. Potvrzení s fakturou v příloze jsme Vám odeslali na email.</p>
+                    <p className="mt-2 text-gray-600 max-w-lg mx-auto">Vaše objednávka č. <strong className="text-dark-gray">{submittedOrder.orderNumber}</strong> byla úspěšně přijata. Potvrzení s odkazem na fakturu jsme Vám odeslali na email.</p>
                 </div>
 
                 {submittedOrder.payment === 'prevodem' && (
