@@ -18,20 +18,60 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   useEffect(() => {
     try {
-      const storedProducts = localStorage.getItem('products');
-      if (storedProducts) {
-        setProducts(JSON.parse(storedProducts));
+      const storedProductsJSON = localStorage.getItem('products');
+      const initialProductsMap = new Map(INITIAL_PRODUCTS.map(p => [p.id, p]));
+      let finalProducts: Product[] = [];
+      let needsUpdateInStorage = false;
+
+      if (storedProductsJSON) {
+        const storedProducts: Product[] = JSON.parse(storedProductsJSON);
+        const processedIds = new Set<string>();
+
+        // Iterate stored products to preserve user changes and order
+        for (const storedProduct of storedProducts) {
+            const initialProduct = initialProductsMap.get(storedProduct.id);
+            if (initialProduct) {
+                // Product is defined in code. Sync its variants.
+                // This preserves any other edits (price, name, etc.) from the admin panel.
+                if (JSON.stringify(storedProduct.variants) !== JSON.stringify(initialProduct.variants)) {
+                    storedProduct.variants = initialProduct.variants;
+                    needsUpdateInStorage = true;
+                }
+                finalProducts.push(storedProduct);
+            } else {
+                // This is a custom product created by the user via admin, keep it.
+                finalProducts.push(storedProduct);
+            }
+            processedIds.add(storedProduct.id);
+        }
+
+        // Add any new products from the code that weren't in storage yet
+        for (const [id, initialProduct] of initialProductsMap.entries()) {
+            if (!processedIds.has(id)) {
+                finalProducts.push(initialProduct);
+                needsUpdateInStorage = true;
+            }
+        }
       } else {
-        setProducts(INITIAL_PRODUCTS);
-        localStorage.setItem('products', JSON.stringify(INITIAL_PRODUCTS));
+        // No products in storage, so we use the initial list.
+        finalProducts = INITIAL_PRODUCTS;
+        needsUpdateInStorage = true; // Needs to be saved to localStorage for the first time
       }
+
+      if (needsUpdateInStorage) {
+        localStorage.setItem('products', JSON.stringify(finalProducts));
+      }
+      
+      setProducts(finalProducts);
+
     } catch (error) {
-      console.error("Failed to load products from localStorage", error);
+      console.error("Failed to load or migrate products from localStorage", error);
+      // In case of any error, fallback to the default products from the code.
       setProducts(INITIAL_PRODUCTS);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // The empty dependency array ensures this logic runs only once on initial app load.
 
   const updateProducts = useCallback((newProducts: Product[]) => {
     setProducts(newProducts);
