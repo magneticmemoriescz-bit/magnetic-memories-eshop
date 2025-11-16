@@ -492,51 +492,22 @@ const CheckoutPage: React.FC = () => {
         }
     };
     
-    const getQRCodeDataURL = (text: string): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            let attempts = 0;
-            const interval = setInterval(() => {
-                if (window.QRCode) {
-                    clearInterval(interval);
-                    window.QRCode.toDataURL(text, { width: 256, margin: 1, errorCorrectionLevel: 'H' }, (err: any, url: string) => {
-                        if (err) reject(err);
-                        else resolve(url);
-                    });
-                } else if (attempts > 20) { // ~5 second timeout
-                    clearInterval(interval);
-                    reject(new Error("Library QRCode is not available after multiple attempts."));
-                }
-                attempts++;
-            }, 250);
-        });
-    };
-    
     const sendEmailNotifications = async (order: OrderDetails) => {
         const vs = order.orderNumber.replace(/\D/g, '');
         let paymentDetailsHtml = '';
         
         if (order.payment === 'prevodem') {
-            const message = `Objednávka ${order.orderNumber}`;
-            const payliboString = `SPD*1.0*ACC:CZ2630300000001562224019*AM:${order.total}*CC:CZK*X-VS:${vs}*MSG:${encodeURIComponent(message)}`;
-            try {
-                const qrCodeDataUrl = await getQRCodeDataURL(payliboString);
-                paymentDetailsHtml = `
-                    <div style="margin-top: 30px; padding: 20px; background-color: #f9f9f9; border-radius: 8px; text-align: center;">
-                        <h2 style="border-bottom: 2px solid #8D7EEF; padding-bottom: 10px; margin-bottom: 20px;">Platební instrukce</h2>
-                        <p>Pro dokončení objednávky prosím uhraďte částku <strong>${order.total} Kč</strong> na níže uvedený účet.</p>
-                        <table style="width: 100%; max-width: 400px; margin: 20px auto; text-align: left;">
-                           <tr><td style="padding: 5px;">Číslo účtu:</td><td style="padding: 5px; font-weight: bold;">1562224019/3030</td></tr>
-                           <tr><td style="padding: 5px;">Částka:</td><td style="padding: 5px; font-weight: bold;">${order.total} Kč</td></tr>
-                           <tr><td style="padding: 5px;">Variabilní symbol:</td><td style="padding: 5px; font-weight: bold;">${vs}</td></tr>
-                        </table>
-                        <p style="margin-top: 20px;">Pro rychlou platbu můžete naskenovat následující QR kód:</p>
-                        <div style="margin-top: 15px;"><img src="${qrCodeDataUrl}" alt="QR kód pro platbu" style="width: 180px; height: 180px; margin: auto; display: block;"></div>
-                        <p style="font-size: 12px; color: #777; margin-top: 20px;">Po připsání platby na náš účet začneme s výrobou Vaší objednávky.</p>
-                    </div>`;
-            } catch (error) {
-                console.error("Failed to generate QR code for email:", error);
-                paymentDetailsHtml = `<p>Nastala chyba při generování QR kódu, prosím proveďte platbu manuálně. Údaje: účet <strong>1562224019/3030</strong>, částka <strong>${order.total} Kč</strong>, VS <strong>${vs}</strong>.</p>`;
-            }
+            paymentDetailsHtml = `
+                <div style="margin-top: 30px; padding: 20px; background-color: #f9f9f9; border-radius: 8px; text-align: center;">
+                    <h2 style="border-bottom: 2px solid #8D7EEF; padding-bottom: 10px; margin-bottom: 20px;">Platební instrukce</h2>
+                    <p>Pro dokončení objednávky prosím uhraďte částku <strong>${order.total} Kč</strong> na níže uvedený účet.</p>
+                    <table style="width: 100%; max-width: 400px; margin: 20px auto; text-align: left;">
+                       <tr><td style="padding: 5px;">Číslo účtu:</td><td style="padding: 5px; font-weight: bold;">1562224019/3030</td></tr>
+                       <tr><td style="padding: 5px;">Částka:</td><td style="padding: 5px; font-weight: bold;">${order.total} Kč</td></tr>
+                       <tr><td style="padding: 5px;">Variabilní symbol:</td><td style="padding: 5px; font-weight: bold;">${vs}</td></tr>
+                    </table>
+                    <p style="font-size: 12px; color: #777; margin-top: 20px;">Po připsání platby na náš účet začneme s výrobou Vaší objednávky.</p>
+                </div>`;
         }
 
         const itemsHtml = order.items.map(item => `
@@ -553,7 +524,7 @@ const CheckoutPage: React.FC = () => {
         
         let customerShippingAddressHtml = '';
         if (order.shipping === 'zasilkovna' && order.packetaPoint) {
-            customerShippingAddressHtml = `<p><strong>Výdejní místo:</strong> ${order.packetaPoint.name}, ${order.packetaPoint.street}, ${order.packetaPoint.city}</p>`;
+            customerShippingAddressHtml = `<p><strong>Výdejní místo:</strong> ${order.packetaPoint.name}, ${order.packetaPoint.street}, ${order.packetaPoint.city}</p><p><strong>Fakturační adresa:</strong><br>${order.contact.street}<br>${order.contact.zip} ${order.contact.city}</p>`;
         } else if (order.shipping !== 'osobne') {
             customerShippingAddressHtml = `<p><strong>Doručovací adresa:</strong><br>${order.contact.street}<br>${order.contact.zip} ${order.contact.city}</p>`;
         }
@@ -606,6 +577,71 @@ const CheckoutPage: React.FC = () => {
              ownerShippingDetailsHtml += `<p>Zákazník si objednávku vyzvedne osobně v Turnově.</p>`;
         }
 
+        const itemsHtmlForInvoice = order.items.map(item => `
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${item.price} Kč</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${item.price * item.quantity} Kč</td>
+            </tr>`).join('');
+
+        const invoiceHtml = `
+            <h2 style="border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 20px;">Faktura - daňový doklad</h2>
+            <div style="border: 1px solid #ccc; padding: 15px; margin-top: 10px; border-radius: 8px; font-size: 14px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="width: 50%; vertical-align: top;">
+                            <h3 style="margin: 0 0 10px 0;">Dodavatel</h3>
+                            <p style="margin: 0;"><strong>Magnetic Memories</strong></p>
+                            <p style="margin: 0;">Adriana Feherová</p>
+                            <p style="margin: 0;">Turnov, 511 01</p>
+                            <p style="margin: 0;">IČO: 19949821</p>
+                            <p style="margin: 0;">Nejsem plátce DPH.</p>
+                        </td>
+                        <td style="width: 50%; vertical-align: top;">
+                            <h3 style="margin: 0 0 10px 0;">Odběratel</h3>
+                            <p style="margin: 0;"><strong>${order.contact.firstName} ${order.contact.lastName}</strong></p>
+                            <p style="margin: 0;">${order.contact.street}</p>
+                            <p style="margin: 0;">${order.contact.zip} ${order.contact.city}</p>
+                            <p style="margin: 0;">Email: ${order.contact.email}</p>
+                        </td>
+                    </tr>
+                </table>
+                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="width: 50%;">
+                            <p style="margin: 0;"><strong>Číslo faktury:</strong> ${order.orderNumber}</p>
+                            <p style="margin: 0;"><strong>Variabilní symbol:</strong> ${vs}</p>
+                        </td>
+                        <td style="width: 50%; text-align: right;">
+                            <p style="margin: 0;"><strong>Datum vystavení:</strong> ${new Date().toLocaleDateString('cs-CZ')}</p>
+                            <p style="margin: 0;"><strong>Datum splatnosti:</strong> ${new Date(new Date().setDate(new Date().getDate() + 7)).toLocaleDateString('cs-CZ')}</p>
+                        </td>
+                    </tr>
+                </table>
+                <h3 style="margin-top: 20px;">Položky faktury</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 8px; border-bottom: 2px solid #ddd; background-color: #f9f9f9; text-align: left;">Popis</th>
+                            <th style="padding: 8px; border-bottom: 2px solid #ddd; background-color: #f9f9f9; text-align: center;">Množství</th>
+                            <th style="padding: 8px; border-bottom: 2px solid #ddd; background-color: #f9f9f9; text-align: right;">Cena/ks</th>
+                            <th style="padding: 8px; border-bottom: 2px solid #ddd; background-color: #f9f9f9; text-align: right;">Celkem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHtmlForInvoice}
+                    </tbody>
+                </table>
+                <div style="text-align: right; margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee;">
+                    <p style="margin: 5px 0;">Mezisoučet: ${order.subtotal} Kč</p>
+                    <p style="margin: 5px 0;">Doprava (${shippingMethodMap[order.shipping]}): ${order.shippingCost} Kč</p>
+                    <p style="margin: 5px 0;">Platba (${paymentMethodMap[order.payment]}): ${order.paymentCost} Kč</p>
+                    <h4 style="margin: 10px 0 0 0;">Celkem k úhradě: ${order.total} Kč</h4>
+                </div>
+            </div>`;
+
 
         const ownerParams = {
             subject_line: `Nová objednávka č. ${order.orderNumber}`,
@@ -627,6 +663,7 @@ const CheckoutPage: React.FC = () => {
                 </div>`,
             photos_html: photosHtml,
             additional_info_html: additionalInfoHtml,
+            invoice_html: invoiceHtml,
         };
 
         // Send to owner first to ensure order is captured
@@ -643,11 +680,9 @@ const CheckoutPage: React.FC = () => {
         if (!data.firstName) errors.firstName = 'Jméno je povinné.';
         if (!data.lastName) errors.lastName = 'Příjmení je povinné.';
         if (!data.email) errors.email = 'Email je povinný.';
-        if (shippingMethod === 'posta') {
-            if (!data.street) errors.street = 'Ulice je povinná.';
-            if (!data.city) errors.city = 'Město je povinné.';
-            if (!data.zip) errors.zip = 'PSČ je povinné.';
-        }
+        if (!data.street) errors.street = 'Ulice je povinná.';
+        if (!data.city) errors.city = 'Město je povinné.';
+        if (!data.zip) errors.zip = 'PSČ je povinné.';
         if (!shippingMethod) errors.shipping = 'Vyberte způsob dopravy.';
         if (shippingMethod === 'zasilkovna' && !packetaPoint) errors.packetaPoint = 'Vyberte výdejní místo.';
         if (!paymentMethod) errors.payment = 'Vyberte způsob platby.';
@@ -701,7 +736,7 @@ const CheckoutPage: React.FC = () => {
                     <div className="mt-10 max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
                         <h3 className="text-2xl font-bold text-dark-gray text-center mb-6">Platební údaje</h3>
                         <div className="space-y-4 text-center">
-                            <p>Pro dokončení objednávky, prosím, proveďte platbu. Všechny potřebné informace, včetně QR kódu, jsme Vám zaslali do emailu.</p>
+                            <p>Pro dokončení objednávky, prosím, proveďte platbu. Všechny potřebné informace jsme Vám zaslali do emailu.</p>
                             <div>
                                 <p className="text-sm text-gray-500">Číslo účtu:</p>
                                 <p className="text-lg font-semibold text-dark-gray">1562224019/3030</p>
@@ -757,26 +792,22 @@ const CheckoutPage: React.FC = () => {
                     <section className="lg:col-span-7">
                         {/* Contact information */}
                         <div className="border-b border-gray-200 pb-8">
-                             <h2 className="text-lg font-medium text-dark-gray">Kontaktní a doručovací údaje</h2>
+                             <h2 className="text-lg font-medium text-dark-gray">Kontaktní a fakturační údaje</h2>
                              <div className="mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4">
                                 <FormInput name="firstName" label="Jméno" type="text" autoComplete="given-name" error={formErrors.firstName} value={formData.firstName} onChange={handleFormChange} required/>
                                 <FormInput name="lastName" label="Příjmení" type="text" autoComplete="family-name" error={formErrors.lastName} value={formData.lastName} onChange={handleFormChange} required/>
                                 <div className="sm:col-span-2">
                                     <FormInput name="email" label="Email" type="email" autoComplete="email" error={formErrors.email} value={formData.email} onChange={handleFormChange} required/>
                                 </div>
-                                {(shippingMethod === 'posta' || !shippingMethod) && (
-                                    <>
-                                        <div className="sm:col-span-2">
-                                            <FormInput name="street" label="Ulice a číslo popisné" type="text" autoComplete="street-address" error={formErrors.street} value={formData.street} onChange={handleFormChange} required/>
-                                        </div>
-                                        <div>
-                                            <FormInput name="city" label="Město" type="text" autoComplete="address-level2" error={formErrors.city} value={formData.city} onChange={handleFormChange} required/>
-                                        </div>
-                                        <div>
-                                            <FormInput name="zip" label="PSČ" type="text" autoComplete="postal-code" error={formErrors.zip} value={formData.zip} onChange={handleFormChange} required/>
-                                        </div>
-                                    </>
-                                )}
+                                <div className="sm:col-span-2">
+                                    <FormInput name="street" label="Ulice a číslo popisné" type="text" autoComplete="street-address" error={formErrors.street} value={formData.street} onChange={handleFormChange} required/>
+                                </div>
+                                <div>
+                                    <FormInput name="city" label="Město" type="text" autoComplete="address-level2" error={formErrors.city} value={formData.city} onChange={handleFormChange} required/>
+                                </div>
+                                <div>
+                                    <FormInput name="zip" label="PSČ" type="text" autoComplete="postal-code" error={formErrors.zip} value={formData.zip} onChange={handleFormChange} required/>
+                                </div>
                                 <div className="sm:col-span-2">
                                     <label htmlFor="additionalInfo" className="block text-sm font-medium text-gray-700">Doplňující informace (nepovinné)</label>
                                     <div className="mt-1">
