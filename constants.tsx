@@ -63,6 +63,8 @@ export const PRODUCTS: Product[] = [
     variants: [
       { id: '6-large', name: '6 ks (10x10 cm)', photoCount: 6, price: 100, imageUrl: 'https://i.imgur.com/7U3iv2e.jpeg' },
       { id: '12-small', name: '12 ks (5x5 cm)', photoCount: 12, price: 180, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
+      { id: 'a5-sheet', name: 'A5', photoCount: 1, price: 70, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: 'a4-sheet', name: 'A4', photoCount: 1, price: 95, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
     ]
   }
 ];
@@ -120,4 +122,3 @@ function IconEnjoy() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
     );
-}
