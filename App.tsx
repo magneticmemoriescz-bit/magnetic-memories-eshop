@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, Link, useParams, useLocation, useNavigate, Navigate, Outlet } from 'react-router-dom';
 import { CartProvider, useCart } from './context/CartContext';
@@ -18,7 +19,7 @@ declare global {
         Packeta: any;
         uploadcare: any;
         emailjs: any;
-        QRCode: any;
+        jspdf: any;
     }
 }
 
@@ -492,13 +493,43 @@ const CheckoutPage: React.FC = () => {
         }
     };
     
+    const generateInvoicePdfAsBase64 = (invoiceHtml: string): Promise<string> => {
+        return new Promise((resolve) => {
+            if (!window.jspdf) {
+                console.error("jsPDF library is not loaded.");
+                resolve('');
+                return;
+            }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            const container = document.createElement('div');
+            container.innerHTML = invoiceHtml;
+            container.style.width = '210mm';
+            document.body.appendChild(container);
+
+            doc.html(container, {
+                callback: function (doc: any) {
+                    document.body.removeChild(container);
+                    const pdfData = doc.output('datauristring');
+                    const base64Data = pdfData.substring(pdfData.indexOf(',') + 1);
+                    resolve(base64Data);
+                },
+                x: 10,
+                y: 10,
+                width: 190,
+                windowWidth: 800
+            });
+        });
+    };
+
     const sendEmailNotifications = async (order: OrderDetails) => {
         const vs = order.orderNumber.replace(/\D/g, '');
         let paymentDetailsHtml = '';
         
         if (order.payment === 'prevodem') {
             paymentDetailsHtml = `
-                <div style="margin-top: 30px; padding: 20px; background-color: #f9f9f9; border-radius: 8px; text-align: center;">
+                <div style="margin-top: 30px; padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
                     <h2 style="border-bottom: 2px solid #8D7EEF; padding-bottom: 10px; margin-bottom: 20px;">Platební instrukce</h2>
                     <p>Pro dokončení objednávky prosím uhraďte částku <strong>${order.total} Kč</strong> na níže uvedený účet.</p>
                     <table style="width: 100%; max-width: 400px; margin: 20px auto; text-align: left;">
@@ -509,6 +540,8 @@ const CheckoutPage: React.FC = () => {
                     <p style="font-size: 12px; color: #777; margin-top: 20px;">Po připsání platby na náš účet začneme s výrobou Vaší objednávky.</p>
                 </div>`;
         }
+
+        paymentDetailsHtml += `<p style="margin-top: 20px;"><strong>Fakturu - daňový doklad</strong> naleznete v příloze tohoto emailu.</p>`;
 
         const itemsHtml = order.items.map(item => `
             <tr>
@@ -522,13 +555,85 @@ const CheckoutPage: React.FC = () => {
         const paymentMethodMap: {[key: string]: string} = { prevodem: 'Bankovním převodem', dobirka: 'Na dobírku'};
         const additionalInfoHtml = order.contact.additionalInfo ? `<h3 style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">Doplňující informace od zákazníka:</h3><p style="padding: 10px; background-color: #f9f9f9; border-radius: 8px;">${order.contact.additionalInfo.replace(/\n/g, '<br>')}</p>` : '';
         
-        let customerShippingAddressHtml = '';
+        let customerShippingAddressHtml = `<p><strong>Fakturační a doručovací adresa:</strong><br>${order.contact.firstName} ${order.contact.lastName}<br>${order.contact.street}<br>${order.contact.zip} ${order.contact.city}</p>`;
         if (order.shipping === 'zasilkovna' && order.packetaPoint) {
             customerShippingAddressHtml = `<p><strong>Výdejní místo:</strong> ${order.packetaPoint.name}, ${order.packetaPoint.street}, ${order.packetaPoint.city}</p><p><strong>Fakturační adresa:</strong><br>${order.contact.street}<br>${order.contact.zip} ${order.contact.city}</p>`;
-        } else if (order.shipping !== 'osobne') {
-            customerShippingAddressHtml = `<p><strong>Doručovací adresa:</strong><br>${order.contact.street}<br>${order.contact.zip} ${order.contact.city}</p>`;
         }
 
+        const itemsHtmlForInvoice = order.items.map(item => `
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${item.price} Kč</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${item.price * item.quantity} Kč</td>
+            </tr>`).join('');
+
+        const invoiceHtml = `
+            <div style="font-family: Arial, sans-serif; color: #333; font-size: 14px; max-width: 800px; margin: auto; padding: 20px;">
+                <h2 style="border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 20px; font-size: 18px;">Faktura - daňový doklad</h2>
+                <div style="border: 1px solid #ccc; padding: 15px; margin-top: 10px; border-radius: 8px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 50%; vertical-align: top;">
+                                <h3 style="margin: 0 0 10px 0; font-size: 16px;">Dodavatel</h3>
+                                <p style="margin: 0;"><strong>Natálie Väterová</strong></p>
+                                <p style="margin: 0;">Dlouhý Most 374</p>
+                                <p style="margin: 0;">463 12, Dlouhý Most</p>
+                                <p style="margin: 0;">IČO: 01764365</p>
+                                <p style="margin: 0;">Nejsem plátce DPH.</p>
+                            </td>
+                            <td style="width: 50%; vertical-align: top;">
+                                <h3 style="margin: 0 0 10px 0; font-size: 16px;">Odběratel</h3>
+                                <p style="margin: 0;"><strong>${order.contact.firstName} ${order.contact.lastName}</strong></p>
+                                <p style="margin: 0;">${order.contact.street}</p>
+                                <p style="margin: 0;">${order.contact.zip} ${order.contact.city}</p>
+                                <p style="margin: 0;">Email: ${order.contact.email}</p>
+                            </td>
+                        </tr>
+                    </table>
+                    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 50%;">
+                                <p style="margin: 0;"><strong>Číslo faktury:</strong> ${order.orderNumber}</p>
+                                <p style="margin: 0;"><strong>Variabilní symbol:</strong> ${vs}</p>
+                            </td>
+                            <td style="width: 50%; text-align: right;">
+                                <p style="margin: 0;"><strong>Datum vystavení:</strong> ${new Date().toLocaleDateString('cs-CZ')}</p>
+                                <p style="margin: 0;"><strong>Datum splatnosti:</strong> ${new Date(new Date().setDate(new Date().getDate() + 7)).toLocaleDateString('cs-CZ')}</p>
+                            </td>
+                        </tr>
+                    </table>
+                    <h3 style="margin-top: 20px; font-size: 16px;">Položky faktury</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px;">
+                        <thead>
+                            <tr>
+                                <th style="padding: 8px; border-bottom: 2px solid #ddd; background-color: #f9f9f9; text-align: left;">Popis</th>
+                                <th style="padding: 8px; border-bottom: 2px solid #ddd; background-color: #f9f9f9; text-align: center;">Množství</th>
+                                <th style="padding: 8px; border-bottom: 2px solid #ddd; background-color: #f9f9f9; text-align: right;">Cena/ks</th>
+                                <th style="padding: 8px; border-bottom: 2px solid #ddd; background-color: #f9f9f9; text-align: right;">Celkem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtmlForInvoice}
+                        </tbody>
+                    </table>
+                    <div style="text-align: right; margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee;">
+                        <p style="margin: 5px 0;">Mezisoučet: ${order.subtotal} Kč</p>
+                        <p style="margin: 5px 0;">Doprava (${shippingMethodMap[order.shipping]}): ${order.shippingCost} Kč</p>
+                        <p style="margin: 5px 0;">Platba (${paymentMethodMap[order.payment]}): ${order.paymentCost} Kč</p>
+                        <h4 style="margin: 10px 0 0 0; font-size: 16px;">Celkem k úhradě: ${order.total} Kč</h4>
+                    </div>
+                </div>
+            </div>`;
+
+        const pdfBase64 = await generateInvoicePdfAsBase64(invoiceHtml);
+        const pdfAttachment = pdfBase64 ? {
+            filename: `Faktura-${order.orderNumber}.pdf`,
+            data: pdfBase64,
+            encoding: 'base64',
+        } : null;
+        
         const customerParams = {
             subject_line: `Potvrzení objednávky č. ${order.orderNumber}`,
             to_email: order.contact.email,
@@ -546,9 +651,10 @@ const CheckoutPage: React.FC = () => {
             photos_confirmation_html: photosConfirmationHtml,
             payment_details_html: paymentDetailsHtml,
             shipping_method: shippingMethodMap[order.shipping],
-            shipping_address_html: customerShippingAddressHtml
+            shipping_address_html: customerShippingAddressHtml,
+            attachments: pdfAttachment ? [pdfAttachment] : [],
         };
-
+        
         const photosHtml = order.items.map(item => {
             if (!item.photos || item.photos.length === 0) return '';
             const photoLinks = item.photos.map((url, index) => `<li><a href="${url}" target="_blank" style="color: #8D7EEF;">Fotografie ${index + 1}</a></li>`).join('');
@@ -556,7 +662,6 @@ const CheckoutPage: React.FC = () => {
         }).join('');
 
         let ownerShippingDetailsHtml = `<h2 style="border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 20px;">Doručovací údaje</h2>`;
-        
         ownerShippingDetailsHtml += `<p><strong>Způsob dopravy:</strong> ${shippingMethodMap[order.shipping]}</p>`;
 
         if (order.shipping === 'zasilkovna' && order.packetaPoint) {
@@ -566,82 +671,14 @@ const CheckoutPage: React.FC = () => {
                                         ${order.packetaPoint.street || ''}<br>
                                         ${order.packetaPoint.zip} ${order.packetaPoint.city}
                                       </div>`;
-        } else if (order.shipping === 'posta') {
-            ownerShippingDetailsHtml += `<div style="padding: 10px; background-color: #f9f9f9; border-radius: 8px; margin-top: 10px;">
-                                        <strong>Doručit na adresu:</strong><br>
+        }
+        
+        ownerShippingDetailsHtml += `<div style="padding: 10px; background-color: #f0f0f0; border-radius: 8px; margin-top: 10px;">
+                                        <strong>Fakturační adresa:</strong><br>
                                         ${order.contact.firstName} ${order.contact.lastName}<br>
                                         ${order.contact.street}<br>
                                         ${order.contact.zip} ${order.contact.city}
                                       </div>`;
-        } else if (order.shipping === 'osobne') {
-             ownerShippingDetailsHtml += `<p>Zákazník si objednávku vyzvedne osobně v Turnově.</p>`;
-        }
-
-        const itemsHtmlForInvoice = order.items.map(item => `
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${item.price} Kč</td>
-                <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${item.price * item.quantity} Kč</td>
-            </tr>`).join('');
-
-        const invoiceHtml = `
-            <h2 style="border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 20px;">Faktura - daňový doklad</h2>
-            <div style="border: 1px solid #ccc; padding: 15px; margin-top: 10px; border-radius: 8px; font-size: 14px;">
-                <table style="width: 100%; border-collapse: collapse;">
-                    <tr>
-                        <td style="width: 50%; vertical-align: top;">
-                            <h3 style="margin: 0 0 10px 0;">Dodavatel</h3>
-                            <p style="margin: 0;"><strong>Magnetic Memories</strong></p>
-                            <p style="margin: 0;">Adriana Feherová</p>
-                            <p style="margin: 0;">Turnov, 511 01</p>
-                            <p style="margin: 0;">IČO: 19949821</p>
-                            <p style="margin: 0;">Nejsem plátce DPH.</p>
-                        </td>
-                        <td style="width: 50%; vertical-align: top;">
-                            <h3 style="margin: 0 0 10px 0;">Odběratel</h3>
-                            <p style="margin: 0;"><strong>${order.contact.firstName} ${order.contact.lastName}</strong></p>
-                            <p style="margin: 0;">${order.contact.street}</p>
-                            <p style="margin: 0;">${order.contact.zip} ${order.contact.city}</p>
-                            <p style="margin: 0;">Email: ${order.contact.email}</p>
-                        </td>
-                    </tr>
-                </table>
-                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
-                <table style="width: 100%; border-collapse: collapse;">
-                    <tr>
-                        <td style="width: 50%;">
-                            <p style="margin: 0;"><strong>Číslo faktury:</strong> ${order.orderNumber}</p>
-                            <p style="margin: 0;"><strong>Variabilní symbol:</strong> ${vs}</p>
-                        </td>
-                        <td style="width: 50%; text-align: right;">
-                            <p style="margin: 0;"><strong>Datum vystavení:</strong> ${new Date().toLocaleDateString('cs-CZ')}</p>
-                            <p style="margin: 0;"><strong>Datum splatnosti:</strong> ${new Date(new Date().setDate(new Date().getDate() + 7)).toLocaleDateString('cs-CZ')}</p>
-                        </td>
-                    </tr>
-                </table>
-                <h3 style="margin-top: 20px;">Položky faktury</h3>
-                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                    <thead>
-                        <tr>
-                            <th style="padding: 8px; border-bottom: 2px solid #ddd; background-color: #f9f9f9; text-align: left;">Popis</th>
-                            <th style="padding: 8px; border-bottom: 2px solid #ddd; background-color: #f9f9f9; text-align: center;">Množství</th>
-                            <th style="padding: 8px; border-bottom: 2px solid #ddd; background-color: #f9f9f9; text-align: right;">Cena/ks</th>
-                            <th style="padding: 8px; border-bottom: 2px solid #ddd; background-color: #f9f9f9; text-align: right;">Celkem</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${itemsHtmlForInvoice}
-                    </tbody>
-                </table>
-                <div style="text-align: right; margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee;">
-                    <p style="margin: 5px 0;">Mezisoučet: ${order.subtotal} Kč</p>
-                    <p style="margin: 5px 0;">Doprava (${shippingMethodMap[order.shipping]}): ${order.shippingCost} Kč</p>
-                    <p style="margin: 5px 0;">Platba (${paymentMethodMap[order.payment]}): ${order.paymentCost} Kč</p>
-                    <h4 style="margin: 10px 0 0 0;">Celkem k úhradě: ${order.total} Kč</h4>
-                </div>
-            </div>`;
-
 
         const ownerParams = {
             subject_line: `Nová objednávka č. ${order.orderNumber}`,
@@ -663,12 +700,10 @@ const CheckoutPage: React.FC = () => {
                 </div>`,
             photos_html: photosHtml,
             additional_info_html: additionalInfoHtml,
-            invoice_html: invoiceHtml,
+            attachments: pdfAttachment ? [pdfAttachment] : [],
         };
 
-        // Send to owner first to ensure order is captured
         await window.emailjs.send('service_2pkoish', 'template_8ax2a2w', ownerParams);
-        // Then send confirmation to customer
         await window.emailjs.send('service_2pkoish', 'template_1v2vxgh', customerParams);
     };
 
@@ -693,7 +728,7 @@ const CheckoutPage: React.FC = () => {
             setIsSubmitting(true);
             setSubmitError('');
             const now = new Date();
-            const orderNumber = `MM${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}-${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+            const orderNumber = `${now.getFullYear().toString().slice(-2)}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
             
             const orderDetails: OrderDetails = {
                 contact: data as { [key: string]: string },
@@ -729,7 +764,7 @@ const CheckoutPage: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <h3 className="mt-4 text-3xl font-semibold text-dark-gray">Děkujeme za Váš nákup!</h3>
-                    <p className="mt-2 text-gray-600 max-w-lg mx-auto">Vaše objednávka č. <strong className="text-dark-gray">{submittedOrder.orderNumber}</strong> byla úspěšně přijata. Potvrzení jsme Vám odeslali na email.</p>
+                    <p className="mt-2 text-gray-600 max-w-lg mx-auto">Vaše objednávka č. <strong className="text-dark-gray">{submittedOrder.orderNumber}</strong> byla úspěšně přijata. Potvrzení s fakturou v příloze jsme Vám odeslali na email.</p>
                 </div>
 
                 {submittedOrder.payment === 'prevodem' && (
