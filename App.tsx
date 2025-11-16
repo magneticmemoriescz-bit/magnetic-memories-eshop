@@ -642,11 +642,11 @@ const CheckoutPage: React.FC = () => {
         y += 6;
 
         checkY(6);
-        doc.setFontSize(12);
-        doc.setFont('DejaVuSans', 'bold', 'normal');
+        doc.setFontSize(14);
         doc.text('Celkem k úhradě:', 115, y);
         doc.text(`${order.total} Kč`, pageWidth - margin - 2, y, { align: 'right' });
-        doc.setFont('DejaVuSans', 'normal');
+        doc.setFontSize(10);
+
 
         const pdfData = doc.output('datauristring');
         return Promise.resolve(pdfData.substring(pdfData.indexOf(',') + 1));
@@ -1421,5 +1421,7 @@ function App() {
     </CartProvider>
   );
 }
+
+export default App;
 
 export default App;
