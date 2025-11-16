@@ -1,11 +1,11 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, Link, useParams, useLocation, useNavigate, Navigate, Outlet } from 'react-router-dom';
 import { CartProvider, useCart } from './context/CartContext';
 import { ProductProvider, useProducts } from './context/ProductContext';
 import { Product, ProductVariant, CartItem, UploadedPhoto } from './types';
-import { HOW_IT_WORKS_STEPS } from './constants';
+// FIX: Added DEJAVU_SANS_BASE64 to imports to use it for PDF generation.
+import { HOW_IT_WORKS_STEPS, DEJAVU_SANS_BASE64 } from './constants';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { ProductCard } from './components/ProductCard';
@@ -447,6 +447,69 @@ const ContactPage: React.FC = () => {
     );
 };
 
+// --- Static Page Components ---
+const PageWrapper: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+    <div className="bg-white py-16 sm:py-24">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 className="text-4xl font-extrabold tracking-tight text-dark-gray text-center mb-12">{title}</h1>
+            <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed">
+                {children}
+            </div>
+        </div>
+    </div>
+);
+
+const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => <h2 className="text-2xl font-bold text-dark-gray mt-10 mb-4 border-b pb-2">{children}</h2>;
+
+const TermsPage: React.FC = () => (
+    <PageWrapper title="Obchodní podmínky">
+        <SectionTitle>1. Úvodní ustanovení</SectionTitle>
+        <p>Tyto obchodní podmínky platí pro nákup v internetovém obchodě Magnetic Memories. Podmínky blíže vymezují a upřesňují práva a povinnosti prodávajícího (provozovatel) a kupujícího (zákazník).</p>
+        <SectionTitle>2. Objednávka a uzavření kupní smlouvy</SectionTitle>
+        <p>Veškeré objednávky podané prostřednictvím internetového obchodu jsou závazné. Podáním objednávky kupující stvrzuje, že se seznámil s těmito obchodními podmínkami a že s nimi souhlasí. Smlouva je uzavřena okamžikem potvrzení objednávky ze strany prodávajícího.</p>
+        <SectionTitle>3. Cena a platební podmínky</SectionTitle>
+        <p>Všechny ceny jsou uvedeny v Kč. Nejsem plátce DPH. Platbu je možné provést bankovním převodem nebo na dobírku. Zboží je expedováno po připsání platby na náš účet (v případě bankovního převodu) nebo ihned (v případě dobírky).</p>
+        <SectionTitle>4. Odstoupení od smlouvy</SectionTitle>
+        <p>Vzhledem k tomu, že se jedná o zboží upravené na přání spotřebitele (personalizované produkty s vlastními fotografiemi), nelze od kupní smlouvy odstoupit ve lhůtě 14 dnů bez udání důvodu, jak je tomu u běžného zboží.</p>
+        <SectionTitle>5. Reklamace</SectionTitle>
+        <p>Případné reklamace vyřídíme v souladu s platným právním řádem České republiky. Zjevné vady je nutné reklamovat ihned při převzetí zboží. Na pozdější reklamace zjevných vad nebude brán zřetel.</p>
+    </PageWrapper>
+);
+
+const PrivacyPage: React.FC = () => (
+    <PageWrapper title="Ochrana osobních údajů">
+        <SectionTitle>1. Správce osobních údajů</SectionTitle>
+        <p>Správcem Vašich osobních údajů je Natálie Väterová, IČO: 01764365 (dále jen "správce").</p>
+        <SectionTitle>2. Jaké údaje zpracováváme</SectionTitle>
+        <p>Zpracováváme údaje, které nám poskytnete při vytváření objednávky (jméno, adresa, e-mail, telefon) a fotografie, které nahrajete pro výrobu produktů. Tyto fotografie jsou po výrobě a doručení objednávky bezpečně smazány.</p>
+        <SectionTitle>3. Účel zpracování</SectionTitle>
+        <p>Údaje jsou zpracovávány za účelem vyřízení Vaší objednávky, komunikace ohledně stavu objednávky a pro plnění zákonných povinností (např. účetnictví).</p>
+        <SectionTitle>4. Vaše práva</SectionTitle>
+        <p>Máte právo na přístup ke svým osobním údajům, jejich opravu, výmaz, omezení zpracování, a právo vznést námitku proti zpracování.</p>
+        <SectionTitle>5. Cookies</SectionTitle>
+        <p>Náš web používá soubory cookies pro zajištění funkčnosti webu. Používáním webu souhlasíte s jejich ukládáním.</p>
+    </PageWrapper>
+);
+
+const ShippingPage: React.FC = () => (
+    <PageWrapper title="Doprava a platba">
+        <SectionTitle>Doba výroby</SectionTitle>
+        <p>Každý produkt je vyráběn na zakázku s maximální péčí. Doba výroby je obvykle 3-5 pracovních dnů od přijetí platby (v případě platby převodem). Po dokončení výroby je zásilka předána dopravci.</p>
+        <SectionTitle>Možnosti dopravy</SectionTitle>
+        <ul className="list-disc pl-6 space-y-2">
+            <li><strong>Zásilkovna - Výdejní místo:</strong> 72 Kč (Doručení obvykle do 2 pracovních dnů od expedice)</li>
+            <li><strong>Česká pošta - Balík Do ruky:</strong> 119 Kč (Doručení na Vaši adresu, obvykle do 2 pracovních dnů od expedice)</li>
+            <li><strong>Osobní odběr - Turnov:</strong> Zdarma (Po předchozí domluvě)</li>
+        </ul>
+        <SectionTitle>Možnosti platby</SectionTitle>
+        <ul className="list-disc pl-6 space-y-2">
+            <li><strong>Bankovním převodem:</strong> Po dokončení objednávky obdržíte platební údaje. (Zdarma)</li>
+            <li><strong>Na dobírku:</strong> Platba při převzetí zboží. (Poplatek 20 Kč)</li>
+        </ul>
+    </PageWrapper>
+);
+
+
 const FormInput = ({ name, label, error, value, onChange, ...props }: any) => (
     <div>
         <label htmlFor={name} className="block text-sm font-medium text-gray-700">{label}</label>
@@ -556,45 +619,22 @@ const CheckoutPage: React.FC = () => {
     };
 
     const generateInvoicePdfAsBlob = async (order: OrderDetails): Promise<Blob> => {
-        if (!window.jspdf) {
-            throw new Error("jsPDF library is not loaded.");
-        }
+        if (!window.jspdf) throw new Error("jsPDF library is not loaded.");
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({
-            orientation: 'p',
-            unit: 'mm',
-            format: 'a4'
-        });
-
-        // Helper to convert ArrayBuffer to Base64
-        const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
-            let binary = '';
-            const bytes = new Uint8Array(buffer);
-            for (let i = 0; i < bytes.byteLength; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            return window.btoa(binary);
-        };
-
+        const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    
+        // FIX: Reverted to using the reliable base64-encoded font from constants.tsx
+        // instead of fetching from an external URL, which was causing failures.
         try {
-            const fontUrl = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf';
-            const response = await fetch(fontUrl);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch font: ${response.statusText}`);
-            }
-            const fontBuffer = await response.arrayBuffer();
-            const fontBase64 = arrayBufferToBase64(fontBuffer);
-            
-            doc.addFileToVFS('DejaVuSans.ttf', fontBase64);
+            // Use the base64 font from constants.tsx
+            doc.addFileToVFS('DejaVuSans.ttf', DEJAVU_SANS_BASE64);
             doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
             doc.setFont('DejaVuSans');
         } catch (error) {
-            console.error("CRITICAL: Failed to load custom font for PDF.", error);
-            // Re-throw the error to ensure the PDF generation is aborted,
-            // as rendering without the font would create a broken document.
+            console.error("CRITICAL: Failed to load custom font for PDF from base64.", error);
             throw new Error(`Font loading failed, cannot generate invoice. Reason: ${error instanceof Error ? error.message : String(error)}`);
         }
-
+        
         const pageHeight = doc.internal.pageSize.height;
         let y = 20;
         const margin = 15;
@@ -700,9 +740,9 @@ const CheckoutPage: React.FC = () => {
         checkY(6);
         doc.text(`Platba (${paymentMethodMap[order.payment]}):`, 115, y);
         doc.text(`${order.paymentCost} Kč`, pageWidth - margin - 2, y, { align: 'right' });
-        y += 6;
+        y += 8;
 
-        checkY(6);
+        checkY(8);
         doc.setFontSize(14);
         doc.text('Celkem k úhradě:', 115, y);
         doc.text(`${order.total} Kč`, pageWidth - margin - 2, y, { align: 'right' });
@@ -729,6 +769,7 @@ const CheckoutPage: React.FC = () => {
         const vs = order.orderNumber;
         let paymentDetailsHtml = '';
         let invoiceDownloadLinkHtml = '';
+        let invoiceGenerationFailed = false;
 
         try {
             const pdfBlob = await generateInvoicePdfAsBlob(order);
@@ -741,6 +782,7 @@ const CheckoutPage: React.FC = () => {
                 </div>`;
         } catch (error) {
              console.error("Failed to generate or upload invoice PDF:", error);
+             invoiceGenerationFailed = true;
              invoiceDownloadLinkHtml = `<p style="margin-top:20px; color: #D8000C; background-color: #FFD2D2; padding: 10px; border-radius: 5px;"><strong>Upozornění:</strong> Fakturu se nepodařilo automaticky vygenerovat. Bude Vám zaslána dodatečně.</p>`;
         }
         
@@ -757,8 +799,6 @@ const CheckoutPage: React.FC = () => {
                     <p style="font-size: 12px; color: #777; margin-top: 20px;">Po připsání platby na náš účet začneme s výrobou Vaší objednávky.</p>
                 </div>`;
         }
-
-        paymentDetailsHtml += invoiceDownloadLinkHtml;
 
         const itemsHtml = order.items.map(item => `
             <tr>
@@ -792,7 +832,7 @@ const CheckoutPage: React.FC = () => {
             payment_cost: order.paymentCost,
             total: order.total,
             photos_confirmation_html: photosConfirmationHtml,
-            payment_details_html: paymentDetailsHtml,
+            payment_details_html: paymentDetailsHtml + invoiceDownloadLinkHtml,
             shipping_method: shippingMethodMap[order.shipping],
             shipping_address_html: customerShippingAddressHtml,
         };
@@ -876,6 +916,12 @@ const CheckoutPage: React.FC = () => {
 
         await window.emailjs.send('service_2pkoish', 'template_8ax2a2w', ownerParams);
         await window.emailjs.send('service_2pkoish', 'template_1v2vxgh', customerParams);
+        
+        if (invoiceGenerationFailed) {
+            // This allows us to show the warning on the confirmation page
+            // even if emails were sent successfully.
+            throw new Error("Fakturu se nepodařilo automaticky vygenerovat. Bude Vám zaslána dodatečně.");
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -919,8 +965,17 @@ const CheckoutPage: React.FC = () => {
                 setSubmittedOrder(orderDetails);
                 dispatch({ type: 'CLEAR_CART' });
             } catch (error: any) {
-                console.error("Failed to send emails:", error);
-                setSubmitError(`Odeslání objednávky se nezdařilo. Zkuste to prosím znovu. Pokud problém přetrvává, kontaktujte nás. (Chyba: ${error.text || error.message || 'Neznámá chyba'})`);
+                const isInvoiceError = error.message.includes("Fakturu se nepodařilo");
+                if (isInvoiceError) {
+                    // It's just a warning about the invoice, the order itself went through.
+                    // We need to show the success page with the warning.
+                    const orderWithWarning = { ...orderDetails, invoiceError: error.message };
+                    setSubmittedOrder(orderWithWarning as any);
+                    dispatch({ type: 'CLEAR_CART' });
+                } else {
+                    console.error("Failed to send emails:", error);
+                    setSubmitError(`Odeslání objednávky se nezdařilo. Zkuste to prosím znovu. Pokud problém přetrvává, kontaktujte nás. (Chyba: ${error.text || error.message || 'Neznámá chyba'})`);
+                }
             } finally {
                 setIsSubmitting(false);
             }
@@ -928,6 +983,7 @@ const CheckoutPage: React.FC = () => {
     };
     
     if (submittedOrder) {
+        const order = submittedOrder as OrderDetails & { invoiceError?: string };
         return (
             <PageWrapper title="Objednávka dokončena!">
                 <div className="text-center py-10 px-6 bg-green-50 rounded-lg">
@@ -935,10 +991,16 @@ const CheckoutPage: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <h3 className="mt-4 text-3xl font-semibold text-dark-gray">Děkujeme za Váš nákup!</h3>
-                    <p className="mt-2 text-gray-600 max-w-lg mx-auto">Vaše objednávka č. <strong className="text-dark-gray">{submittedOrder.orderNumber}</strong> byla úspěšně přijata. Potvrzení s odkazem na fakturu jsme Vám odeslali na email.</p>
+                    <p className="mt-2 text-gray-600 max-w-lg mx-auto">Vaše objednávka č. <strong className="text-dark-gray">{order.orderNumber}</strong> byla úspěšně přijata. Potvrzení jsme Vám odeslali na email.</p>
                 </div>
 
-                {submittedOrder.payment === 'prevodem' && (
+                {order.invoiceError && (
+                     <div className="mt-8 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
+                        {order.invoiceError}
+                    </div>
+                )}
+
+                {order.payment === 'prevodem' && (
                     <div className="mt-10 max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
                         <h3 className="text-2xl font-bold text-dark-gray text-center mb-6">Platební údaje</h3>
                         <div className="space-y-4 text-center">
@@ -949,11 +1011,11 @@ const CheckoutPage: React.FC = () => {
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Částka:</p>
-                                <p className="text-lg font-semibold text-dark-gray">{submittedOrder.total} Kč</p>
+                                <p className="text-lg font-semibold text-dark-gray">{order.total} Kč</p>
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Variabilní symbol:</p>
-                                <p className="text-lg font-semibold text-dark-gray">{submittedOrder.orderNumber}</p>
+                                <p className="text-lg font-semibold text-dark-gray">{order.orderNumber}</p>
                             </div>
                         </div>
                     </div>
@@ -1057,79 +1119,63 @@ const CheckoutPage: React.FC = () => {
                             {formErrors.payment && <p className="mt-2 text-sm text-red-500">{formErrors.payment}</p>}
                             <div className="mt-4 grid grid-cols-1 gap-y-4">
                                <RadioCard name="payment" value="prevodem" checked={paymentMethod === 'prevodem'} onChange={(e) => setPaymentMethod(e.target.value)} title="Bankovním převodem" price="Zdarma"/>
-                               <RadioCard name="payment" value="dobirka" checked={paymentMethod === 'dobirka'} onChange={(e) => setPaymentMethod(e.target.value)} title="Na dobírku" price="20 Kč"/>
+                               <RadioCard name="payment" value="dobirka" checked={paymentMethod === 'dobirka'} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPaymentMethod(e.target.value)} title="Na dobírku" price="20 Kč"/>
                             </div>
                         </div>
                     </section>
-
                     {/* Order summary */}
                     <section className="mt-16 rounded-lg bg-gray-50 px-4 py-6 sm:p-6 lg:col-span-5 lg:mt-0 lg:p-8">
                         <h2 className="text-lg font-medium text-dark-gray">Souhrn objednávky</h2>
-                        <ul role="list" className="divide-y divide-gray-200">
-                           {items.map(item => (
-                               <li key={item.id} className="flex py-6 space-x-4">
-                                   <img src={item.product.imageUrl} alt={item.product.name} className="flex-none w-24 h-24 rounded-md object-cover" />
-                                   <div className="flex flex-col justify-between flex-auto">
-                                       <div>
-                                           <h3 className="font-medium text-dark-gray">{item.product.name}</h3>
-                                           <p className="text-sm text-gray-500">
-                                               {item.variant?.name}
-                                               {item.orientation === 'portrait' ? ' (na výšku)' : item.orientation === 'landscape' ? ' (na šířku)' : ''}
-                                           </p>
-                                       </div>
-                                       <div className="flex items-baseline justify-between mt-2">
+                        <ul className="divide-y divide-gray-200">
+                            {items.map((item) => (
+                                <li key={item.id} className="flex py-6">
+                                    <div className="flex-shrink-0">
+                                        <img src={item.photos[0]?.url ? `${item.photos[0].url}-/preview/100x100/` : item.product.imageUrl} alt={item.product.name} className="w-24 h-24 rounded-md object-cover sm:w-32 sm:h-32"/>
+                                    </div>
+                                    <div className="ml-4 flex-1 flex flex-col">
+                                        <div>
+                                            <div className="flex justify-between text-base font-medium text-dark-gray">
+                                                <h3>{item.product.name}</h3>
+                                                <p className="ml-4">{item.price * item.quantity} Kč</p>
+                                            </div>
+                                            <p className="mt-1 text-sm text-gray-500">{item.variant?.name}</p>
+                                        </div>
+                                        <div className="flex-1 flex items-end justify-between text-sm">
                                             <div className="flex items-center border border-gray-300 rounded-md">
-                                               <button
-                                                   type="button"
-                                                   onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                                                   className="px-3 py-1 text-base font-medium text-gray-600 hover:bg-gray-100 rounded-l-md"
-                                                   aria-label={`Snížit počet kusů ${item.product.name}`}
-                                               >
-                                                   -
-                                               </button>
-                                               <span className="px-4 py-1 text-center text-dark-gray font-medium">{item.quantity}</span>
-                                               <button
-                                                   type="button"
-                                                   onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                                                   className="px-3 py-1 text-base font-medium text-gray-600 hover:bg-gray-100 rounded-r-md"
-                                                   aria-label={`Zvýšit počet kusů ${item.product.name}`}
-                                               >
-                                                   +
-                                               </button>
-                                           </div>
-                                           <div className="text-right">
-                                               <p className="font-medium text-dark-gray">{item.price * item.quantity} Kč</p>
-                                               <button onClick={() => handleRemoveItem(item.id)} type="button" className="text-sm font-medium text-brand-purple hover:opacity-80">
-                                                   Odstranit
-                                               </button>
-                                           </div>
-                                       </div>
-                                   </div>
-                               </li>
-                           ))}
+                                                <button type="button" onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)} className="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded-l-md" aria-label={`Snížit počet kusů ${item.product.name}`}>-</button>
+                                                <span className="px-4 py-1">{item.quantity}</span>
+                                                <button type="button" onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)} className="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded-r-md" aria-label={`Zvýšit počet kusů ${item.product.name}`}>+</button>
+                                            </div>
+                                            <div className="flex">
+                                                <button onClick={() => handleRemoveItem(item.id)} type="button" className="font-medium text-red-600 hover:text-red-500">Odstranit</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            ))}
                         </ul>
-                        <dl className="space-y-4 border-t border-gray-200 pt-6">
+                        <dl className="border-t border-gray-200 py-6 px-4 space-y-6 sm:px-6">
                             <div className="flex items-center justify-between">
-                                <dt className="text-sm text-gray-600">Mezisoučet</dt>
+                                <dt className="text-sm">Mezisoučet</dt>
                                 <dd className="text-sm font-medium text-dark-gray">{subtotal} Kč</dd>
                             </div>
-                             <div className="flex items-center justify-between">
-                                <dt className="text-sm text-gray-600">Doprava</dt>
+                            <div className="flex items-center justify-between">
+                                <dt className="text-sm">Doprava</dt>
                                 <dd className="text-sm font-medium text-dark-gray">{shippingCost} Kč</dd>
                             </div>
-                             <div className="flex items-center justify-between">
-                                <dt className="text-sm text-gray-600">Platba</dt>
+                            <div className="flex items-center justify-between">
+                                <dt className="text-sm">Platba</dt>
                                 <dd className="text-sm font-medium text-dark-gray">{paymentCost} Kč</dd>
                             </div>
-                            <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                                <dt className="text-base font-medium text-dark-gray">Celkem</dt>
+                            <div className="flex items-center justify-between border-t border-gray-200 pt-6">
+                                <dt className="text-base font-medium">Celkem</dt>
                                 <dd className="text-base font-medium text-dark-gray">{total} Kč</dd>
                             </div>
                         </dl>
                         <div className="mt-6">
                             {submitError && <p className="text-red-600 text-sm text-center mb-4">{submitError}</p>}
                             <button type="submit" disabled={isSubmitting} className="w-full bg-brand-pink border border-transparent rounded-md shadow-sm py-3 px-4 text-base font-medium text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink disabled:opacity-50">
-                                {isSubmitting ? 'Odesílám objednávku...' : 'Odeslat objednávku'}
+                                {isSubmitting ? 'Odesílám objednávku...' : `Objednat a zaplatit ${total} Kč`}
                             </button>
                         </div>
                     </section>
@@ -1139,415 +1185,43 @@ const CheckoutPage: React.FC = () => {
     );
 };
 
-// Static Page Components
-const PageWrapper: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div className="bg-white py-16 sm:py-24">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-4xl font-extrabold tracking-tight text-dark-gray text-center mb-12">{title}</h1>
-            <div className="space-y-6 text-gray-700 leading-relaxed">
-                {children}
-            </div>
-        </div>
-    </div>
-);
-
-const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => <h2 className="text-2xl font-bold text-dark-gray mt-10 mb-4 border-b pb-2">{children}</h2>;
-
-const TermsPage: React.FC = () => (
-    <PageWrapper title="Obchodní podmínky">
-        <SectionTitle>1. Úvodní ustanovení</SectionTitle>
-        <p>Tyto obchodní podmínky platí pro nákup v internetovém obchodě Magnetic Memories. Podmínky blíže vymezují a upřesňují práva a povinnosti prodávajícího (provozovatel) a kupujícího (zákazník).</p>
-        <SectionTitle>2. Objednávka a uzavření kupní smlouvy</SectionTitle>
-        <p>Veškeré objednávky podané prostřednictvím internetového obchodu jsou závazné. Podáním objednávky kupující stvrzuje, že se seznámil s těmito obchodními podmínkami a že s nimi souhlasí. Smlouva je uzavřena okamžikem potvrzení objednávky ze strany prodávajícího.</p>
-        <SectionTitle>3. Cena a platební podmínky</SectionTitle>
-        <p>Všechny ceny jsou uvedeny v Kč včetně DPH. Platbu je možné provést online platební kartou nebo bankovním převodem. Zboží je expedováno po připsání platby na náš účet.</p>
-        <SectionTitle>4. Odstoupení od smlouvy</SectionTitle>
-        <p>Vzhledem k tomu, že se jedná o zboží upravené na přání spotřebitele (personalizované produkty s vlastními fotografiemi), nelze od kupní smlouvy odstoupit ve lhůtě 14 dnů bez udání důvodu, jak je tomu u běžného zboží.</p>
-        <SectionTitle>5. Reklamace</SectionTitle>
-        <p>Případné reklamace vyřídíme v souladu s platným právním řádem České republiky. Zjevné vady je nutné reklamovat ihned při převzetí zboží. Na pozdější reklamace zjevných vad nebude brán zřetel.</p>
-    </PageWrapper>
-);
-
-const PrivacyPage: React.FC = () => (
-    <PageWrapper title="Ochrana osobních údajů">
-        <SectionTitle>1. Správce osobních údajů</SectionTitle>
-        <p>Správcem Vašich osobních údajů je společnost Magnetic Memories s.r.o. (dále jen "správce").</p>
-        <SectionTitle>2. Jaké údaje zpracováváme</SectionTitle>
-        <p>Zpracováváme údaje, které nám poskytnete při vytváření objednávky (jméno, adresa, e-mail, telefon) a fotografie, které nahrajete pro výrobu produktů. Tyto fotografie jsou po výrobě a doručení objednávky bezpečně smazány.</p>
-        <SectionTitle>3. Účel zpracování</SectionTitle>
-        <p>Údaje jsou zpracovávány za účelem vyřízení Vaší objednávky, komunikace ohledně stavu objednávky a pro plnění zákonných povinností (např. účetnictví).</p>
-        <SectionTitle>4. Vaše práva</SectionTitle>
-        <p>Máte právo na přístup ke svým osobním údajům, jejich opravu, výmaz, omezení zpracování, a právo vznést námitku proti zpracování.</p>
-        <SectionTitle>5. Cookies</SectionTitle>
-        <p>Náš web používá soubory cookies pro zajištění funkčnosti webu a pro analytické účely. Používáním webu souhlasíte s jejich ukládáním.</p>
-    </PageWrapper>
-);
-
-const ShippingPage: React.FC = () => (
-    <PageWrapper title="Doprava a platba">
-        <SectionTitle>Doba výroby</SectionTitle>
-        <p>Každý produkt je vyráběn na zakázku s maximální péčí. Doba výroby je obvykle 3-5 pracovních dnů od přijetí platby. Po dokončení výroby je zásilka předána dopravci.</p>
-        <SectionTitle>Možnosti dopravy</SectionTitle>
-        <ul className="list-disc pl-6 space-y-2">
-            <li><strong>Zásilkovna - Výdejní místo:</strong> 72 Kč (Doručení obvykle do 2 pracovních dnů od expedice)</li>
-            <li><strong>Česká pošta - Balík Do ruky:</strong> 119 Kč (Doručení na Vaši adresu, obvykle do 2 pracovních dnů od expedice)</li>
-            <li><strong>Osobní odběr - Turnov:</strong> Zdarma (Po předchozí domluvě)</li>
-        </ul>
-        <SectionTitle>Možnosti platby</SectionTitle>
-        <ul className="list-disc pl-6 space-y-2">
-            <li><strong>Bankovním převodem:</strong> Po dokončení objednávky obdržíte platební údaje. (Zdarma)</li>
-            <li><strong>Na dobírku:</strong> Platba při převzetí zboží. (Poplatek 20 Kč)</li>
-        </ul>
-    </PageWrapper>
-);
-
-// --- ADMIN COMPONENTS ---
-
-const useAuth = () => {
-    const [isAuthenticated, setIsAuthenticated] = useState(!!sessionStorage.getItem('isAdminAuthenticated'));
-
-    const login = (password: string) => {
-        // In a real app, this would be an API call.
-        if (password === 'Adrianka06') {
-            sessionStorage.setItem('isAdminAuthenticated', 'true');
-            setIsAuthenticated(true);
-            return true;
-        }
-        return false;
-    };
-
-    const logout = () => {
-        sessionStorage.removeItem('isAdminAuthenticated');
-        setIsAuthenticated(false);
-    };
-
-    return { isAuthenticated, login, logout };
-};
-
-const ProtectedRoute = () => {
-    const { isAuthenticated } = useAuth();
-    const location = useLocation();
-
-    if (!isAuthenticated) {
-        return <Navigate to="/admin/login" state={{ from: location }} replace />;
-    }
-
-    return <Outlet />;
-};
-
-const AdminLoginPage: React.FC = () => {
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const { login } = useAuth();
-    const navigate = useNavigate();
-    const location = useLocation();
-    const from = location.state?.from?.pathname || "/admin";
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (login(password)) {
-            navigate(from, { replace: true });
-        } else {
-            setError('Nesprávné heslo.');
-        }
-    };
-
+// FIX: Add Layout and App components to provide routing and a default export.
+const Layout: React.FC = () => {
     return (
-        <div className="flex items-center justify-center min-h-[60vh] bg-gray-50">
-            <div className="w-full max-w-md p-8 space-y-8 bg-white shadow-lg rounded-lg">
-                <div>
-                    <h2 className="text-3xl font-extrabold text-center text-gray-900">Přihlášení do administrace</h2>
-                </div>
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    <div>
-                        <label htmlFor="password-admin" className="sr-only">Heslo</label>
-                        <input
-                            id="password-admin"
-                            name="password"
-                            type="password"
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-purple focus:border-brand-purple"
-                            placeholder="Heslo"
-                        />
-                    </div>
-                    {error && <p className="text-sm text-center text-red-600">{error}</p>}
-                    <div>
-                        <button
-                            type="submit"
-                            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-purple hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-purple"
-                        >
-                            Přihlásit se
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-};
-
-const AdminDashboardPage: React.FC = () => {
-    const { products, updateProducts, exportProducts, importProducts } = useProducts();
-    const { logout } = useAuth();
-    const navigate = useNavigate();
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleDelete = (productId: string) => {
-        if (window.confirm('Opravdu chcete smazat tento produkt?')) {
-            updateProducts(products.filter(p => p.id !== productId));
-        }
-    };
-    
-    const handleLogout = () => {
-        logout();
-        navigate('/');
-    }
-    
-    const handleImportClick = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            try {
-                await importProducts(file);
-                alert("Produkty byly úspěšně naimportovány.");
-            } catch (error) {
-                alert(`Chyba při importu: ${error instanceof Error ? error.message : String(error)}`);
-            }
-        }
-    };
-
-    return (
-        <PageWrapper title="Administrace produktů">
-            <div className="mb-8 space-y-4">
-                <div className="flex justify-between items-center flex-wrap gap-4">
-                    <Link to="/admin/product/new" className="inline-block bg-brand-pink text-white px-6 py-2 rounded-md hover:opacity-90">
-                        Přidat nový produkt
-                    </Link>
-                     <button onClick={handleLogout} className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
-                        Odhlásit se
-                    </button>
-                </div>
-                <div className="flex justify-between items-center flex-wrap gap-4">
-                     <button onClick={exportProducts} className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-                        Exportovat data
-                    </button>
-                    <button onClick={handleImportClick} className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
-                        Importovat data
-                    </button>
-                    <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".json" className="hidden" />
-                </div>
-            </div>
-            <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border">
-                    <thead className="bg-gray-100">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produkt</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cena</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Akce</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                        {products.map(product => (
-                            <tr key={product.id}>
-                                <td className="px-6 py-4 whitespace-nowrap">{product.name}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">{product.price} Kč</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <Link to={`/admin/product/${product.id}`} className="text-brand-purple hover:opacity-80">Upravit</Link>
-                                    <button onClick={() => handleDelete(product.id)} className="ml-4 text-red-600 hover:text-red-800">Smazat</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </PageWrapper>
-    );
-};
-
-const AdminProductEditPage: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
-    const { products, updateProducts } = useProducts();
-    const navigate = useNavigate();
-    const [product, setProduct] = useState<Partial<Product> | null>(null);
-
-    useEffect(() => {
-        if (id === 'new') {
-            setProduct({
-                id: '', name: '', price: 0, shortDescription: '', description: '',
-                imageUrl: '', gallery: [], requiredPhotos: 1, variants: [],
-            });
-        } else {
-            const existingProduct = products.find(p => p.id === id);
-            setProduct(existingProduct || null);
-        }
-    }, [id, products]);
-    
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value, type } = e.target;
-        const parsedValue = type === 'number' ? parseFloat(value) || 0 : value;
-        setProduct(prev => prev ? { ...prev, [name]: parsedValue } : null);
-    };
-
-    const handleVariantChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value, type } = e.target;
-        const parsedValue = type === 'number' ? parseFloat(value) || 0 : value;
-        const newVariants = [...(product?.variants || [])];
-        newVariants[index] = { ...newVariants[index], [name]: parsedValue };
-        setProduct(prev => prev ? { ...prev, variants: newVariants } : null);
-    };
-
-    const addVariant = () => {
-        const newVariants = [...(product?.variants || []), { id: `new-${Date.now()}`, name: '', photoCount: 1, price: 0, imageUrl: '' }];
-        setProduct(prev => prev ? { ...prev, variants: newVariants } : null);
-    };
-    
-    const removeVariant = (index: number) => {
-        const newVariants = [...(product?.variants || [])];
-        newVariants.splice(index, 1);
-        setProduct(prev => prev ? { ...prev, variants: newVariants } : null);
-    };
-    
-    const handleGalleryChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const urls = e.target.value.split('\n').filter(url => url.trim() !== '');
-        setProduct(prev => prev ? { ...prev, gallery: urls } : null);
-    }
-    
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!product || !product.name) {
-            alert("Název produktu je povinný.");
-            return;
-        }
-
-        if (id === 'new') {
-            const newProduct = {
-                ...product,
-                id: product.name!.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
-            } as Product;
-            updateProducts([...products, newProduct]);
-        } else {
-            updateProducts(products.map(p => p.id === id ? product as Product : p));
-        }
-        navigate('/admin');
-    };
-    
-    if (product === null) return <div>Načítání produktu...</div>;
-
-    const AdminInput: React.FC<any> = ({ label, ...props }) => (
-      <div>
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
-        <input {...props} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-brand-purple focus:border-brand-purple sm:text-sm" />
-      </div>
-    );
-    
-    const AdminTextarea: React.FC<any> = ({ label, ...props }) => (
-       <div>
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
-        <textarea {...props} rows={props.rows || 3} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-brand-purple focus:border-brand-purple sm:text-sm" />
-      </div>
-    );
-
-    return (
-        <PageWrapper title={id === 'new' ? 'Nový produkt' : 'Upravit produkt'}>
-            <form onSubmit={handleSubmit} className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <AdminInput label="Název produktu" name="name" value={product.name} onChange={handleChange} required />
-                    <AdminInput label="Cena (Kč)" name="price" type="number" value={product.price} onChange={handleChange} required />
-                </div>
-                
-                <AdminInput label="Krátký popisek" name="shortDescription" value={product.shortDescription} onChange={handleChange} required />
-                <AdminTextarea label="Dlouhý popisek" name="description" value={product.description} onChange={handleChange} required />
-                
-                <AdminInput label="URL hlavního obrázku" name="imageUrl" value={product.imageUrl} onChange={handleChange} placeholder="https://imgur.com/your-image.jpg" required />
-                <AdminTextarea label="URL obrázků galerie (každý na nový řádek)" name="gallery" value={product.gallery?.join('\n')} onChange={handleGalleryChange} placeholder="https://imgur.com/image1.jpg&#10;https://imgur.com/image2.jpg" />
-                
-                <AdminInput label="Počet požadovaných fotek od zákazníka" name="requiredPhotos" type="number" value={product.requiredPhotos} onChange={handleChange} required />
-
-                <div>
-                    <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">Varianty produktu</h3>
-                    <div className="space-y-4">
-                        {product.variants?.map((variant, index) => (
-                            <div key={index} className="grid grid-cols-1 sm:grid-cols-5 gap-4 p-4 border rounded-md relative">
-                                <AdminInput label="ID varianty" name="id" value={variant.id} onChange={(e: any) => handleVariantChange(index, e)} required />
-                                <AdminInput label="Název varianty" name="name" value={variant.name} onChange={(e: any) => handleVariantChange(index, e)} required />
-                                <AdminInput label="Počet fotek" name="photoCount" type="number" value={variant.photoCount} onChange={(e: any) => handleVariantChange(index, e)} required />
-                                <AdminInput label="Cena (volitelné)" name="price" type="number" value={variant.price} onChange={(e: any) => handleVariantChange(index, e)} />
-                                <AdminInput label="URL obrázku (volitelné)" name="imageUrl" value={variant.imageUrl || ''} onChange={(e: any) => handleVariantChange(index, e)} placeholder="https://imgur.com/variant.jpg"/>
-                                <button type="button" onClick={() => removeVariant(index)} className="absolute top-2 right-2 text-red-500 hover:text-red-700">&times;</button>
-                            </div>
-                        ))}
-                    </div>
-                     <button type="button" onClick={addVariant} className="mt-4 bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">Přidat variantu</button>
-                </div>
-
-                <div className="flex justify-end gap-4">
-                     <Link to="/admin" className="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600">Zrušit</Link>
-                     <button type="submit" className="bg-brand-purple text-white px-6 py-2 rounded-md hover:opacity-90">Uložit produkt</button>
-                </div>
-            </form>
-        </PageWrapper>
-    );
-};
-
-
-const AppLayout: React.FC = () => {
-    const { loading } = useProducts();
-
-    useEffect(() => {
-        if (window.emailjs) {
-            window.emailjs.init({publicKey: 'sVd3x5rH1tZu6JGUR'});
-        } else {
-            console.error("EmailJS script not loaded.");
-        }
-    }, []);
-
-    if (loading) {
-        return <div className="flex justify-center items-center min-h-screen">Načítání...</div>;
-    }
-
-    return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen font-sans text-dark-gray">
+            <ScrollToTop />
             <Header />
             <main className="flex-grow">
-                <ScrollToTop />
-                <Routes>
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/produkty" element={<ProductsPage />} />
-                    <Route path="/produkty/:id" element={<ProductDetailPage />} />
-                    <Route path="/jak-to-funguje" element={<HowItWorksPage />} />
-                    <Route path="/kontakt" element={<ContactPage />} />
-                    <Route path="/kosik" element={<CheckoutPage />} />
-                    <Route path="/obchodni-podminky" element={<TermsPage />} />
-                    <Route path="/ochrana-udaju" element={<PrivacyPage />} />
-                    <Route path="/doprava" element={<ShippingPage />} />
-                    
-                    {/* Admin Routes */}
-                    <Route path="/admin/login" element={<AdminLoginPage />} />
-                    <Route path="/admin" element={<ProtectedRoute />}>
-                        <Route index element={<AdminDashboardPage />} />
-                        <Route path="product/:id" element={<AdminProductEditPage />} />
-                    </Route>
-                </Routes>
+                <Outlet />
             </main>
             <Footer />
         </div>
     );
-}
+};
 
-function App() {
+const App: React.FC = () => {
   return (
-    <CartProvider>
-      <ProductProvider>
+    <ProductProvider>
+      <CartProvider>
         <HashRouter>
-          <AppLayout />
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<HomePage />} />
+              <Route path="produkty" element={<ProductsPage />} />
+              <Route path="produkty/:id" element={<ProductDetailPage />} />
+              <Route path="jak-to-funguje" element={<HowItWorksPage />} />
+              <Route path="kontakt" element={<ContactPage />} />
+              <Route path="kosik" element={<CheckoutPage />} />
+              <Route path="doprava" element={<ShippingPage />} />
+              <Route path="obchodni-podminky" element={<TermsPage />} />
+              <Route path="ochrana-udaju" element={<PrivacyPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
         </HashRouter>
-      </ProductProvider>
-    </CartProvider>
+      </CartProvider>
+    </ProductProvider>
   );
-}
+};
 
 export default App;
