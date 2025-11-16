@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, Link, useParams, useLocation, useNavigate, Navigate, Outlet } from 'react-router-dom';
 import { CartProvider, useCart } from './context/CartContext';
@@ -546,6 +547,7 @@ const CheckoutPage: React.FC = () => {
         const photosConfirmationHtml = order.items.some(item => item.photos && item.photos.length > 0) ? `<p style="margin-top: 20px;">Vaše fotografie byly úspěšně přijaty a budou použity pro výrobu.</p>` : '';
 
         const customerParams = {
+            customer_email: order.contact.email,
             order_number: order.orderNumber,
             first_name: order.contact.firstName,
             items_html: itemsHtml,
@@ -1004,15 +1006,25 @@ const AdminDashboardPage: React.FC = () => {
 
     return (
         <PageWrapper title="Administrace produktů">
-            <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
-                 <div className="flex gap-4">
-                    <button onClick={exportProducts} className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Exportovat data</button>
-                    <button onClick={handleImportClick} className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">Importovat data</button>
+            <div className="mb-8 space-y-4">
+                <div className="flex justify-between items-center flex-wrap gap-4">
+                    <Link to="/admin/product/new" className="inline-block bg-brand-pink text-white px-6 py-2 rounded-md hover:opacity-90">
+                        Přidat nový produkt
+                    </Link>
+                     <button onClick={handleLogout} className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+                        Odhlásit se
+                    </button>
+                </div>
+                <div className="flex justify-between items-center flex-wrap gap-4">
+                     <button onClick={exportProducts} className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                        Exportovat data
+                    </button>
+                    <button onClick={handleImportClick} className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+                        Importovat data
+                    </button>
                     <input type="file" ref={fileInputRef} onChange={handleFileImport} accept=".json" className="hidden" />
-                 </div>
-                 <button onClick={handleLogout} className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">Odhlásit se</button>
+                </div>
             </div>
-            <Link to="/admin/product/new" className="inline-block bg-brand-pink text-white px-6 py-2 rounded-md hover:opacity-90 mb-6">Přidat nový produkt</Link>
             <div className="overflow-x-auto">
                 <table className="min-w-full bg-white border">
                     <thead className="bg-gray-100">
@@ -1171,7 +1183,7 @@ const AppLayout: React.FC = () => {
 
     useEffect(() => {
         if (window.emailjs) {
-            window.emailjs.init({ publicKey: 'sVd3x5rH1tZu6JGUR' });
+            window.emailjs.init('sVd3x5rH1tZu6JGUR');
         } else {
             console.error("EmailJS script not loaded.");
         }
