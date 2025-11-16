@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, Link, useParams, useLocation, useNavigate, Navigate, Outlet } from 'react-router-dom';
 import { CartProvider, useCart } from './context/CartContext';
@@ -493,38 +494,74 @@ const CheckoutPage: React.FC = () => {
         }
     };
     
-    const generateInvoicePdfAsBase64 = (invoiceHtml: string): Promise<string> => {
-        return new Promise((resolve) => {
-            if (!window.jspdf) {
-                console.error("jsPDF library is not loaded.");
-                resolve('');
-                return;
-            }
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            const container = document.createElement('div');
-            container.innerHTML = invoiceHtml;
-            container.style.width = '210mm';
-            document.body.appendChild(container);
+    const generateOrderNumber = (): string => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        const day = today.getDate().toString().padStart(2, '0');
+        const datePrefix = `${year}${month}${day}`;
 
-            doc.html(container, {
-                callback: function (doc: any) {
-                    document.body.removeChild(container);
-                    const pdfData = doc.output('datauristring');
-                    const base64Data = pdfData.substring(pdfData.indexOf(',') + 1);
-                    resolve(base64Data);
-                },
-                x: 10,
-                y: 10,
-                width: 190,
-                windowWidth: 800
-            });
+        const storageKey = `orderSequence_${datePrefix}`;
+        let sequence = 1;
+
+        try {
+            const lastSequence = localStorage.getItem(storageKey);
+            if (lastSequence) {
+                sequence = parseInt(lastSequence, 10) + 1;
+            }
+            localStorage.setItem(storageKey, sequence.toString());
+        } catch (error) {
+            console.error("Could not access localStorage for order sequence. Falling back to timestamp.", error);
+            const hours = today.getHours().toString().padStart(2, '0');
+            const minutes = today.getMinutes().toString().padStart(2, '0');
+            const seconds = today.getSeconds().toString().padStart(2, '0');
+            return `${datePrefix}${hours}${minutes}${seconds}`;
+        }
+        
+        const sequenceString = sequence.toString().padStart(3, '0');
+        return `${datePrefix}${sequenceString}`;
+    };
+
+    const generateInvoicePdfAsBase64 = async (invoiceHtml: string): Promise<string> => {
+        if (!window.jspdf) {
+            console.error("jsPDF library is not loaded.");
+            throw new Error("jsPDF library is not loaded.");
+        }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+            orientation: 'p',
+            unit: 'mm',
+            format: 'a4'
         });
+        
+        const container = document.createElement('div');
+        container.innerHTML = invoiceHtml;
+        container.style.width = '210mm';
+        container.style.padding = '10mm';
+        container.style.boxSizing = 'border-box';
+        container.style.visibility = 'hidden';
+        document.body.appendChild(container);
+
+        try {
+            await doc.html(container, {
+                x: 0,
+                y: 0,
+                width: 210,
+                windowWidth: container.scrollWidth,
+                autoPaging: 'text',
+            });
+            const pdfData = doc.output('datauristring');
+            return pdfData.substring(pdfData.indexOf(',') + 1);
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            throw error;
+        } finally {
+            document.body.removeChild(container);
+        }
     };
 
     const sendEmailNotifications = async (order: OrderDetails) => {
-        const vs = order.orderNumber.replace(/\D/g, '');
+        const vs = order.orderNumber;
         let paymentDetailsHtml = '';
         
         if (order.payment === 'prevodem') {
@@ -727,8 +764,8 @@ const CheckoutPage: React.FC = () => {
         if (Object.keys(errors).length === 0) {
             setIsSubmitting(true);
             setSubmitError('');
-            const now = new Date();
-            const orderNumber = `${now.getFullYear().toString().slice(-2)}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            const orderNumber = generateOrderNumber();
             
             const orderDetails: OrderDetails = {
                 contact: data as { [key: string]: string },
@@ -749,7 +786,7 @@ const CheckoutPage: React.FC = () => {
                 dispatch({ type: 'CLEAR_CART' });
             } catch (error: any) {
                 console.error("Failed to send emails:", error);
-                setSubmitError(`Odeslání objednávky se nezdařilo: ${error.text || 'Zkontrolujte prosím své připojení a zkuste to znovu.'}`);
+                setSubmitError(`Odeslání objednávky se nezdařilo. Zkuste to prosím znovu. Pokud problém přetrvává, kontaktujte nás. (Chyba: ${error.text || error.message || 'Neznámá chyba'})`);
             } finally {
                 setIsSubmitting(false);
             }
@@ -782,7 +819,7 @@ const CheckoutPage: React.FC = () => {
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Variabilní symbol:</p>
-                                <p className="text-lg font-semibold text-dark-gray">{submittedOrder.orderNumber.replace(/\D/g, '')}</p>
+                                <p className="text-lg font-semibold text-dark-gray">{submittedOrder.orderNumber}</p>
                             </div>
                         </div>
                     </div>
