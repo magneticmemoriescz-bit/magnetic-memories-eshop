@@ -1,5 +1,10 @@
 
 
+export interface UploadedPhoto {
+  url: string;
+  name: string;
+}
+
 export interface ProductVariant {
   id: string;
   name: string;
@@ -31,7 +36,7 @@ export interface CartItem {
   quantity: number;
   price: number;
   variant?: ProductVariant;
-  photos: string[]; // array of base64 data URLs
+  photos: UploadedPhoto[];
   photoGroupId: string | null;
   customText?: { [key: string]: string };
   orientation?: 'portrait' | 'landscape';
