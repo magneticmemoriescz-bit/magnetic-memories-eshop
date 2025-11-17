@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { CartItem } from '../types';
 import { PageWrapper } from '../components/layout/PageWrapper';
@@ -23,7 +23,7 @@ interface OrderDetails {
 const CheckoutPage: React.FC = () => {
     const { state, dispatch } = useCart();
     const { items } = state;
-    const [submittedOrder, setSubmittedOrder] = useState<OrderDetails | null>(null);
+    const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState('');
     
@@ -110,7 +110,7 @@ const CheckoutPage: React.FC = () => {
 
     const sendEmailNotifications = async (order: OrderDetails) => {
         const vs = order.orderNumber;
-        const invoiceNoticeHtml = `<p style="margin-top:20px; color: #555; background-color: #f0f0f0; padding: 10px; border-radius: 5px;"><strong>Upozornění:</strong> Fakturu (daňový doklad) Vám zašleme v nejbližší době v samostatném e-mailu.</p>`;
+        const invoiceNoticeHtml = `<p style="margin-top:20px; color: #555;">Fakturu (daňový doklad) Vám zašleme v samostatném e-mailu.</p>`;
         
         let paymentDetailsHtml = '';
         if (order.payment === 'prevodem') {
@@ -314,8 +314,8 @@ const CheckoutPage: React.FC = () => {
             try {
                 await sendEmailNotifications(orderDetails);
                 triggerMakeWebhook(orderDetails);
-                setSubmittedOrder(orderDetails);
                 dispatch({ type: 'CLEAR_CART' });
+                navigate('/dekujeme', { state: { order: orderDetails } });
             } catch (error: any) {
                 console.error("Failed to send emails:", error);
                 setSubmitError(`Odeslání objednávky se nezdařilo. Zkuste to prosím znovu. (Chyba: ${error.text || 'Neznámá chyba'})`);
@@ -325,54 +325,7 @@ const CheckoutPage: React.FC = () => {
         }
     };
     
-    if (submittedOrder) {
-        const invoiceNotice = (
-            <div className="mt-4 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700">
-                <p><strong>Upozornění:</strong> Fakturu (daňový doklad) Vám zašleme v nejbližší době v samostatném e-mailu.</p>
-            </div>
-        );
-
-        return (
-            <PageWrapper title="Objednávka dokončena!">
-                <div className="text-center py-10 px-6 bg-green-50 rounded-lg">
-                    <svg className="mx-auto h-16 w-16 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <h3 className="mt-4 text-3xl font-semibold text-dark-gray">Děkujeme za Váš nákup!</h3>
-                    <p className="mt-2 text-gray-600 max-w-lg mx-auto">Vaše objednávka č. <strong className="text-dark-gray">{submittedOrder.orderNumber}</strong> byla úspěšně přijata. Potvrzení jsme Vám odeslali na email.</p>
-                    {invoiceNotice}
-                </div>
-
-                {submittedOrder.payment === 'prevodem' && (
-                    <div className="mt-10 max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
-                        <h3 className="text-2xl font-bold text-dark-gray text-center mb-6">Platební údaje</h3>
-                        <div className="space-y-4 text-center">
-                            <p>Pro dokončení objednávky, prosím, proveďte platbu. Všechny potřebné informace jsme Vám zaslali do emailu.</p>
-                            <div>
-                                <p className="text-sm text-gray-500">Číslo účtu:</p>
-                                <p className="text-lg font-semibold text-dark-gray">3524601011/3030</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500">Částka:</p>
-                                <p className="text-lg font-semibold text-dark-gray">{submittedOrder.total} Kč</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500">Variabilní symbol:</p>
-                                <p className="text-lg font-semibold text-dark-gray">{submittedOrder.orderNumber}</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-                 <div className="text-center mt-10">
-                    <Link to="/" className="inline-block bg-brand-purple text-white font-bold py-3 px-8 rounded-full shadow-lg hover:opacity-90 transition-transform transform hover:scale-105">
-                        Zpět na hlavní stránku
-                    </Link>
-                </div>
-            </PageWrapper>
-        );
-    }
-    
-    if (items.length === 0 && !submittedOrder) {
+    if (items.length === 0) {
         return (
             <PageWrapper title="Nákupní košík">
                 <div className="text-center py-10">
