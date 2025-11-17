@@ -5,6 +5,7 @@ import { CartItem } from '../types';
 import { PageWrapper } from '../components/layout/PageWrapper';
 import { FormInput } from '../components/forms/FormInput';
 import { RadioCard } from '../components/forms/RadioCard';
+import { DEJAVU_SANS_BASE64 } from '../constants';
 
 interface OrderDetails {
     contact: { [key: string]: string };
@@ -17,7 +18,116 @@ interface OrderDetails {
     shippingCost: number;
     paymentCost: number;
     orderNumber: string;
+    invoiceUrl?: string | null;
 }
+
+const generateAndUploadInvoice = async (order: Omit<OrderDetails, 'invoiceUrl'>): Promise<string | null> => {
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        doc.addFileToVFS('DejaVuSans.ttf', DEJAVU_SANS_BASE64);
+        doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
+        doc.setFont('DejaVuSans');
+
+        let y = 20;
+        const margin = 15;
+        const pageWidth = doc.internal.pageSize.getWidth();
+
+        doc.setFontSize(22);
+        doc.text('Faktura - Daňový doklad', pageWidth / 2, y, { align: 'center' });
+        y += 8;
+        doc.setFontSize(10);
+        doc.text(`Číslo objednávky: ${order.orderNumber}`, pageWidth / 2, y, { align: 'center' });
+        y += 15;
+
+        doc.setFontSize(10);
+        const supplierX = margin;
+        const customerX = pageWidth / 2 + 10;
+        
+        doc.setFont('DejaVuSans', 'normal');
+        doc.text('Dodavatel:', supplierX, y);
+        doc.setFontSize(12);
+        doc.text('Natálie Väterová', supplierX, y + 5);
+        doc.setFontSize(10);
+        doc.text('Dlouhý Most 374', supplierX, y + 10);
+        doc.text('46312, Dlouhý Most', supplierX, y + 15);
+        doc.text(`IČO: 01764365`, supplierX, y + 20);
+        
+        doc.setFont('DejaVuSans', 'normal');
+        doc.text('Odběratel:', customerX, y);
+        doc.setFontSize(12);
+        doc.text(`${order.contact.firstName} ${order.contact.lastName}`, customerX, y + 5);
+        doc.setFontSize(10);
+        doc.text(order.contact.street, customerX, y + 10);
+        doc.text(`${order.contact.zip} ${order.contact.city}`, customerX, y + 15);
+        doc.text(`Email: ${order.contact.email}`, customerX, y + 20);
+        
+        y += 35;
+        
+        const today = new Date().toLocaleDateString('cs-CZ');
+        doc.text(`Datum vystavení: ${today}`, margin, y);
+        doc.text(`Datum splatnosti: ${today}`, margin, y + 5);
+        y += 15;
+
+        const tableHeaders = ['Položka', 'Množství', 'Cena/ks', 'Celkem'];
+        const tableData = order.items.map(item => [
+            `${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}`,
+            item.quantity.toString(),
+            `${item.price} Kč`,
+            `${item.price * item.quantity} Kč`
+        ]);
+        
+        doc.autoTable({
+            startY: y,
+            head: [tableHeaders],
+            body: tableData,
+            theme: 'striped',
+            styles: { font: 'DejaVuSans', fontStyle: 'normal' },
+            headStyles: { fillColor: [234, 92, 157] },
+        });
+        
+        y = (doc as any).lastAutoTable.finalY + 15;
+
+        doc.setFontSize(12);
+        doc.text(`Mezisoučet:`, pageWidth - margin - 30, y, { align: 'left' });
+        doc.text(`${order.subtotal} Kč`, pageWidth - margin, y, { align: 'right' });
+        y += 7;
+        doc.text(`Doprava:`, pageWidth - margin - 30, y, { align: 'left' });
+        doc.text(`${order.shippingCost} Kč`, pageWidth - margin, y, { align: 'right' });
+        y += 7;
+        doc.text(`Platba:`, pageWidth - margin - 30, y, { align: 'left' });
+        doc.text(`${order.paymentCost} Kč`, pageWidth - margin, y, { align: 'right' });
+        y += 7;
+        doc.setLineWidth(0.5);
+        doc.line(pageWidth - margin - 40, y, pageWidth - margin, y);
+        y += 7;
+        doc.setFontSize(14);
+        doc.text(`Celkem k úhradě:`, pageWidth - margin - 30, y, { align: 'left' });
+        doc.text(`${order.total} Kč`, pageWidth - margin, y, { align: 'right' });
+        y += 15;
+
+        if (order.payment === 'prevodem') {
+            doc.setFontSize(10);
+            doc.text('Platební údaje:', margin, y);
+            y += 5;
+            doc.text(`Číslo účtu: 1562224019/3030`, margin, y);
+            y += 5;
+            doc.text(`Variabilní symbol: ${order.orderNumber}`, margin, y);
+        }
+
+        const pdfBlob = doc.output('blob');
+        const pdfFile = new File([pdfBlob], `faktura-${order.orderNumber}.pdf`, { type: 'application/pdf' });
+
+        const fileInfo = await window.uploadcare.uploadFile(pdfFile);
+        return fileInfo.cdnUrl;
+
+    } catch (error) {
+        console.error("Failed to generate or upload invoice PDF:", error);
+        return null;
+    }
+};
+
 
 const CheckoutPage: React.FC = () => {
     const { state, dispatch } = useCart();
@@ -70,7 +180,7 @@ const CheckoutPage: React.FC = () => {
     };
 
     const openPacketaWidget = () => {
-        const PACKETA_API_KEY = '15e63288a4805214'; // Demo API key
+        const PACKETA_API_KEY = '15e63288a4805214';
         if (window.Packeta) {
             window.Packeta.Widget.pick(PACKETA_API_KEY, (point: any) => {
                 if (point) {
@@ -101,194 +211,26 @@ const CheckoutPage: React.FC = () => {
             }
             localStorage.setItem(storageKey, sequence.toString());
         } catch (error) {
-            console.error("Could not access localStorage for order sequence. Falling back to timestamp.", error);
-            const hours = today.getHours().toString().padStart(2, '0');
-            const minutes = today.getMinutes().toString().padStart(2, '0');
-            const seconds = today.getSeconds().toString().padStart(2, '0');
-            return `${datePrefix}${hours}${minutes}${seconds}`;
+            console.error("Could not access localStorage for order sequence.", error);
         }
         
         const sequenceString = sequence.toString().padStart(3, '0');
         return `${datePrefix}${sequenceString}`;
     };
 
-    const generateInvoicePdfAsBlob = async (order: OrderDetails): Promise<Blob> => {
-        if (!window.jspdf) {
-            throw new Error("jsPDF library is not loaded.");
-        }
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({
-            orientation: 'p',
-            unit: 'mm',
-            format: 'a4'
-        });
-
-        const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
-            let binary = '';
-            const bytes = new Uint8Array(buffer);
-            for (let i = 0; i < bytes.byteLength; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            return window.btoa(binary);
-        };
-
-        try {
-            const fontUrl = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf';
-            const response = await fetch(fontUrl);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch font: ${response.statusText}`);
-            }
-            const fontBuffer = await response.arrayBuffer();
-            const fontBase64 = arrayBufferToBase64(fontBuffer);
-            
-            doc.addFileToVFS('DejaVuSans.ttf', fontBase64);
-            doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
-            doc.setFont('DejaVuSans');
-        } catch (error) {
-            console.error("CRITICAL: Failed to load custom font for PDF.", error);
-            throw new Error(`Font loading failed, cannot generate invoice. Reason: ${error instanceof Error ? error.message : String(error)}`);
-        }
-
-        const pageHeight = doc.internal.pageSize.height;
-        let y = 20;
-        const margin = 15;
-        const col1 = margin;
-        const col2 = 110;
-        const pageWidth = doc.internal.pageSize.width;
-
-        const checkY = (increment: number) => {
-            if (y + increment > pageHeight - margin) {
-                doc.addPage();
-                y = margin;
-            }
-        };
-
-        doc.setFontSize(22);
-        doc.text('Faktura - daňový doklad', col1, y);
-        y += 15;
-
-        doc.setFontSize(10);
-        doc.setLineWidth(0.2);
-        doc.line(margin, y - 5, pageWidth - margin, y - 5);
-
-        doc.text('Dodavatel:', col1, y);
-        doc.setFontSize(11);
-        doc.text('Natálie Väterová', col1, y + 5);
-        doc.setFontSize(10);
-        doc.text('Dlouhý Most 374', col1, y + 10);
-        doc.text('463 12, Dlouhý Most', col1, y + 15);
-        doc.text('IČO: 01764365', col1, y + 20);
-        doc.text('Nejsem plátce DPH.', col1, y + 25);
-        
-        doc.setFontSize(10);
-        doc.text('Odběratel:', col2, y);
-        doc.setFontSize(11);
-        doc.text(`${order.contact.firstName} ${order.contact.lastName}`, col2, y + 5);
-        doc.setFontSize(10);
-        doc.text(order.contact.street, col2, y + 10);
-        doc.text(`${order.contact.zip} ${order.contact.city}`, col2, y + 15);
-        doc.text(order.contact.email, col2, y + 20);
-
-        y += 35;
-        checkY(0);
-
-        doc.line(margin, y - 5, pageWidth - margin, y - 5);
-        doc.text(`Číslo faktury: ${order.orderNumber}`, col1, y);
-        doc.text(`Variabilní symbol: ${order.orderNumber}`, col1, y + 5);
-        
-        const issueDate = new Date().toLocaleDateString('cs-CZ');
-        const dueDate = new Date(new Date().setDate(new Date().getDate() + 7)).toLocaleDateString('cs-CZ');
-        doc.text(`Datum vystavení: ${issueDate}`, col2, y);
-        doc.text(`Datum splatnosti: ${dueDate}`, col2, y + 5);
-        
-        y += 15;
-        checkY(0);
-
-        doc.line(margin, y - 5, pageWidth - margin, y - 5);
-        
-        doc.setFontSize(10);
-        doc.setFillColor(240, 240, 240);
-        doc.rect(margin, y - 4, pageWidth - (2 * margin), 8, 'F');
-        doc.text('Popis položky', col1 + 2, y);
-        doc.text('Počet', 130, y, { align: 'center' });
-        doc.text('Cena/ks', 155, y, { align: 'right' });
-        doc.text('Celkem', pageWidth - margin - 2, y, { align: 'right' });
-        
-        y += 10;
-        
-        order.items.forEach(item => {
-            checkY(10);
-            const itemName = `${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}`;
-            const lines = doc.splitTextToSize(itemName, 90);
-            doc.text(lines, col1 + 2, y);
-            doc.text(item.quantity.toString(), 130, y, { align: 'center' });
-            doc.text(`${item.price} Kč`, 155, y, { align: 'right' });
-            doc.text(`${item.price * item.quantity} Kč`, pageWidth - margin - 2, y, { align: 'right' });
-            const lineIncrement = lines.length * 5;
-            y += (lineIncrement > 10 ? lineIncrement : 10);
-        });
-
-        checkY(5);
-
-        doc.line(110, y - 5, pageWidth - margin, y - 5);
-        const shippingMethodMap: {[key: string]: string} = { zasilkovna: 'Zásilkovna', posta: 'Česká pošta', osobne: 'Osobní odběr'};
-        const paymentMethodMap: {[key: string]: string} = { prevodem: 'Bankovním převodem', dobirka: 'Na dobírku'};
-
-        doc.setFontSize(10);
-        doc.text('Mezisoučet:', 115, y);
-        doc.text(`${order.subtotal} Kč`, pageWidth - margin - 2, y, { align: 'right' });
-        y += 6;
-
-        checkY(6);
-        doc.text(`Doprava (${shippingMethodMap[order.shipping]}):`, 115, y);
-        doc.text(`${order.shippingCost} Kč`, pageWidth - margin - 2, y, { align: 'right' });
-        y += 6;
-
-        checkY(6);
-        doc.text(`Platba (${paymentMethodMap[order.payment]}):`, 115, y);
-        doc.text(`${order.paymentCost} Kč`, pageWidth - margin - 2, y, { align: 'right' });
-        y += 6;
-
-        checkY(6);
-        doc.setFontSize(14);
-        doc.text('Celkem k úhradě:', 115, y);
-        doc.text(`${order.total} Kč`, pageWidth - margin - 2, y, { align: 'right' });
-        doc.setFontSize(10);
-
-        return doc.output('blob');
-    };
-    
-    const uploadPdfToUploadcare = async (pdfBlob: Blob, orderNumber: string): Promise<string> => {
-        if (!window.uploadcare) {
-            throw new Error("Uploadcare widget is not available.");
-        }
-        const file = new File([pdfBlob], `Faktura-${orderNumber}.pdf`, { type: 'application/pdf' });
-        try {
-            const uploadedFile = await window.uploadcare.uploadFile(file);
-            return uploadedFile.cdnUrl;
-        } catch (error) {
-            console.error("Failed to upload PDF to Uploadcare:", error);
-            throw new Error("Nahrání faktury na server selhalo.");
-        }
-    };
-
     const sendEmailNotifications = async (order: OrderDetails) => {
         const vs = order.orderNumber;
         let paymentDetailsHtml = '';
-        let invoiceDownloadLinkHtml = '';
-
-        try {
-            const pdfBlob = await generateInvoicePdfAsBlob(order);
-            const invoiceUrl = await uploadPdfToUploadcare(pdfBlob, order.orderNumber);
-            invoiceDownloadLinkHtml = `
-                <div style="text-align: center; margin-top: 30px; padding: 15px; background-color: #f0f0f0; border-radius: 8px;">
-                    <a href="${invoiceUrl}" target="_blank" style="display: inline-block; padding: 12px 24px; background-color: #8D7EEF; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
-                        Stáhnout fakturu (PDF)
-                    </a>
-                </div>`;
-        } catch (error) {
-             console.error("Failed to generate or upload invoice PDF:", error);
-             invoiceDownloadLinkHtml = `<p style="margin-top:20px; color: #D8000C; background-color: #FFD2D2; padding: 10px; border-radius: 5px;"><strong>Upozornění:</strong> Fakturu se nepodařilo automaticky vygenerovat. Bude Vám zaslána dodatečně.</p>`;
+        
+        let invoiceHtml = '';
+        if (order.invoiceUrl) {
+            invoiceHtml = `<p style="margin-top:20px;">
+                <a href="${order.invoiceUrl}" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">
+                    Stáhnout fakturu (PDF)
+                </a>
+            </p>`;
+        } else {
+            invoiceHtml = `<p style="margin-top:20px; color: #D8000C; background-color: #FFD2D2; padding: 10px; border-radius: 5px;"><strong>Upozornění:</strong> Fakturu se nepodařilo automaticky vygenerovat. Bude Vám zaslána dodatečně.</p>`;
         }
         
         if (order.payment === 'prevodem') {
@@ -301,17 +243,14 @@ const CheckoutPage: React.FC = () => {
                        <tr><td style="padding: 5px;">Částka:</td><td style="padding: 5px; font-weight: bold;">${order.total} Kč</td></tr>
                        <tr><td style="padding: 5px;">Variabilní symbol:</td><td style="padding: 5px; font-weight: bold;">${vs}</td></tr>
                     </table>
-                    <p style="font-size: 12px; color: #777; margin-top: 20px;">Po připsání platby na náš účet začneme s výrobou Vaší objednávky.</p>
                 </div>`;
         }
-
-        paymentDetailsHtml += invoiceDownloadLinkHtml;
-
+        
         const itemsHtml = order.items.map(item => `
             <tr>
                 <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: left;">${item.product.name} ${item.variant ? `(${item.variant.name})` : ''} ${item.orientation ? `(${item.orientation === 'portrait' ? 'na výšku' : 'na šířku'})` : ''}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">${item.price} Kč</td>
+                <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">${item.price * item.quantity} Kč</td>
             </tr>`).join('');
         
         const photosConfirmationHtml = order.items.some(item => item.photos && item.photos.length > 0) ? `<p style="margin-top: 20px;">Vaše fotografie byly úspěšně přijaty a budou použity pro výrobu.</p>` : '';
@@ -339,7 +278,7 @@ const CheckoutPage: React.FC = () => {
             payment_cost: order.paymentCost,
             total: order.total,
             photos_confirmation_html: photosConfirmationHtml,
-            payment_details_html: paymentDetailsHtml,
+            payment_details_html: paymentDetailsHtml + invoiceHtml,
             shipping_method: shippingMethodMap[order.shipping],
             shipping_address_html: customerShippingAddressHtml,
         };
@@ -357,7 +296,7 @@ const CheckoutPage: React.FC = () => {
                             Zobrazit fotografie v Uploadcare &raquo;
                         </a>
                        </p>`
-                    : `<p style="margin-top: 15px; color: #777; font-size: 12px;">(Fotografie nebyly nahrány jako skupina)</p>`;
+                    : ``;
 
                 return `
                     <div style="padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; background-color: #fafafa;">
@@ -418,7 +357,7 @@ const CheckoutPage: React.FC = () => {
                 </div>`,
             photos_html: ownerPhotosSectionHtml,
             additional_info_html: additionalInfoHtml,
-            invoice_html: invoiceDownloadLinkHtml,
+            invoice_html: invoiceHtml,
         };
 
         await window.emailjs.send('service_2pkoish', 'template_8ax2a2w', ownerParams);
@@ -448,7 +387,7 @@ const CheckoutPage: React.FC = () => {
             
             const orderNumber = generateOrderNumber();
             
-            const orderDetails: OrderDetails = {
+            const orderDetails: Omit<OrderDetails, 'invoiceUrl'> = {
                 contact: data as { [key: string]: string },
                 shipping: shippingMethod!,
                 payment: paymentMethod!,
@@ -461,13 +400,16 @@ const CheckoutPage: React.FC = () => {
                 orderNumber: orderNumber
             };
             
+            const invoiceUrl = await generateAndUploadInvoice(orderDetails);
+            const finalOrderDetails = { ...orderDetails, invoiceUrl };
+            
             try {
-                await sendEmailNotifications(orderDetails);
-                setSubmittedOrder(orderDetails);
+                await sendEmailNotifications(finalOrderDetails);
+                setSubmittedOrder(finalOrderDetails);
                 dispatch({ type: 'CLEAR_CART' });
             } catch (error: any) {
                 console.error("Failed to send emails:", error);
-                setSubmitError(`Odeslání objednávky se nezdařilo. Zkuste to prosím znovu. Pokud problém přetrvává, kontaktujte nás. (Chyba: ${error.text || error.message || 'Neznámá chyba'})`);
+                setSubmitError(`Odeslání objednávky se nezdařilo. Zkuste to prosím znovu. (Chyba: ${error.text || 'Neznámá chyba'})`);
             } finally {
                 setIsSubmitting(false);
             }
@@ -475,6 +417,16 @@ const CheckoutPage: React.FC = () => {
     };
     
     if (submittedOrder) {
+        const invoiceNotice = submittedOrder.invoiceUrl ? (
+            <a href={submittedOrder.invoiceUrl} target="_blank" rel="noopener noreferrer" className="mt-6 inline-block bg-green-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:opacity-90">
+                Stáhnout fakturu (PDF)
+            </a>
+        ) : (
+            <div className="mt-4 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700">
+                <p><strong>Upozornění:</strong> Fakturu se nepodařilo automaticky vygenerovat. Bude Vám zaslána dodatečně.</p>
+            </div>
+        );
+
         return (
             <PageWrapper title="Objednávka dokončena!">
                 <div className="text-center py-10 px-6 bg-green-50 rounded-lg">
@@ -482,7 +434,8 @@ const CheckoutPage: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <h3 className="mt-4 text-3xl font-semibold text-dark-gray">Děkujeme za Váš nákup!</h3>
-                    <p className="mt-2 text-gray-600 max-w-lg mx-auto">Vaše objednávka č. <strong className="text-dark-gray">{submittedOrder.orderNumber}</strong> byla úspěšně přijata. Potvrzení s odkazem na fakturu jsme Vám odeslali na email.</p>
+                    <p className="mt-2 text-gray-600 max-w-lg mx-auto">Vaše objednávka č. <strong className="text-dark-gray">{submittedOrder.orderNumber}</strong> byla úspěšně přijata. Potvrzení jsme Vám odeslali na email.</p>
+                    {invoiceNotice}
                 </div>
 
                 {submittedOrder.payment === 'prevodem' && (
@@ -518,153 +471,106 @@ const CheckoutPage: React.FC = () => {
         return (
             <PageWrapper title="Nákupní košík">
                 <div className="text-center py-10">
-                    <p className="text-xl text-gray-500">Váš košík je prázdný.</p>
+                    <p className="text-lg text-gray-600">Váš košík je prázdný.</p>
                     <Link to="/produkty" className="mt-6 inline-block bg-brand-pink text-white font-bold py-3 px-8 rounded-full shadow-lg hover:opacity-90 transition-transform transform hover:scale-105">
                         Pokračovat v nákupu
                     </Link>
                 </div>
             </PageWrapper>
-        )
+        );
     }
 
     return (
         <div className="bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <h1 className="text-4xl font-extrabold tracking-tight text-dark-gray text-center mb-12">Nákupní košík</h1>
-                <form onSubmit={handleSubmit} className="lg:grid lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16">
-                    <section className="lg:col-span-7">
-                        {/* Contact information */}
-                        <div className="border-b border-gray-200 pb-8">
-                             <h2 className="text-lg font-medium text-dark-gray">Kontaktní a fakturační údaje</h2>
-                             <div className="mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4">
-                                <FormInput name="firstName" label="Jméno" type="text" autoComplete="given-name" error={formErrors.firstName} value={formData.firstName} onChange={handleFormChange} required/>
-                                <FormInput name="lastName" label="Příjmení" type="text" autoComplete="family-name" error={formErrors.lastName} value={formData.lastName} onChange={handleFormChange} required/>
-                                <div className="sm:col-span-2">
-                                    <FormInput name="email" label="Email" type="email" autoComplete="email" error={formErrors.email} value={formData.email} onChange={handleFormChange} required/>
-                                </div>
-                                <div className="sm:col-span-2">
-                                    <FormInput name="street" label="Ulice a číslo popisné" type="text" autoComplete="street-address" error={formErrors.street} value={formData.street} onChange={handleFormChange} required/>
-                                </div>
-                                <div>
-                                    <FormInput name="city" label="Město" type="text" autoComplete="address-level2" error={formErrors.city} value={formData.city} onChange={handleFormChange} required/>
-                                </div>
-                                <div>
-                                    <FormInput name="zip" label="PSČ" type="text" autoComplete="postal-code" error={formErrors.zip} value={formData.zip} onChange={handleFormChange} required/>
-                                </div>
-                                <div className="sm:col-span-2">
-                                    <label htmlFor="additionalInfo" className="block text-sm font-medium text-gray-700">Doplňující informace (nepovinné)</label>
-                                    <div className="mt-1">
-                                        <textarea
-                                            id="additionalInfo"
-                                            name="additionalInfo"
-                                            rows={4}
-                                            value={formData.additionalInfo}
-                                            onChange={handleFormChange}
-                                            className="block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-purple focus:border-brand-purple sm:text-sm placeholder-gray-500 border-brand-purple/20 bg-brand-purple/10"
-                                            placeholder="Zde můžete uvést poznámky k objednávce, speciální požadavky atd."
-                                        />
-                                    </div>
-                                </div>
-                             </div>
-                        </div>
-
-                        {/* Shipping */}
-                        <div className="mt-10 border-b border-gray-200 pb-8">
-                            <h2 className="text-lg font-medium text-dark-gray">Doprava</h2>
-                            {formErrors.shipping && <p className="mt-2 text-sm text-red-500">{formErrors.shipping}</p>}
-                            <div className="mt-4 grid grid-cols-1 gap-y-4">
-                               <RadioCard name="shipping" value="zasilkovna" checked={shippingMethod === 'zasilkovna'} onChange={(e) => setShippingMethod(e.target.value)} title="Zásilkovna - Výdejní místo" price="72 Kč"/>
-                               {shippingMethod === 'zasilkovna' && (
-                                   <div className="pl-4">
-                                       <button type="button" onClick={openPacketaWidget} className="text-sm font-medium text-white bg-brand-purple hover:opacity-90 py-2 px-4 rounded-md">
-                                           {packetaPoint ? 'Změnit výdejní místo' : 'Vybrat výdejní místo'}
-                                       </button>
-                                       {packetaPoint && <div className="mt-2 text-sm text-gray-600">Vybráno: <strong>{packetaPoint.name}</strong>, {packetaPoint.street}, {packetaPoint.city}</div>}
-                                       {formErrors.packetaPoint && <p className="mt-1 text-sm text-red-500">{formErrors.packetaPoint}</p>}
-                                   </div>
-                               )}
-                               <RadioCard name="shipping" value="posta" checked={shippingMethod === 'posta'} onChange={(e) => setShippingMethod(e.target.value)} title="Česká pošta - Balík Do ruky" price="119 Kč"/>
-                               <RadioCard name="shipping" value="osobne" checked={shippingMethod === 'osobne'} onChange={(e) => setShippingMethod(e.target.value)} title="Osobní odběr - Turnov" price="Zdarma"/>
+                <h1 className="text-4xl font-extrabold tracking-tight text-dark-gray text-center mb-12">Váš nákupní košík</h1>
+                <form onSubmit={handleSubmit} className="lg:grid lg:grid-cols-12 lg:gap-x-12 lg:items-start xl:gap-x-16">
+                    <section aria-labelledby="cart-heading" className="lg:col-span-7 bg-white p-8 rounded-lg shadow-lg">
+                        <h2 id="contact-details-heading" className="text-2xl font-bold text-dark-gray mb-6">Kontaktní údaje</h2>
+                        <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4">
+                            <FormInput name="firstName" label="Křestní jméno" value={formData.firstName} onChange={handleFormChange} error={formErrors.firstName} required />
+                            <FormInput name="lastName" label="Příjmení" value={formData.lastName} onChange={handleFormChange} error={formErrors.lastName} required />
+                            <div className="sm:col-span-2">
+                                <FormInput name="email" label="Email" type="email" value={formData.email} onChange={handleFormChange} error={formErrors.email} required />
                             </div>
+                             <div className="sm:col-span-2">
+                                <FormInput name="street" label="Ulice a č.p." value={formData.street} onChange={handleFormChange} error={formErrors.street} required />
+                            </div>
+                            <FormInput name="city" label="Město" value={formData.city} onChange={handleFormChange} error={formErrors.city} required />
+                            <FormInput name="zip" label="PSČ" value={formData.zip} onChange={handleFormChange} error={formErrors.zip} required />
                         </div>
                         
-                        {/* Payment */}
-                        <div className="mt-10">
-                            <h2 className="text-lg font-medium text-dark-gray">Platba</h2>
-                            {formErrors.payment && <p className="mt-2 text-sm text-red-500">{formErrors.payment}</p>}
-                            <div className="mt-4 grid grid-cols-1 gap-y-4">
-                               <RadioCard name="payment" value="prevodem" checked={paymentMethod === 'prevodem'} onChange={(e) => setPaymentMethod(e.target.value)} title="Bankovním převodem" price="Zdarma"/>
-                               <RadioCard name="payment" value="dobirka" checked={paymentMethod === 'dobirka'} onChange={(e) => setPaymentMethod(e.target.value)} title="Na dobírku" price="20 Kč"/>
+                        <div className="mt-8">
+                            <label htmlFor="additionalInfo" className="block text-sm font-medium text-gray-700">Doplňující informace</label>
+                            <textarea id="additionalInfo" name="additionalInfo" rows={3} value={formData.additionalInfo} onChange={handleFormChange} className="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-purple focus:border-brand-purple sm:text-sm border-brand-purple/20 bg-brand-purple/10 placeholder-gray-500"></textarea>
+                        </div>
+                        
+                        <div className="mt-8">
+                            <h2 className="text-2xl font-bold text-dark-gray mb-6">Doprava</h2>
+                            <div className="space-y-4">
+                               <RadioCard name="shipping" value="zasilkovna" checked={shippingMethod === 'zasilkovna'} onChange={() => { setShippingMethod('zasilkovna'); setFormErrors(p => ({...p, shipping: ''})) }} title="Zásilkovna - Výdejní místo" price={`${shippingCosts.zasilkovna} Kč`} />
+                                {shippingMethod === 'zasilkovna' && (
+                                    <div className="pl-4">
+                                        <button type="button" onClick={openPacketaWidget} className="text-brand-purple font-medium hover:opacity-80">
+                                            {packetaPoint ? 'Změnit výdejní místo' : 'Vybrat výdejní místo'}
+                                        </button>
+                                        {packetaPoint && <p className="mt-2 text-sm text-gray-600">{packetaPoint.name}, {packetaPoint.street}, {packetaPoint.city}</p>}
+                                        {formErrors.packetaPoint && <p className="text-sm text-red-500 mt-1">{formErrors.packetaPoint}</p>}
+                                    </div>
+                                )}
+                                <RadioCard name="shipping" value="posta" checked={shippingMethod === 'posta'} onChange={() => { setShippingMethod('posta'); setFormErrors(p => ({...p, shipping: ''})) }} title="Česká pošta - Balík Do ruky" price={`${shippingCosts.posta} Kč`} />
+                                <RadioCard name="shipping" value="osobne" checked={shippingMethod === 'osobne'} onChange={() => { setShippingMethod('osobne'); setFormErrors(p => ({...p, shipping: ''})) }} title="Osobní odběr - Turnov" price="Zdarma" />
+                                {formErrors.shipping && <p className="text-sm text-red-500">{formErrors.shipping}</p>}
                             </div>
                         </div>
-                    </section>
 
+                        <div className="mt-8">
+                             <h2 className="text-2xl font-bold text-dark-gray mb-6">Platba</h2>
+                             <div className="space-y-4">
+                                <RadioCard name="payment" value="prevodem" checked={paymentMethod === 'prevodem'} onChange={() => { setPaymentMethod('prevodem'); setFormErrors(p => ({...p, payment: ''})) }} title="Bankovním převodem" price="Zdarma" />
+                                <RadioCard name="payment" value="dobirka" checked={paymentMethod === 'dobirka'} onChange={() => { setPaymentMethod('dobirka'); setFormErrors(p => ({...p, payment: ''})) }} title="Na dobírku" price={`${paymentCosts.dobirka} Kč`} />
+                                {formErrors.payment && <p className="text-sm text-red-500">{formErrors.payment}</p>}
+                            </div>
+                        </div>
+
+                    </section>
+                    
                     {/* Order summary */}
-                    <section className="mt-16 rounded-lg bg-gray-50 px-4 py-6 sm:p-6 lg:col-span-5 lg:mt-0 lg:p-8">
-                        <h2 className="text-lg font-medium text-dark-gray">Souhrn objednávky</h2>
-                        <ul role="list" className="divide-y divide-gray-200">
-                           {items.map(item => (
-                               <li key={item.id} className="flex py-6 space-x-4">
-                                   <img src={item.product.imageUrl} alt={item.product.name} className="flex-none w-24 h-24 rounded-md object-cover" />
-                                   <div className="flex flex-col justify-between flex-auto">
-                                       <div>
-                                           <h3 className="font-medium text-dark-gray">{item.product.name}</h3>
-                                           <p className="text-sm text-gray-500">
-                                               {item.variant?.name}
-                                               {item.orientation === 'portrait' ? ' (na výšku)' : item.orientation === 'landscape' ? ' (na šířku)' : ''}
-                                           </p>
-                                       </div>
-                                       <div className="flex items-baseline justify-between mt-2">
-                                            <div className="flex items-center border border-gray-300 rounded-md">
-                                               <button
-                                                   type="button"
-                                                   onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                                                   className="px-3 py-1 text-base font-medium text-gray-600 hover:bg-gray-100 rounded-l-md"
-                                                   aria-label={`Snížit počet kusů ${item.product.name}`}
-                                               >
-                                                   -
-                                               </button>
-                                               <span className="px-4 py-1 text-center text-dark-gray font-medium">{item.quantity}</span>
-                                               <button
-                                                   type="button"
-                                                   onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                                                   className="px-3 py-1 text-base font-medium text-gray-600 hover:bg-gray-100 rounded-r-md"
-                                                   aria-label={`Zvýšit počet kusů ${item.product.name}`}
-                                               >
-                                                   +
-                                               </button>
-                                           </div>
-                                           <div className="text-right">
-                                               <p className="font-medium text-dark-gray">{item.price * item.quantity} Kč</p>
-                                               <button onClick={() => handleRemoveItem(item.id)} type="button" className="text-sm font-medium text-brand-purple hover:opacity-80">
-                                                   Odstranit
-                                               </button>
-                                           </div>
-                                       </div>
-                                   </div>
-                               </li>
-                           ))}
+                    <section aria-labelledby="summary-heading" className="mt-16 bg-light-gray rounded-lg shadow-lg px-4 py-6 sm:p-6 lg:p-8 lg:mt-0 lg:col-span-5">
+                        <h2 id="summary-heading" className="text-2xl font-bold text-dark-gray">Souhrn objednávky</h2>
+                        <ul role="list" className="mt-6 divide-y divide-gray-200">
+                            {items.map(item => (
+                                <li key={item.id} className="flex py-6 space-x-6">
+                                    <img src={item.product.imageUrl} alt={item.product.name} className="flex-none w-24 h-24 object-cover rounded-md"/>
+                                    <div className="flex flex-col justify-between">
+                                        <div>
+                                            <h3 className="text-sm"><Link to={`/produkty/${item.product.id}`} className="font-medium text-dark-gray hover:text-brand-purple">{item.product.name}</Link></h3>
+                                            {item.variant && <p className="text-xs text-gray-500">{item.variant.name}</p>}
+                                            {item.orientation && <p className="text-xs text-gray-500">{item.orientation === 'portrait' ? 'Na výšku' : 'Na šířku'}</p>}
+                                        </div>
+                                        <div className="flex items-center border border-gray-300 rounded-md w-fit mt-2">
+                                            <button type="button" onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)} className="px-2 py-1 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-l-md">-</button>
+                                            <span className="px-3 py-1 text-center text-sm">{item.quantity}</span>
+                                            <button type="button" onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)} className="px-2 py-1 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-r-md">+</button>
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 flex flex-col items-end justify-between">
+                                        <p className="text-sm font-medium text-dark-gray">{item.price * item.quantity} Kč</p>
+                                        <button type="button" onClick={() => handleRemoveItem(item.id)} className="text-xs font-medium text-brand-purple hover:opacity-80">Odstranit</button>
+                                    </div>
+                                </li>
+                            ))}
                         </ul>
-                        <dl className="space-y-4 border-t border-gray-200 pt-6">
-                            <div className="flex items-center justify-between">
-                                <dt className="text-sm text-gray-600">Mezisoučet</dt>
-                                <dd className="text-sm font-medium text-dark-gray">{subtotal} Kč</dd>
-                            </div>
-                             <div className="flex items-center justify-between">
-                                <dt className="text-sm text-gray-600">Doprava</dt>
-                                <dd className="text-sm font-medium text-dark-gray">{shippingCost} Kč</dd>
-                            </div>
-                             <div className="flex items-center justify-between">
-                                <dt className="text-sm text-gray-600">Platba</dt>
-                                <dd className="text-sm font-medium text-dark-gray">{paymentCost} Kč</dd>
-                            </div>
-                            <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                                <dt className="text-base font-medium text-dark-gray">Celkem</dt>
-                                <dd className="text-base font-medium text-dark-gray">{total} Kč</dd>
-                            </div>
+
+                        <dl className="mt-6 space-y-4 border-t border-gray-200 pt-6">
+                            <div className="flex items-center justify-between"><dt className="text-sm text-gray-600">Mezisoučet</dt><dd className="text-sm font-medium text-dark-gray">{subtotal} Kč</dd></div>
+                            <div className="flex items-center justify-between"><dt className="text-sm text-gray-600">Doprava</dt><dd className="text-sm font-medium text-dark-gray">{shippingCost} Kč</dd></div>
+                             <div className="flex items-center justify-between"><dt className="text-sm text-gray-600">Platba</dt><dd className="text-sm font-medium text-dark-gray">{paymentCost} Kč</dd></div>
+                            <div className="flex items-center justify-between border-t border-gray-200 pt-4"><dt className="text-base font-medium text-dark-gray">Celkem</dt><dd className="text-base font-medium text-dark-gray">{total} Kč</dd></div>
                         </dl>
+                        
                         <div className="mt-6">
-                            {submitError && <p className="text-red-600 text-sm text-center mb-4">{submitError}</p>}
+                            {submitError && <p className="text-red-500 text-sm text-center mb-4">{submitError}</p>}
                             <button type="submit" disabled={isSubmitting} className="w-full bg-brand-pink border border-transparent rounded-md shadow-sm py-3 px-4 text-base font-medium text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink disabled:opacity-50">
                                 {isSubmitting ? 'Odesílám objednávku...' : 'Odeslat objednávku'}
                             </button>
@@ -676,4 +582,113 @@ const CheckoutPage: React.FC = () => {
     );
 };
 
-export default CheckoutPage;
+export default CheckoutPage; text-lg text-gray-600">Váš košík je prázdný.</p>
+                    <Link to="/produkty" className="mt-6 inline-block bg-brand-pink text-white font-bold py-3 px-8 rounded-full shadow-lg hover:opacity-90 transition-transform transform hover:scale-105">
+                        Pokračovat v nákupu
+                    </Link>
+                </div>
+            </PageWrapper>
+        );
+    }
+
+    return (
+        <div className="bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                <h1 className="text-4xl font-extrabold tracking-tight text-dark-gray text-center mb-12">Váš nákupní košík</h1>
+                <form onSubmit={handleSubmit} className="lg:grid lg:grid-cols-12 lg:gap-x-12 lg:items-start xl:gap-x-16">
+                    <section aria-labelledby="cart-heading" className="lg:col-span-7 bg-white p-8 rounded-lg shadow-lg">
+                        <h2 id="contact-details-heading" className="text-2xl font-bold text-dark-gray mb-6">Kontaktní údaje</h2>
+                        <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4">
+                            <FormInput name="firstName" label="Křestní jméno" value={formData.firstName} onChange={handleFormChange} error={formErrors.firstName} required />
+                            <FormInput name="lastName" label="Příjmení" value={formData.lastName} onChange={handleFormChange} error={formErrors.lastName} required />
+                            <div className="sm:col-span-2">
+                                <FormInput name="email" label="Email" type="email" value={formData.email} onChange={handleFormChange} error={formErrors.email} required />
+                            </div>
+                             <div className="sm:col-span-2">
+                                <FormInput name="street" label="Ulice a č.p." value={formData.street} onChange={handleFormChange} error={formErrors.street} required />
+                            </div>
+                            <FormInput name="city" label="Město" value={formData.city} onChange={handleFormChange} error={formErrors.city} required />
+                            <FormInput name="zip" label="PSČ" value={formData.zip} onChange={handleFormChange} error={formErrors.zip} required />
+                        </div>
+                        
+                        <div className="mt-8">
+                            <label htmlFor="additionalInfo" className="block text-sm font-medium text-gray-700">Doplňující informace</label>
+                            <textarea id="additionalInfo" name="additionalInfo" rows={3} value={formData.additionalInfo} onChange={handleFormChange} className="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-purple focus:border-brand-purple sm:text-sm border-brand-purple/20 bg-brand-purple/10 placeholder-gray-500"></textarea>
+                        </div>
+                        
+                        <div className="mt-8">
+                            <h2 className="text-2xl font-bold text-dark-gray mb-6">Doprava</h2>
+                            <div className="space-y-4">
+                               <RadioCard name="shipping" value="zasilkovna" checked={shippingMethod === 'zasilkovna'} onChange={() => { setShippingMethod('zasilkovna'); setFormErrors(p => ({...p, shipping: ''})) }} title="Zásilkovna - Výdejní místo" price={`${shippingCosts.zasilkovna} Kč`} />
+                                {shippingMethod === 'zasilkovna' && (
+                                    <div className="pl-4">
+                                        <button type="button" onClick={openPacketaWidget} className="text-brand-purple font-medium hover:opacity-80">
+                                            {packetaPoint ? 'Změnit výdejní místo' : 'Vybrat výdejní místo'}
+                                        </button>
+                                        {packetaPoint && <p className="mt-2 text-sm text-gray-600">{packetaPoint.name}, {packetaPoint.street}, {packetaPoint.city}</p>}
+                                        {formErrors.packetaPoint && <p className="text-sm text-red-500 mt-1">{formErrors.packetaPoint}</p>}
+                                    </div>
+                                )}
+                                <RadioCard name="shipping" value="posta" checked={shippingMethod === 'posta'} onChange={() => { setShippingMethod('posta'); setFormErrors(p => ({...p, shipping: ''})) }} title="Česká pošta - Balík Do ruky" price={`${shippingCosts.posta} Kč`} />
+                                <RadioCard name="shipping" value="osobne" checked={shippingMethod === 'osobne'} onChange={() => { setShippingMethod('osobne'); setFormErrors(p => ({...p, shipping: ''})) }} title="Osobní odběr - Turnov" price="Zdarma" />
+                                {formErrors.shipping && <p className="text-sm text-red-500">{formErrors.shipping}</p>}
+                            </div>
+                        </div>
+
+                        <div className="mt-8">
+                             <h2 className="text-2xl font-bold text-dark-gray mb-6">Platba</h2>
+                             <div className="space-y-4">
+                                <RadioCard name="payment" value="prevodem" checked={paymentMethod === 'prevodem'} onChange={() => { setPaymentMethod('prevodem'); setFormErrors(p => ({...p, payment: ''})) }} title="Bankovním převodem" price="Zdarma" />
+                                <RadioCard name="payment" value="dobirka" checked={paymentMethod === 'dobirka'} onChange={() => { setPaymentMethod('dobirka'); setFormErrors(p => ({...p, payment: ''})) }} title="Na dobírku" price={`${paymentCosts.dobirka} Kč`} />
+                                {formErrors.payment && <p className="text-sm text-red-500">{formErrors.payment}</p>}
+                            </div>
+                        </div>
+
+                    </section>
+                    
+                    {/* Order summary */}
+                    <section aria-labelledby="summary-heading" className="mt-16 bg-light-gray rounded-lg shadow-lg px-4 py-6 sm:p-6 lg:p-8 lg:mt-0 lg:col-span-5">
+                        <h2 id="summary-heading" className="text-2xl font-bold text-dark-gray">Souhrn objednávky</h2>
+                        <ul role="list" className="mt-6 divide-y divide-gray-200">
+                            {items.map(item => (
+                                <li key={item.id} className="flex py-6 space-x-6">
+                                    <img src={item.product.imageUrl} alt={item.product.name} className="flex-none w-24 h-24 object-cover rounded-md"/>
+                                    <div className="flex flex-col justify-between">
+                                        <div>
+                                            <h3 className="text-sm"><Link to={`/produkty/${item.product.id}`} className="font-medium text-dark-gray hover:text-brand-purple">{item.product.name}</Link></h3>
+                                            {item.variant && <p className="text-xs text-gray-500">{item.variant.name}</p>}
+                                            {item.orientation && <p className="text-xs text-gray-500">{item.orientation === 'portrait' ? 'Na výšku' : 'Na šířku'}</p>}
+                                        </div>
+                                        <div className="flex items-center border border-gray-300 rounded-md w-fit mt-2">
+                                            <button type="button" onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)} className="px-2 py-1 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-l-md">-</button>
+                                            <span className="px-3 py-1 text-center text-sm">{item.quantity}</span>
+                                            <button type="button" onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)} className="px-2 py-1 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-r-md">+</button>
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 flex flex-col items-end justify-between">
+                                        <p className="text-sm font-medium text-dark-gray">{item.price * item.quantity} Kč</p>
+                                        <button type="button" onClick={() => handleRemoveItem(item.id)} className="text-xs font-medium text-brand-purple hover:opacity-80">Odstranit</button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+
+                        <dl className="mt-6 space-y-4 border-t border-gray-200 pt-6">
+                            <div className="flex items-center justify-between"><dt className="text-sm text-gray-600">Mezisoučet</dt><dd className="text-sm font-medium text-dark-gray">{subtotal} Kč</dd></div>
+                            <div className="flex items-center justify-between"><dt className="text-sm text-gray-600">Doprava</dt><dd className="text-sm font-medium text-dark-gray">{shippingCost} Kč</dd></div>
+                             <div className="flex items-center justify-between"><dt className="text-sm text-gray-600">Platba</dt><dd className="text-sm font-medium text-dark-gray">{paymentCost} Kč</dd></div>
+                            <div className="flex items-center justify-between border-t border-gray-200 pt-4"><dt className="text-base font-medium text-dark-gray">Celkem</dt><dd className="text-base font-medium text-dark-gray">{total} Kč</dd></div>
+                        </dl>
+                        
+                        <div className="mt-6">
+                            {submitError && <p className="text-red-500 text-sm text-center mb-4">{submitError}</p>}
+                            <button type="submit" disabled={isSubmitting} className="w-full bg-brand-pink border border-transparent rounded-md shadow-sm py-3 px-4 text-base font-medium text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink disabled:opacity-50">
+                                {isSubmitting ? 'Odesílám objednávku...' : 'Odeslat objednávku'}
+                            </button>
+                        </div>
+                    </section>
+                </form>
+            </div>
+        </div>
+    );
+};
