@@ -12,6 +12,7 @@ import ProductDetailPage from '../../pages/ProductDetailPage';
 import HowItWorksPage from '../../pages/HowItWorksPage';
 import ContactPage from '../../pages/ContactPage';
 import CheckoutPage from '../../pages/CheckoutPage';
+import OrderConfirmationPage from '../../pages/OrderConfirmationPage';
 import TermsPage from '../../pages/TermsPage';
 import PrivacyPage from '../../pages/PrivacyPage';
 import ShippingPage from '../../pages/ShippingPage';
@@ -56,6 +57,7 @@ export const AppLayout: React.FC = () => {
                     <Route path="/jak-to-funguje" element={<HowItWorksPage />} />
                     <Route path="/kontakt" element={<ContactPage />} />
                     <Route path="/kosik" element={<CheckoutPage />} />
+                    <Route path="/dekujeme" element={<OrderConfirmationPage />} />
                     <Route path="/obchodni-podminky" element={<TermsPage />} />
                     <Route path="/ochrana-udaju" element={<PrivacyPage />} />
                     <Route path="/doprava" element={<ShippingPage />} />
