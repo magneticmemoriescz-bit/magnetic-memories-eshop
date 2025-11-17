@@ -255,14 +255,19 @@ const CheckoutPage: React.FC = () => {
         }
 
         const payload = {
-            ...order,
+            orderNumber: order.orderNumber,
+            total: Number(order.total),
+            subtotal: Number(order.subtotal),
+            shippingCost: Number(order.shippingCost),
+            paymentCost: Number(order.paymentCost),
+            contact: order.contact,
+            shipping: order.shipping,
+            payment: order.payment,
+            packetaPoint: order.packetaPoint,
             items: order.items.map(item => ({
-                ...item,
-                // Ensure price and quantity are numbers for Fakturoid
-                price: Number(item.price) || 0,
+                name: `${item.product.name}${item.variant ? ` - ${item.variant.name}` : ''}`,
                 quantity: Number(item.quantity) || 1,
-                // Simplify product data to avoid nesting issues
-                product: { name: item.product.name, variant: item.variant?.name }
+                unit_price: Number(item.price) || 0,
             })),
         };
         
