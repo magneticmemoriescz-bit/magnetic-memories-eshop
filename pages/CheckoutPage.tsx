@@ -246,29 +246,45 @@ const CheckoutPage: React.FC = () => {
     };
     
     const triggerMakeWebhook = (order: OrderDetails) => {
-        // This function sends data to Make.com. It's "fire and forget".
-        // A failure here should not block the user or show an error, as their order is already confirmed.
-        // It should be logged for debugging purposes.
         if (!MAKE_WEBHOOK_URL) {
             console.warn("Make.com Webhook URL is not configured. Skipping invoice generation.");
             return;
         }
 
+        // Create a lean, clean payload for Fakturoid
+        const invoiceItems = order.items.map(item => ({
+            name: `${item.product.name}${item.variant ? ` - ${item.variant.name}` : ''}`,
+            quantity: Number(item.quantity) || 1,
+            unit_price: Number(item.price) || 0,
+        }));
+
+        if (order.shippingCost > 0) {
+            invoiceItems.push({
+                name: 'Doprava',
+                quantity: 1,
+                unit_price: Number(order.shippingCost),
+            });
+        }
+
+        if (order.paymentCost > 0) {
+            invoiceItems.push({
+                name: 'Platba',
+                quantity: 1,
+                unit_price: Number(order.paymentCost),
+            });
+        }
+
         const payload = {
             orderNumber: order.orderNumber,
-            total: Number(order.total),
-            subtotal: Number(order.subtotal),
-            shippingCost: Number(order.shippingCost),
-            paymentCost: Number(order.paymentCost),
-            contact: order.contact,
-            shipping: order.shipping,
-            payment: order.payment,
-            packetaPoint: order.packetaPoint,
-            items: order.items.map(item => ({
-                name: `${item.product.name}${item.variant ? ` - ${item.variant.name}` : ''}`,
-                quantity: Number(item.quantity) || 1,
-                unit_price: Number(item.price) || 0,
-            })),
+            contact: {
+                firstName: order.contact.firstName,
+                lastName: order.contact.lastName,
+                email: order.contact.email,
+                street: order.contact.street,
+                city: order.contact.city,
+                zip: order.contact.zip,
+            },
+            items: invoiceItems,
         };
         
         fetch(MAKE_WEBHOOK_URL, {
