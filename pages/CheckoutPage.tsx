@@ -113,7 +113,7 @@ const generateAndUploadInvoice = async (order: Omit<OrderDetails, 'invoiceUrl'>)
             doc.setFontSize(10);
             doc.text('Platební údaje:', margin, y);
             y += 5;
-            doc.text(`Číslo účtu: 1562224019/3030`, margin, y);
+            doc.text(`Číslo účtu: 3524601011/3030`, margin, y);
             y += 5;
             doc.text(`Variabilní symbol: ${order.orderNumber}`, margin, y);
         }
@@ -202,10 +202,9 @@ const CheckoutPage: React.FC = () => {
         const today = new Date();
         const year = today.getFullYear();
         const month = (today.getMonth() + 1).toString().padStart(2, '0');
-        const day = today.getDate().toString().padStart(2, '0');
-        const datePrefix = `${year}${month}${day}`;
+        const datePrefix = `${year}${month}`; // Use YYYYMM as the prefix
 
-        const storageKey = `orderSequence_${datePrefix}`;
+        const storageKey = `orderSequence_${datePrefix}`; // The key is now monthly
         let sequence = 1;
 
         try {
@@ -243,7 +242,7 @@ const CheckoutPage: React.FC = () => {
                     <h2 style="border-bottom: 2px solid #8D7EEF; padding-bottom: 10px; margin-bottom: 20px;">Platební instrukce</h2>
                     <p>Pro dokončení objednávky prosím uhraďte částku <strong>${order.total} Kč</strong> na níže uvedený účet.</p>
                     <table style="width: 100%; max-width: 400px; margin: 20px auto; text-align: left;">
-                       <tr><td style="padding: 5px;">Číslo účtu:</td><td style="padding: 5px; font-weight: bold;">1562224019/3030</td></tr>
+                       <tr><td style="padding: 5px;">Číslo účtu:</td><td style="padding: 5px; font-weight: bold;">3524601011/3030</td></tr>
                        <tr><td style="padding: 5px;">Částka:</td><td style="padding: 5px; font-weight: bold;">${order.total} Kč</td></tr>
                        <tr><td style="padding: 5px;">Variabilní symbol:</td><td style="padding: 5px; font-weight: bold;">${vs}</td></tr>
                     </table>
@@ -449,7 +448,7 @@ const CheckoutPage: React.FC = () => {
                             <p>Pro dokončení objednávky, prosím, proveďte platbu. Všechny potřebné informace jsme Vám zaslali do emailu.</p>
                             <div>
                                 <p className="text-sm text-gray-500">Číslo účtu:</p>
-                                <p className="text-lg font-semibold text-dark-gray">1562224019/3030</p>
+                                <p className="text-lg font-semibold text-dark-gray">3524601011/3030</p>
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Částka:</p>
