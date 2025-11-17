@@ -5,7 +5,7 @@ import { CartItem } from '../types';
 import { PageWrapper } from '../components/layout/PageWrapper';
 import { FormInput } from '../components/forms/FormInput';
 import { RadioCard } from '../components/forms/RadioCard';
-import { DEJAVU_SANS_BASE64 } from '../constants';
+import { MAKE_WEBHOOK_URL } from '../constants';
 
 interface OrderDetails {
     contact: { [key: string]: string };
@@ -18,120 +18,7 @@ interface OrderDetails {
     shippingCost: number;
     paymentCost: number;
     orderNumber: string;
-    invoiceUrl?: string | null;
 }
-
-const generateAndUploadInvoice = async (order: Omit<OrderDetails, 'invoiceUrl'>): Promise<string | null> => {
-    try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-
-        // Add the font to jsPDF's virtual file system
-        doc.addFileToVFS('DejaVuSans.ttf', DEJAVU_SANS_BASE64);
-        doc.addFont('DejaVuSans.ttf', 'DejaVuSans', 'normal');
-        doc.setFont('DejaVuSans');
-
-        // --- Document Content ---
-        let y = 20;
-        const margin = 15;
-        const pageWidth = doc.internal.pageSize.getWidth();
-
-        doc.setFontSize(22);
-        doc.text('Faktura - Daňový doklad', pageWidth / 2, y, { align: 'center' });
-        y += 8;
-        doc.setFontSize(10);
-        doc.text(`Číslo objednávky: ${order.orderNumber}`, pageWidth / 2, y, { align: 'center' });
-        y += 15;
-
-        doc.setFontSize(10);
-        const supplierX = margin;
-        const customerX = pageWidth / 2 + 10;
-        
-        doc.setFont('DejaVuSans', 'normal');
-        doc.text('Dodavatel:', supplierX, y);
-        doc.setFontSize(12);
-        doc.text('Natálie Väterová', supplierX, y + 5);
-        doc.setFontSize(10);
-        doc.text('Dlouhý Most 374', supplierX, y + 10);
-        doc.text('46312, Dlouhý Most', supplierX, y + 15);
-        doc.text(`IČO: 01764365`, supplierX, y + 20);
-        
-        doc.setFont('DejaVuSans', 'normal');
-        doc.text('Odběratel:', customerX, y);
-        doc.setFontSize(12);
-        doc.text(`${order.contact.firstName} ${order.contact.lastName}`, customerX, y + 5);
-        doc.setFontSize(10);
-        doc.text(order.contact.street, customerX, y + 10);
-        doc.text(`${order.contact.zip} ${order.contact.city}`, customerX, y + 15);
-        doc.text(`Email: ${order.contact.email}`, customerX, y + 20);
-        
-        y += 35;
-        
-        const today = new Date().toLocaleDateString('cs-CZ');
-        doc.text(`Datum vystavení: ${today}`, margin, y);
-        doc.text(`Datum splatnosti: ${today}`, margin, y + 5);
-        y += 15;
-
-        const tableHeaders = ['Položka', 'Množství', 'Cena/ks', 'Celkem'];
-        const tableData = order.items.map(item => [
-            `${item.product.name} ${item.variant ? `(${item.variant.name})` : ''}`,
-            item.quantity.toString(),
-            `${item.price} Kč`,
-            `${item.price * item.quantity} Kč`
-        ]);
-        
-        (doc as any).autoTable({
-            startY: y,
-            head: [tableHeaders],
-            body: tableData,
-            theme: 'striped',
-            styles: { font: 'DejaVuSans', fontStyle: 'normal' },
-            headStyles: { fillColor: [234, 92, 157] },
-        });
-        
-        y = (doc as any).lastAutoTable.finalY + 15;
-
-        doc.setFontSize(12);
-        doc.text(`Mezisoučet:`, pageWidth - margin - 30, y, { align: 'left' });
-        doc.text(`${order.subtotal} Kč`, pageWidth - margin, y, { align: 'right' });
-        y += 7;
-        doc.text(`Doprava:`, pageWidth - margin - 30, y, { align: 'left' });
-        doc.text(`${order.shippingCost} Kč`, pageWidth - margin, y, { align: 'right' });
-        y += 7;
-        doc.text(`Platba:`, pageWidth - margin - 30, y, { align: 'left' });
-        doc.text(`${order.paymentCost} Kč`, pageWidth - margin, y, { align: 'right' });
-        y += 7;
-        doc.setLineWidth(0.5);
-        doc.line(pageWidth - margin - 40, y, pageWidth - margin, y);
-        y += 7;
-        doc.setFontSize(14);
-        doc.text(`Celkem k úhradě:`, pageWidth - margin - 30, y, { align: 'left' });
-        doc.text(`${order.total} Kč`, pageWidth - margin, y, { align: 'right' });
-        y += 15;
-
-        if (order.payment === 'prevodem') {
-            doc.setFontSize(10);
-            doc.text('Platební údaje:', margin, y);
-            y += 5;
-            doc.text(`Číslo účtu: 3524601011/3030`, margin, y);
-            y += 5;
-            doc.text(`Variabilní symbol: ${order.orderNumber}`, margin, y);
-        }
-        
-        // --- Upload to Uploadcare ---
-        const pdfBlob = doc.output('blob');
-        const pdfFile = new File([pdfBlob], `faktura-${order.orderNumber}.pdf`, { type: 'application/pdf' });
-
-        const fileInfo = await window.uploadcare.uploadFile(pdfFile);
-        return fileInfo.cdnUrl;
-
-    } catch (error) {
-        console.error("Failed to generate or upload invoice PDF:", error);
-        // Ensure the function returns null on failure so the calling function can handle it.
-        return null; 
-    }
-};
-
 
 const CheckoutPage: React.FC = () => {
     const { state, dispatch } = useCart();
@@ -202,9 +89,9 @@ const CheckoutPage: React.FC = () => {
         const today = new Date();
         const year = today.getFullYear();
         const month = (today.getMonth() + 1).toString().padStart(2, '0');
-        const datePrefix = `${year}${month}`; // Use YYYYMM as the prefix
+        const datePrefix = `${year}${month}`;
 
-        const storageKey = `orderSequence_${datePrefix}`; // The key is now monthly
+        const storageKey = `orderSequence_${datePrefix}`;
         let sequence = 1;
 
         try {
@@ -223,19 +110,9 @@ const CheckoutPage: React.FC = () => {
 
     const sendEmailNotifications = async (order: OrderDetails) => {
         const vs = order.orderNumber;
+        const invoiceNoticeHtml = `<p style="margin-top:20px; color: #555; background-color: #f0f0f0; padding: 10px; border-radius: 5px;"><strong>Upozornění:</strong> Fakturu (daňový doklad) Vám zašleme v nejbližší době v samostatném e-mailu.</p>`;
+        
         let paymentDetailsHtml = '';
-        
-        let invoiceHtml = '';
-        if (order.invoiceUrl) {
-            invoiceHtml = `<p style="margin-top:20px;">
-                <a href="${order.invoiceUrl}" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">
-                    Stáhnout fakturu (PDF)
-                </a>
-            </p>`;
-        } else {
-            invoiceHtml = `<p style="margin-top:20px; color: #D8000C; background-color: #FFD2D2; padding: 10px; border-radius: 5px;"><strong>Upozornění:</strong> Fakturu se nepodařilo automaticky vygenerovat. Bude Vám zaslána dodatečně.</p>`;
-        }
-        
         if (order.payment === 'prevodem') {
             paymentDetailsHtml = `
                 <div style="margin-top: 30px; padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
@@ -281,12 +158,12 @@ const CheckoutPage: React.FC = () => {
             payment_cost: order.paymentCost,
             total: order.total,
             photos_confirmation_html: photosConfirmationHtml,
-            payment_details_html: paymentDetailsHtml + invoiceHtml,
+            payment_details_html: paymentDetailsHtml + invoiceNoticeHtml,
             shipping_method: shippingMethodMap[order.shipping],
             shipping_address_html: customerShippingAddressHtml,
         };
         
-        const ownerPhotosHtml = order.items
+         const ownerPhotosHtml = order.items
             .filter(item => item.photos && item.photos.length > 0)
             .map(item => {
                 const photoListHtml = `<ol style="margin-top: 10px; padding-left: 20px; font-size: 13px; color: #555; line-height: 1.6;">` +
@@ -320,7 +197,7 @@ const CheckoutPage: React.FC = () => {
                 </p>
              </div>`
             : '';
-
+        
         let ownerShippingDetailsHtml = `<h2 style="border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 20px;">Doručovací údaje</h2>`;
         ownerShippingDetailsHtml += `<p><strong>Způsob dopravy:</strong> ${shippingMethodMap[order.shipping]}</p>`;
 
@@ -360,11 +237,42 @@ const CheckoutPage: React.FC = () => {
                 </div>`,
             photos_html: ownerPhotosSectionHtml,
             additional_info_html: additionalInfoHtml,
-            invoice_html: invoiceHtml,
+            invoice_html: invoiceNoticeHtml,
         };
-
+        
+        // This is a failsafe. We must send owner email first. If customer email fails, the order is still recorded.
         await window.emailjs.send('service_2pkoish', 'template_8ax2a2w', ownerParams);
         await window.emailjs.send('service_2pkoish', 'template_1v2vxgh', customerParams);
+    };
+    
+    const triggerMakeWebhook = (order: OrderDetails) => {
+        // This function sends data to Make.com. It's "fire and forget".
+        // A failure here should not block the user or show an error, as their order is already confirmed.
+        // It should be logged for debugging purposes.
+        if (!MAKE_WEBHOOK_URL) {
+            console.warn("Make.com Webhook URL is not configured. Skipping invoice generation.");
+            return;
+        }
+
+        const payload = {
+            ...order,
+            items: order.items.map(item => ({
+                ...item,
+                // Ensure price and quantity are numbers for Fakturoid
+                price: Number(item.price) || 0,
+                quantity: Number(item.quantity) || 1,
+                // Simplify product data to avoid nesting issues
+                product: { name: item.product.name, variant: item.variant?.name }
+            })),
+        };
+        
+        fetch(MAKE_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).catch(error => {
+            console.error("Failed to send data to Make.com webhook:", error);
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -390,7 +298,7 @@ const CheckoutPage: React.FC = () => {
             
             const orderNumber = generateOrderNumber();
             
-            const orderDetails: Omit<OrderDetails, 'invoiceUrl'> = {
+            const orderDetails: OrderDetails = {
                 contact: data as { [key: string]: string },
                 shipping: shippingMethod!,
                 payment: paymentMethod!,
@@ -403,12 +311,10 @@ const CheckoutPage: React.FC = () => {
                 orderNumber: orderNumber
             };
             
-            const invoiceUrl = await generateAndUploadInvoice(orderDetails);
-            const finalOrderDetails = { ...orderDetails, invoiceUrl };
-            
             try {
-                await sendEmailNotifications(finalOrderDetails);
-                setSubmittedOrder(finalOrderDetails);
+                await sendEmailNotifications(orderDetails);
+                triggerMakeWebhook(orderDetails);
+                setSubmittedOrder(orderDetails);
                 dispatch({ type: 'CLEAR_CART' });
             } catch (error: any) {
                 console.error("Failed to send emails:", error);
@@ -420,13 +326,9 @@ const CheckoutPage: React.FC = () => {
     };
     
     if (submittedOrder) {
-        const invoiceNotice = submittedOrder.invoiceUrl ? (
-            <a href={submittedOrder.invoiceUrl} target="_blank" rel="noopener noreferrer" className="mt-6 inline-block bg-green-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:opacity-90">
-                Stáhnout fakturu (PDF)
-            </a>
-        ) : (
+        const invoiceNotice = (
             <div className="mt-4 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700">
-                <p><strong>Upozornění:</strong> Fakturu se nepodařilo automaticky vygenerovat. Bude Vám zaslána dodatečně.</p>
+                <p><strong>Upozornění:</strong> Fakturu (daňový doklad) Vám zašleme v nejbližší době v samostatném e-mailu.</p>
             </div>
         );
 
