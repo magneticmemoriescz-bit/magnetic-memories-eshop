@@ -241,8 +241,8 @@ const CheckoutPage: React.FC = () => {
         };
         
         // This is a failsafe. We must send owner email first. If customer email fails, the order is still recorded.
-        await window.emailjs.send('service_2pkoish', 'template_8ax2a2w', ownerParams);
-        await window.emailjs.send('service_2pkoish', 'template_1v2vxgh', customerParams);
+        await window.emailjs.send('service_8dmx38z', 'template_8ax2a2w', ownerParams);
+        await window.emailjs.send('service_8dmx38z', 'template_1v2vxgh', customerParams);
     };
     
     const triggerMakeWebhook = (order: OrderDetails) => {
