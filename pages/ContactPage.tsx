@@ -16,7 +16,7 @@ const ContactPage: React.FC = () => {
             return;
         }
 
-        window.emailjs.sendForm('service_2pkoish', 'template_ajmxwjd', formRef.current)
+        window.emailjs.sendForm('service_8dmx38z', 'template_ajmxwjd', formRef.current)
             .then(() => {
                 setStatus('success');
             }, (error: any) => {
