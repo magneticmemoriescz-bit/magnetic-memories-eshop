@@ -152,13 +152,15 @@ const CheckoutPage: React.FC = () => {
             customerShippingAddressHtml = `<p><strong>Výdejní místo:</strong> ${order.packetaPoint.name}, ${order.packetaPoint.street}, ${order.packetaPoint.city}</p><p><strong>Fakturační adresa:</strong><br>${order.contact.street}<br>${order.contact.zip} ${order.contact.city}</p>`;
         }
         
+        // Params for Customer Email (Auto-Reply)
+        // Corresponds to template_1v2vxgh
         const customerParams = {
             subject_line: `Potvrzení objednávky č. ${order.orderNumber}`,
             to_email: order.contact.email,
             customer_email: order.contact.email,
             email: order.contact.email,
             to_name: `${order.contact.firstName} ${order.contact.lastName}`,
-            reply_to: order.contact.email,
+            reply_to: 'magnetic.memories@magnetify.cz', // Customer replies to you
             order_number: order.orderNumber,
             first_name: order.contact.firstName,
             items_html: itemsHtml,
@@ -226,9 +228,14 @@ const CheckoutPage: React.FC = () => {
                                         ${order.contact.zip} ${order.contact.city}
                                       </div>`;
 
+        // Params for Owner Email (Order Confirmation)
+        // Corresponds to template_8ax2a2w
+        // We include 'email' and 'to_email' even if the template has a hardcoded 'To' address, just to be safe.
         const ownerParams = {
             subject_line: `Nová objednávka č. ${order.orderNumber}`,
-            email: 'magnetic.memories@magnetify.cz',
+            email: 'magnetic.memories@magnetify.cz', 
+            to_email: 'magnetic.memories@magnetify.cz',
+            reply_to: order.contact.email, // You reply to the customer
             order_number: order.orderNumber,
             customer_name: `${order.contact.firstName} ${order.contact.lastName}`,
             customer_email: order.contact.email,
@@ -250,13 +257,23 @@ const CheckoutPage: React.FC = () => {
             invoice_html: invoiceNoticeHtml,
         };
         
-        // This is a failsafe. We must send owner email first. If customer email fails, the order is still recorded.
+        // Try sending Owner email (template_8ax2a2w = Order Confirmation)
         try {
+            console.log("Sending owner email to magnetic.memories@magnetify.cz...");
             await window.emailjs.send('service_8dmx38z', 'template_8ax2a2w', ownerParams);
+            console.log("Owner email sent.");
         } catch (e) {
-            console.warn('Failed to send owner email notification', e);
+            console.error('Failed to send owner email notification', e);
         }
-        await window.emailjs.send('service_8dmx38z', 'template_1v2vxgh', customerParams);
+
+        // Send Customer email (template_1v2vxgh = Auto-Reply Magnetic Memories)
+        try {
+            console.log(`Sending customer email to ${order.contact.email}...`);
+            await window.emailjs.send('service_8dmx38z', 'template_1v2vxgh', customerParams);
+            console.log("Customer email sent.");
+        } catch (e) {
+             console.error('Failed to send customer email notification', e);
+        }
     };
     
     const triggerMakeWebhook = (order: OrderDetails) => {
