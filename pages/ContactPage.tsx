@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 
 const ContactPage: React.FC = () => {
@@ -16,6 +17,7 @@ const ContactPage: React.FC = () => {
             return;
         }
 
+        // ID šablony: template_ajmxwjd (Contact Us Magnetic Memories) - Dle screenshotu
         window.emailjs.sendForm('service_8dmx38z', 'template_ajmxwjd', formRef.current)
             .then(() => {
                 setStatus('success');
