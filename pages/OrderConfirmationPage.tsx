@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useLocation, Link, Navigate } from 'react-router-dom';
 import { PageWrapper } from '../components/layout/PageWrapper';
@@ -25,9 +24,8 @@ const OrderConfirmationPage: React.FC = () => {
 
     useEffect(() => {
         if (order) {
-            // Google Ads / GA4 Purchase Event
-            // This triggers the 'purchase' event for Google Analytics and Ads conversion tracking
             if (typeof window.gtag === 'function') {
+                // 1. GA4 Purchase Event (Standard)
                 window.gtag('event', 'purchase', {
                     transaction_id: order.orderNumber,
                     value: order.total,
@@ -40,6 +38,14 @@ const OrderConfirmationPage: React.FC = () => {
                         price: item.price,
                         quantity: item.quantity
                     }))
+                });
+
+                // 2. Google Ads Conversion Event (Specific Label)
+                window.gtag('event', 'conversion', {
+                    'send_to': 'AW-17736455369/-ppHCPrL-sIbEMmps4lC',
+                    'value': order.total,
+                    'currency': 'CZK',
+                    'transaction_id': order.orderNumber
                 });
             }
         }
