@@ -1,5 +1,4 @@
-import React from 'react';
-import { Helmet } from 'react-helmet-async';
+import React, { useEffect } from 'react';
 
 interface SeoProps {
   title: string;
@@ -23,58 +22,74 @@ export const Seo: React.FC<SeoProps> = ({
   const siteName = 'Magnetic Memories';
   const fullTitle = `${title} | ${siteName}`;
 
-  // Structured Data (JSON-LD) for Google Rich Snippets
-  const structuredData = type === 'product' && price ? {
-    "@context": "https://schema.org/",
-    "@type": "Product",
-    "name": title,
-    "image": [imageUrl],
-    "description": description,
-    "brand": {
-      "@type": "Brand",
-      "name": siteName
-    },
-    "offers": {
-      "@type": "Offer",
-      "url": url,
-      "priceCurrency": currency,
-      "price": price,
-      "availability": "https://schema.org/InStock",
-      "itemCondition": "https://schema.org/NewCondition"
+  useEffect(() => {
+    // Update Title
+    document.title = fullTitle;
+
+    // Helper to update or create meta tag
+    const updateMeta = (name: string, content: string, attribute: string = 'name') => {
+        let element = document.querySelector(`meta[${attribute}="${name}"]`);
+        if (!element) {
+            element = document.createElement('meta');
+            element.setAttribute(attribute, name);
+            document.head.appendChild(element);
+        }
+        element.setAttribute('content', content);
+    };
+
+    // Standard Meta
+    updateMeta('description', description);
+
+    // Open Graph
+    updateMeta('og:type', type, 'property');
+    updateMeta('og:url', url, 'property');
+    updateMeta('og:title', fullTitle, 'property');
+    updateMeta('og:description', description, 'property');
+    updateMeta('og:image', imageUrl, 'property');
+    updateMeta('og:site_name', siteName, 'property');
+
+    // Twitter
+    updateMeta('twitter:card', 'summary_large_image');
+    updateMeta('twitter:title', fullTitle);
+    updateMeta('twitter:description', description);
+    updateMeta('twitter:image', imageUrl);
+
+    // JSON-LD Structured Data
+    const structuredData = type === 'product' && price ? {
+        "@context": "https://schema.org/",
+        "@type": "Product",
+        "name": title,
+        "image": [imageUrl],
+        "description": description,
+        "brand": {
+        "@type": "Brand",
+        "name": siteName
+        },
+        "offers": {
+        "@type": "Offer",
+        "url": url,
+        "priceCurrency": currency,
+        "price": price,
+        "availability": "https://schema.org/InStock",
+        "itemCondition": "https://schema.org/NewCondition"
+        }
+    } : {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": siteName,
+        "url": "https://www.magnetify.cz",
+        "logo": "https://i.imgur.com/gkmFoKx.png"
+    };
+
+    let script = document.querySelector('script[type="application/ld+json"]');
+    if (!script) {
+        script = document.createElement('script');
+        script.setAttribute('type', 'application/ld+json');
+        document.head.appendChild(script);
     }
-  } : {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": siteName,
-    "url": "https://www.magnetify.cz",
-    "logo": "https://i.imgur.com/gkmFoKx.png"
-  };
+    script.textContent = JSON.stringify(structuredData);
 
-  return (
-    <Helmet>
-      {/* Standard Metadata */}
-      <title>{fullTitle}</title>
-      <meta name="description" content={description} />
-      <link rel="canonical" href={url} />
+  }, [fullTitle, description, imageUrl, url, type, price, currency]);
 
-      {/* Open Graph / Facebook */}
-      <meta property="og:type" content={type} />
-      <meta property="og:url" content={url} />
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
-      <meta property="og:image" content={imageUrl} />
-      <meta property="og:site_name" content={siteName} />
-
-      {/* Twitter */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={imageUrl} />
-
-      {/* Structured Data */}
-      <script type="application/ld+json">
-        {JSON.stringify(structuredData)}
-      </script>
-    </Helmet>
-  );
+  return null;
 };
