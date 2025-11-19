@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, Link, Navigate } from 'react-router-dom';
 import { PageWrapper } from '../components/layout/PageWrapper';
 import { CartItem } from '../types';
 import { formatPrice } from '../utils/format';
+import { Seo } from '../components/Seo';
 
 interface OrderDetails {
     contact: { [key: string]: string };
@@ -22,6 +23,28 @@ const OrderConfirmationPage: React.FC = () => {
     const location = useLocation();
     const order = location.state?.order as OrderDetails | undefined;
 
+    useEffect(() => {
+        if (order) {
+            // Google Ads / GA4 Purchase Event
+            // This triggers the 'purchase' event for Google Analytics and Ads conversion tracking
+            if (typeof window.gtag === 'function') {
+                window.gtag('event', 'purchase', {
+                    transaction_id: order.orderNumber,
+                    value: order.total,
+                    currency: 'CZK',
+                    shipping: order.shippingCost,
+                    items: order.items.map(item => ({
+                        item_id: item.product.id,
+                        item_name: item.product.name,
+                        variant: item.variant?.name,
+                        price: item.price,
+                        quantity: item.quantity
+                    }))
+                });
+            }
+        }
+    }, [order]);
+
     if (!order) {
         // Redirect to home if there is no order data, e.g., direct access to URL
         return <Navigate to="/" replace />;
@@ -29,6 +52,7 @@ const OrderConfirmationPage: React.FC = () => {
 
     return (
         <PageWrapper title="Objednávka dokončena!">
+            <Seo title="Děkujeme za objednávku" description="Vaše objednávka byla úspěšně přijata." />
             <div className="text-center py-10 px-6 bg-green-50 rounded-lg">
                 <svg className="mx-auto h-16 w-16 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
