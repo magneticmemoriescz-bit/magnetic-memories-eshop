@@ -4,6 +4,7 @@ import { useProducts } from '../context/ProductContext';
 import { HOW_IT_WORKS_STEPS } from '../constants';
 import { ProductCard } from '../components/ProductCard';
 import { Logo } from '../components/Logo';
+import { Seo } from '../components/Seo';
 
 const buttonStyles = [
     { gradient: 'bg-gradient-to-r from-brand-cyan to-brand-purple', focusRing: 'focus:ring-brand-purple/50' },
@@ -17,6 +18,10 @@ const HomePage: React.FC = () => {
 
     return (
         <>
+            <Seo 
+                title="Magnetky z vlastních fotek | Originální dárky" 
+                description="Vytvořte si jedinečné fotomagnety, kalendáře nebo svatební oznámení. Rychlá výroba, špičková kvalita a radost na každé lednici."
+            />
             {/* Hero Section */}
             <section className="relative bg-white flex items-center justify-center min-h-screen text-white p-4 sm:p-6 lg:p-8">
                 <div className="absolute inset-0">
