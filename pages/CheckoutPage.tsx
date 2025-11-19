@@ -116,6 +116,11 @@ const CheckoutPage: React.FC = () => {
     };
 
     const sendEmailNotifications = async (order: OrderDetails) => {
+        // NOTE: Switched back to SMTP Service (service_8dmx38z) per user request to use professional email.
+        // REQUIRES: Valid SPF records in Active24 DNS for 'magnetify.cz'.
+        const EMAIL_SERVICE_ID = 'service_8dmx38z'; 
+        const ADMIN_EMAIL = 'objednavky@magnetify.cz';
+
         const vs = order.orderNumber;
         const invoiceNoticeHtml = `<p style="margin-top:20px; color: #555;">Fakturu (daňový doklad) Vám zašleme v samostatném e-mailu.</p>`;
         
@@ -153,7 +158,6 @@ const CheckoutPage: React.FC = () => {
         }
         
         // Params for Customer Email (Auto-Reply)
-        // Corresponds to template_1v2vxgh
         const customerParams = {
             subject_line: `Potvrzení objednávky č. ${order.orderNumber}`,
             to_email: order.contact.email,
@@ -161,7 +165,7 @@ const CheckoutPage: React.FC = () => {
             email: order.contact.email,
             to_name: `${order.contact.firstName} ${order.contact.lastName}`,
             from_name: 'Magnetic Memories',
-            reply_to: 'magnetic.memories@magnetify.cz', // Customer replies to you
+            reply_to: ADMIN_EMAIL, // Replies go to objednavky@magnetify.cz
             order_number: order.orderNumber,
             first_name: order.contact.firstName,
             items_html: itemsHtml,
@@ -230,13 +234,12 @@ const CheckoutPage: React.FC = () => {
                                       </div>`;
 
         // Params for Owner Email (Order Confirmation)
-        // Corresponds to template_8ax2a2w
         const ownerParams = {
             subject_line: `Nová objednávka č. ${order.orderNumber}`,
-            email: 'magnetic.memories@magnetify.cz', 
-            to_email: 'magnetic.memories@magnetify.cz',
-            from_name: 'Automatický systém', // Helps prevent spam filtering by not appearing as self-sent
-            reply_to: order.contact.email, // You reply to the customer
+            email: ADMIN_EMAIL, 
+            to_email: ADMIN_EMAIL,
+            from_name: 'E-shop System',
+            reply_to: order.contact.email, 
             order_number: order.orderNumber,
             customer_name: `${order.contact.firstName} ${order.contact.lastName}`,
             customer_email: order.contact.email,
@@ -258,36 +261,29 @@ const CheckoutPage: React.FC = () => {
             invoice_html: invoiceNoticeHtml,
         };
         
-        // SERVICE ID: service_8dmx38z (Checked and confirmed)
-        // TEMPLATE IDs: template_8ax2a2w (Owner), template_1v2vxgh (Customer)
-        
         try {
-            console.log("Sending owner email to magnetic.memories@magnetify.cz...");
-            await window.emailjs.send('service_8dmx38z', 'template_8ax2a2w', ownerParams);
-            console.log("Owner email sent successfully (Status OK). If not in inbox, check SPAM or SMTP settings.");
+            console.log(`Sending owner email via ${EMAIL_SERVICE_ID}...`);
+            await window.emailjs.send(EMAIL_SERVICE_ID, 'template_8ax2a2w', ownerParams);
+            console.log("Owner email sent successfully.");
         } catch (e: any) {
             console.error('FAILED to send owner email notification:', e);
-            // We do NOT throw here, because we want to try sending the customer email even if owner email fails
         }
 
         try {
-            console.log(`Sending customer email to ${order.contact.email}...`);
-            await window.emailjs.send('service_8dmx38z', 'template_1v2vxgh', customerParams);
+            console.log(`Sending customer email via ${EMAIL_SERVICE_ID}...`);
+            await window.emailjs.send(EMAIL_SERVICE_ID, 'template_1v2vxgh', customerParams);
             console.log("Customer email sent successfully.");
         } catch (e: any) {
              console.error('FAILED to send customer email notification:', e);
-             // If this fails, we should probably alert the user, but the order is technically "done" in the cart.
-             // For now, we log it. The user will see the success screen.
         }
     };
     
-    const triggerMakeWebhook = (order: OrderDetails) => {
+    const triggerMakeWebhook = async (order: OrderDetails) => {
         if (!MAKE_WEBHOOK_URL) {
             console.warn("Make.com Webhook URL is not configured. Skipping invoice generation.");
             return;
         }
 
-        // Create a lean, clean payload for Fakturoid
         const invoiceItems = order.items.map(item => ({
             name: `${item.product.name}${item.variant ? ` - ${item.variant.name}` : ''}`,
             quantity: Number(item.quantity) || 1,
@@ -323,10 +319,12 @@ const CheckoutPage: React.FC = () => {
             items: invoiceItems,
         };
         
-        fetch(MAKE_WEBHOOK_URL, {
+        // Use keepalive to ensure request completes even if page navigates away
+        return fetch(MAKE_WEBHOOK_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            keepalive: true
         }).catch(error => {
             console.error("Failed to send data to Make.com webhook:", error);
         });
@@ -372,7 +370,9 @@ const CheckoutPage: React.FC = () => {
             
             try {
                 await sendEmailNotifications(orderDetails);
-                triggerMakeWebhook(orderDetails);
+                // Await the webhook trigger to ensure data is sent before navigation
+                await triggerMakeWebhook(orderDetails);
+                
                 dispatch({ type: 'CLEAR_CART' });
                 navigate('/dekujeme', { state: { order: orderDetails } });
             } catch (error: any) {
