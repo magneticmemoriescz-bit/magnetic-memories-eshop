@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext';
 import { ProductVariant, CartItem } from '../types';
 import { FileUpload, UploadedFilesInfo } from '../components/FileUpload';
 import { formatPrice } from '../utils/format';
+import { Seo } from '../components/Seo';
 
 const ProductDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -106,6 +107,13 @@ const ProductDetailPage: React.FC = () => {
 
     return (
         <div className="bg-white">
+            <Seo 
+                title={product.name}
+                description={product.shortDescription}
+                imageUrl={displayImage}
+                type="product"
+                price={displayPrice}
+            />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 lg:items-start">
                     {/* Image gallery */}
