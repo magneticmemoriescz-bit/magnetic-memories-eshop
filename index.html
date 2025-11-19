@@ -1,10 +1,14 @@
+
 <!DOCTYPE html>
 <html lang="cs">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Magnetky z vlastních fotek | Originální dárek | MagneticMemories.cz</title>
-    <meta name="description" content="Proměňte své fotografie v jedinečné magnetické vzpomínky. Ideální jako originální dárek pro vaše blízké. Snadná online objednávka a rychlé dodání.">
+    
+    <!-- Base SEO defaults (will be overwritten by Helmet) -->
+    <title>Magnetky z vlastních fotek | MagneticMemories.cz</title>
+    <meta name="description" content="Proměňte své fotografie v jedinečné magnetické vzpomínky.">
+
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-KSKHR7NNX3"></script>
     <script>
@@ -14,6 +18,7 @@
 
       gtag('config', 'G-KSKHR7NNX3');
     </script>
+
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='heartGradient' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23EA5C9D' /%3E%3Cstop offset='100%25' style='stop-color:%238D7EEF' /%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23heartGradient)' d='M10,30 A20,20 0,0,1 50,30 A20,20 0,0,1 90,30 Q90,60 50,90 Q10,60 10,30 z'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -54,14 +59,17 @@
 <script type="importmap">
 {
   "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "react-router-dom": "https://esm.sh/react-router-dom@6.23.1?external=react,react-dom",
+    "react-helmet-async": "https://esm.sh/react-helmet-async@2.0.5?external=react,react-dom",
+    "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.5"
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body class="bg-light-gray text-dark-gray">
     <div id="root"></div>
