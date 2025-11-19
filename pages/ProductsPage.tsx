@@ -1,6 +1,7 @@
 import React from 'react';
 import { useProducts } from '../context/ProductContext';
 import { ProductCard } from '../components/ProductCard';
+import { Seo } from '../components/Seo';
 
 const buttonStyles = [
     { gradient: 'bg-gradient-to-r from-brand-cyan to-brand-purple', focusRing: 'focus:ring-brand-purple/50' },
@@ -12,6 +13,10 @@ const ProductsPage: React.FC = () => {
     const { products } = useProducts();
     return (
         <div className="bg-white">
+            <Seo 
+                title="Naše produkty - Fotomagnety, Kalendáře, Oznámení" 
+                description="Vyberte si z naší nabídky magnetických produktů. Fotomagnety, roční kalendáře nebo originální svatební oznámení."
+            />
             <div className="max-w-7xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8">
                 <h1 className="text-4xl font-extrabold tracking-tight text-dark-gray text-center">Všechny produkty</h1>
                 {/* FIX: Changed from grid to a centered flex layout */}
