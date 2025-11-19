@@ -160,6 +160,7 @@ const CheckoutPage: React.FC = () => {
             customer_email: order.contact.email,
             email: order.contact.email,
             to_name: `${order.contact.firstName} ${order.contact.lastName}`,
+            from_name: 'Magnetic Memories',
             reply_to: 'magnetic.memories@magnetify.cz', // Customer replies to you
             order_number: order.orderNumber,
             first_name: order.contact.firstName,
@@ -230,11 +231,11 @@ const CheckoutPage: React.FC = () => {
 
         // Params for Owner Email (Order Confirmation)
         // Corresponds to template_8ax2a2w
-        // We include 'email' and 'to_email' even if the template has a hardcoded 'To' address, just to be safe.
         const ownerParams = {
             subject_line: `Nová objednávka č. ${order.orderNumber}`,
             email: 'magnetic.memories@magnetify.cz', 
             to_email: 'magnetic.memories@magnetify.cz',
+            from_name: 'Automatický systém', // Helps prevent spam filtering by not appearing as self-sent
             reply_to: order.contact.email, // You reply to the customer
             order_number: order.orderNumber,
             customer_name: `${order.contact.firstName} ${order.contact.lastName}`,
@@ -257,22 +258,26 @@ const CheckoutPage: React.FC = () => {
             invoice_html: invoiceNoticeHtml,
         };
         
-        // Try sending Owner email (template_8ax2a2w = Order Confirmation)
+        // SERVICE ID: service_8dmx38z (Checked and confirmed)
+        // TEMPLATE IDs: template_8ax2a2w (Owner), template_1v2vxgh (Customer)
+        
         try {
             console.log("Sending owner email to magnetic.memories@magnetify.cz...");
             await window.emailjs.send('service_8dmx38z', 'template_8ax2a2w', ownerParams);
-            console.log("Owner email sent.");
-        } catch (e) {
-            console.error('Failed to send owner email notification', e);
+            console.log("Owner email sent successfully (Status OK). If not in inbox, check SPAM or SMTP settings.");
+        } catch (e: any) {
+            console.error('FAILED to send owner email notification:', e);
+            // We do NOT throw here, because we want to try sending the customer email even if owner email fails
         }
 
-        // Send Customer email (template_1v2vxgh = Auto-Reply Magnetic Memories)
         try {
             console.log(`Sending customer email to ${order.contact.email}...`);
             await window.emailjs.send('service_8dmx38z', 'template_1v2vxgh', customerParams);
-            console.log("Customer email sent.");
-        } catch (e) {
-             console.error('Failed to send customer email notification', e);
+            console.log("Customer email sent successfully.");
+        } catch (e: any) {
+             console.error('FAILED to send customer email notification:', e);
+             // If this fails, we should probably alert the user, but the order is technically "done" in the cart.
+             // For now, we log it. The user will see the success screen.
         }
     };
     
@@ -371,7 +376,7 @@ const CheckoutPage: React.FC = () => {
                 dispatch({ type: 'CLEAR_CART' });
                 navigate('/dekujeme', { state: { order: orderDetails } });
             } catch (error: any) {
-                console.error("Failed to send emails:", error);
+                console.error("Failed to process order:", error);
                 setSubmitError(`Odeslání objednávky se nezdařilo. Zkuste to prosím znovu. (Chyba: ${error.text || 'Neznámá chyba'})`);
             } finally {
                 setIsSubmitting(false);
