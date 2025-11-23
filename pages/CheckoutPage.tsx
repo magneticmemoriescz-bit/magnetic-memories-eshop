@@ -228,8 +228,16 @@ const CheckoutPage: React.FC = () => {
 
         const ownerParams = {
             subject_line: `Nová objednávka č. ${order.orderNumber}`,
-            email: 'objednavky@magnetify.cz',
-            reply_to: order.contact.email, // When you reply, it goes to customer
+            // 'email' is usually mapped to 'To Email' in EmailJS template.
+            // We use the domain email here as the destination.
+            email: 'objednavky@magnetify.cz', 
+            // 'reply_to' must be the customer's email so you can reply to them.
+            reply_to: order.contact.email, 
+            // 'from_name' helps avoid spam filters by identifying the system
+            from_name: 'Magnetic Memories System',
+            // 'to_name' helps identify the recipient
+            to_name: 'Admin',
+            
             order_number: order.orderNumber,
             customer_name: `${order.contact.firstName} ${order.contact.lastName}`,
             customer_email: order.contact.email,
@@ -251,13 +259,13 @@ const CheckoutPage: React.FC = () => {
             invoice_html: invoiceNoticeHtml,
         };
         
-        // Using Gmail service (service_2pkoish) because it works more reliably without advanced DNS setup
+        // Using SMTP service (service_m6t8eve)
         try {
-            await window.emailjs.send('service_2pkoish', 'template_8ax2a2w', ownerParams);
+            await window.emailjs.send('service_m6t8eve', 'template_8ax2a2w', ownerParams);
         } catch (e) {
             console.warn('Failed to send owner email notification', e);
         }
-        await window.emailjs.send('service_2pkoish', 'template_1v2vxgh', customerParams);
+        await window.emailjs.send('service_m6t8eve', 'template_1v2vxgh', customerParams);
     };
     
     const triggerMakeWebhook = (order: OrderDetails) => {
