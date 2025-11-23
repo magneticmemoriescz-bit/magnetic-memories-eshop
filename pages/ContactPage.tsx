@@ -17,8 +17,8 @@ const ContactPage: React.FC = () => {
             return;
         }
 
-        // Using SMTP service (service_m6t8eve) as requested to use hosting email
-        window.emailjs.sendForm('service_m6t8eve', 'template_ajmxwjd', formRef.current)
+        // Using Gmail service (service_2pkoish) as requested
+        window.emailjs.sendForm('service_2pkoish', 'template_ajmxwjd', formRef.current)
             .then(() => {
                 setStatus('success');
             }, (error: any) => {
