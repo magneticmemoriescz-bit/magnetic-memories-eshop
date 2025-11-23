@@ -18,38 +18,44 @@ export const Seo: React.FC<SeoProps> = ({
   availability
 }) => {
   useEffect(() => {
-    // Update Title
+    // 1. Update Document Title
     document.title = title;
 
-    // Update Meta Tags helper
-    const updateMeta = (name: string, content: string) => {
-      let element = document.querySelector(`meta[name="${name}"]`);
-      if (!element) {
-        element = document.createElement('meta');
-        element.setAttribute('name', name);
-        document.head.appendChild(element);
-      }
-      element.setAttribute('content', content);
+    // 2. Helper to update meta tags
+    // Handles both 'name' (standard meta) and 'property' (OG tags) attributes
+    const setMetaTag = (attr: 'name' | 'property', key: string, content: string) => {
+        let element = document.querySelector(`meta[${attr}="${key}"]`);
+        if (!element) {
+            element = document.createElement('meta');
+            element.setAttribute(attr, key);
+            document.head.appendChild(element);
+        }
+        element.setAttribute('content', content);
     };
 
-    const updateOgMeta = (property: string, content: string) => {
-      let element = document.querySelector(`meta[property="${property}"]`);
-      if (!element) {
-        element = document.createElement('meta');
-        element.setAttribute('property', property);
-        document.head.appendChild(element);
-      }
-      element.setAttribute('content', content);
-    };
+    const currentUrl = window.location.href;
 
-    updateMeta('description', description);
-    updateOgMeta('og:title', title);
-    updateOgMeta('og:description', description);
-    updateOgMeta('og:image', image);
-    updateOgMeta('og:type', type);
-    updateOgMeta('og:url', window.location.href);
+    // 3. Standard SEO
+    setMetaTag('name', 'description', description);
 
-    // Structured Data (JSON-LD)
+    // 4. Open Graph (Facebook, LinkedIn, etc.)
+    setMetaTag('property', 'og:title', title);
+    setMetaTag('property', 'og:description', description);
+    setMetaTag('property', 'og:image', image);
+    setMetaTag('property', 'og:type', type);
+    setMetaTag('property', 'og:url', currentUrl);
+    setMetaTag('property', 'og:site_name', 'Magnetic Memories');
+    setMetaTag('property', 'og:locale', 'cs_CZ');
+
+    // 5. Twitter Card
+    setMetaTag('name', 'twitter:card', 'summary_large_image');
+    setMetaTag('name', 'twitter:title', title);
+    setMetaTag('name', 'twitter:description', description);
+    setMetaTag('name', 'twitter:image', image);
+    setMetaTag('name', 'twitter:domain', window.location.hostname);
+    setMetaTag('name', 'twitter:url', currentUrl);
+
+    // 6. Structured Data (JSON-LD)
     let script = document.querySelector('script[type="application/ld+json"]');
     if (!script) {
       script = document.createElement('script');
@@ -63,7 +69,7 @@ export const Seo: React.FC<SeoProps> = ({
       "name": title,
       "description": description,
       "image": image,
-      "url": window.location.href,
+      "url": currentUrl,
     };
 
     if (type === 'product' && price) {
