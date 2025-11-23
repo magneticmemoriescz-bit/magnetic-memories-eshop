@@ -259,13 +259,13 @@ const CheckoutPage: React.FC = () => {
             invoice_html: invoiceNoticeHtml,
         };
         
-        // Using SMTP service (service_m6t8eve)
+        // Using Gmail service (service_2pkoish) because it works more reliably without advanced DNS setup
         try {
-            await window.emailjs.send('service_m6t8eve', 'template_8ax2a2w', ownerParams);
+            await window.emailjs.send('service_2pkoish', 'template_8ax2a2w', ownerParams);
         } catch (e) {
             console.warn('Failed to send owner email notification', e);
         }
-        await window.emailjs.send('service_m6t8eve', 'template_1v2vxgh', customerParams);
+        await window.emailjs.send('service_2pkoish', 'template_1v2vxgh', customerParams);
     };
     
     const triggerMakeWebhook = (order: OrderDetails) => {
