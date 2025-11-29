@@ -280,8 +280,9 @@ const CheckoutPage: React.FC = () => {
             if (item.variant && item.variant.name) {
                 itemName += ` - ${item.variant.name}`;
             }
+            // CRITICAL FIX: Ensure item name is never empty for Make.com/Fakturoid validation
             if (!itemName || itemName.trim() === '') {
-                itemName = 'Produkt bez názvu';
+                itemName = 'Produkt';
             }
 
             return {
@@ -306,11 +307,13 @@ const CheckoutPage: React.FC = () => {
                 unit_price: Number(order.paymentCost),
             });
         }
+        
+        const fullName = `${order.contact.firstName} ${order.contact.lastName}`.trim();
 
         const payload = {
             orderNumber: order.orderNumber,
             contact: {
-                name: `${order.contact.firstName} ${order.contact.lastName}`.trim(), // Combined name for systems that require a single name field
+                name: fullName.length > 0 ? fullName : "Zákazník", // Fallback for name to avoid validation error
                 firstName: order.contact.firstName,
                 lastName: order.contact.lastName,
                 email: order.contact.email,
