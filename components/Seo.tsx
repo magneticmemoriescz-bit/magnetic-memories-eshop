@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 
 interface SeoProps {
@@ -22,47 +23,49 @@ export const Seo: React.FC<SeoProps> = ({
     document.title = title;
 
     // 2. Helper to update meta tags
-    // Handles both 'name' (standard meta) and 'property' (OG tags) attributes
-    const setMetaTag = (attr: 'name' | 'property', key: string, content: string) => {
-        let element = document.querySelector(`meta[${attr}="${key}"]`);
+    const updateMeta = (selectorAttr: string, selectorValue: string, content: string) => {
+        let element = document.querySelector(`meta[${selectorAttr}="${selectorValue}"]`);
         if (!element) {
             element = document.createElement('meta');
-            element.setAttribute(attr, key);
+            element.setAttribute(selectorAttr, selectorValue);
             document.head.appendChild(element);
         }
+        // Always update content
         element.setAttribute('content', content);
     };
 
     const currentUrl = window.location.href;
 
     // 3. Standard SEO
-    setMetaTag('name', 'description', description);
+    updateMeta('name', 'description', description);
 
     // 4. Open Graph (Facebook, LinkedIn, etc.)
-    setMetaTag('property', 'og:title', title);
-    setMetaTag('property', 'og:description', description);
-    setMetaTag('property', 'og:image', image);
-    setMetaTag('property', 'og:type', type);
-    setMetaTag('property', 'og:url', currentUrl);
-    setMetaTag('property', 'og:site_name', 'Magnetic Memories');
-    setMetaTag('property', 'og:locale', 'cs_CZ');
+    updateMeta('property', 'og:title', title);
+    updateMeta('property', 'og:description', description);
+    updateMeta('property', 'og:image', image);
+    updateMeta('property', 'og:type', type);
+    updateMeta('property', 'og:url', currentUrl);
+    updateMeta('property', 'og:site_name', 'Magnetic Memories');
+    updateMeta('property', 'og:locale', 'cs_CZ');
 
     // 5. Twitter Card
-    setMetaTag('name', 'twitter:card', 'summary_large_image');
-    setMetaTag('name', 'twitter:title', title);
-    setMetaTag('name', 'twitter:description', description);
-    setMetaTag('name', 'twitter:image', image);
-    setMetaTag('name', 'twitter:domain', window.location.hostname);
-    setMetaTag('name', 'twitter:url', currentUrl);
+    updateMeta('name', 'twitter:card', 'summary_large_image');
+    updateMeta('name', 'twitter:title', title);
+    updateMeta('name', 'twitter:description', description);
+    updateMeta('name', 'twitter:image', image);
+    updateMeta('name', 'twitter:url', currentUrl);
 
     // 6. Structured Data (JSON-LD)
-    let script = document.querySelector('script[type="application/ld+json"]');
-    if (!script) {
-      script = document.createElement('script');
-      script.setAttribute('type', 'application/ld+json');
-      document.head.appendChild(script);
+    // Remove existing script to prevent duplicates if navigating back and forth
+    const existingScript = document.querySelector('script[data-type="json-ld"]');
+    if (existingScript) {
+        existingScript.remove();
     }
 
+    const script = document.createElement('script');
+    script.setAttribute('type', 'application/ld+json');
+    script.setAttribute('data-type', 'json-ld');
+    
     const schemaData: any = {
       "@context": "https://schema.org",
       "@type": type === 'product' ? "Product" : "WebSite",
@@ -82,6 +85,15 @@ export const Seo: React.FC<SeoProps> = ({
     }
 
     script.textContent = JSON.stringify(schemaData);
+    document.head.appendChild(script);
+
+    // Cleanup function not strictly necessary for meta tags as we overwrite them, 
+    // but good for the script tag.
+    return () => {
+        if (document.head.contains(script)) {
+            document.head.removeChild(script);
+        }
+    };
 
   }, [title, description, image, type, price, availability]);
 
