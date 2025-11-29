@@ -34,6 +34,7 @@ const CheckoutPage: React.FC = () => {
         firstName: '',
         lastName: '',
         email: '',
+        phone: '',
         street: '',
         city: '',
         zip: '',
@@ -56,7 +57,7 @@ const CheckoutPage: React.FC = () => {
     const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
     const shippingCosts: { [key: string]: number } = {
-        'zasilkovna': 72,
+        'zasilkovna': 89,
         'posta': 119,
         'osobne': 0
     };
@@ -147,9 +148,9 @@ const CheckoutPage: React.FC = () => {
         
         const marketingConsentHtml = order.marketingConsent ? `<p style="margin-top: 10px; color: green;"><strong>Zákazník souhlasí se zveřejněním produktů pro reklamní účely.</strong></p>` : `<p style="margin-top: 10px; color: grey;">Zákazník nesouhlasí se zveřejněním produktů.</p>`;
 
-        let customerShippingAddressHtml = `<p><strong>Fakturační a doručovací adresa:</strong><br>${order.contact.firstName} ${order.contact.lastName}<br>${order.contact.street}<br>${order.contact.zip} ${order.contact.city}</p>`;
+        let customerShippingAddressHtml = `<p><strong>Fakturační a doručovací adresa:</strong><br>${order.contact.firstName} ${order.contact.lastName}<br>${order.contact.street}<br>${order.contact.zip} ${order.contact.city}<br>Tel: ${order.contact.phone}</p>`;
         if (order.shipping === 'zasilkovna' && order.packetaPoint) {
-            customerShippingAddressHtml = `<p><strong>Výdejní místo:</strong> ${order.packetaPoint.name}, ${order.packetaPoint.street}, ${order.packetaPoint.city}</p><p><strong>Fakturační adresa:</strong><br>${order.contact.street}<br>${order.contact.zip} ${order.contact.city}</p>`;
+            customerShippingAddressHtml = `<p><strong>Výdejní místo:</strong> ${order.packetaPoint.name}, ${order.packetaPoint.street}, ${order.packetaPoint.city}</p><p><strong>Fakturační adresa:</strong><br>${order.contact.street}<br>${order.contact.zip} ${order.contact.city}<br>Tel: ${order.contact.phone}</p>`;
         }
         
         const customerParams = {
@@ -223,7 +224,8 @@ const CheckoutPage: React.FC = () => {
                                         <strong>Fakturační adresa:</strong><br>
                                         ${order.contact.firstName} ${order.contact.lastName}<br>
                                         ${order.contact.street}<br>
-                                        ${order.contact.zip} ${order.contact.city}
+                                        ${order.contact.zip} ${order.contact.city}<br>
+                                        Tel: ${order.contact.phone}
                                       </div>`;
 
         const ownerParams = {
@@ -319,6 +321,7 @@ const CheckoutPage: React.FC = () => {
                 firstName: order.contact.firstName,
                 lastName: order.contact.lastName,
                 email: order.contact.email,
+                phone: order.contact.phone,
                 street: order.contact.street,
                 city: order.contact.city,
                 zip: order.contact.zip,
@@ -351,6 +354,7 @@ const CheckoutPage: React.FC = () => {
         if (!data.firstName) errors.firstName = 'Jméno je povinné.';
         if (!data.lastName) errors.lastName = 'Příjmení je povinné.';
         if (!data.email) errors.email = 'Email je povinný.';
+        if (!data.phone) errors.phone = 'Telefon je povinný.';
         if (!data.street) errors.street = 'Ulice je povinná.';
         if (!data.city) errors.city = 'Město je povinné.';
         if (!data.zip) errors.zip = 'PSČ je povinné.';
@@ -420,10 +424,9 @@ const CheckoutPage: React.FC = () => {
                         <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4">
                             <FormInput name="firstName" label="Křestní jméno" value={formData.firstName} onChange={handleFormChange} error={formErrors.firstName} required />
                             <FormInput name="lastName" label="Příjmení" value={formData.lastName} onChange={handleFormChange} error={formErrors.lastName} required />
+                            <FormInput name="email" label="Email" type="email" value={formData.email} onChange={handleFormChange} error={formErrors.email} required />
+                            <FormInput name="phone" label="Telefon" type="tel" value={formData.phone} onChange={handleFormChange} error={formErrors.phone} required />
                             <div className="sm:col-span-2">
-                                <FormInput name="email" label="Email" type="email" value={formData.email} onChange={handleFormChange} error={formErrors.email} required />
-                            </div>
-                             <div className="sm:col-span-2">
                                 <FormInput name="street" label="Ulice a č.p." value={formData.street} onChange={handleFormChange} error={formErrors.street} required />
                             </div>
                             <FormInput name="city" label="Město" value={formData.city} onChange={handleFormChange} error={formErrors.city} required />
