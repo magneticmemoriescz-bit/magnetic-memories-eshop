@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { CartItem } from '../types';
@@ -56,15 +56,28 @@ const CheckoutPage: React.FC = () => {
 
     const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
+    // Shipping costs configuration
     const shippingCosts: { [key: string]: number } = {
         'zasilkovna': 89,
         'posta': 119,
+        'doporucene': 77,
         'osobne': 0
     };
     const paymentCosts: { [key: string]: number } = {
         'prevodem': 0,
         'dobirka': 20
     };
+
+    // Only allow 'doporucene' if subtotal is less than 1000 CZK
+    const isDoporuceneAvailable = subtotal < 1000;
+
+    // Effect to reset shipping method if 'doporucene' is selected but no longer valid
+    useEffect(() => {
+        if (shippingMethod === 'doporucene' && !isDoporuceneAvailable) {
+            setShippingMethod(null);
+            setFormErrors(prev => ({ ...prev, shipping: 'Zvolený způsob dopravy již není dostupný pro tuto výši objednávky. Vyberte prosím jiný.' }));
+        }
+    }, [subtotal, shippingMethod, isDoporuceneAvailable]);
 
     const shippingCost = shippingMethod ? shippingCosts[shippingMethod] : 0;
     const paymentCost = paymentMethod ? paymentCosts[paymentMethod] : 0;
@@ -142,7 +155,7 @@ const CheckoutPage: React.FC = () => {
             </tr>`).join('');
         
         const photosConfirmationHtml = order.items.some(item => item.photos && item.photos.length > 0) ? `<p style="margin-top: 20px;">Vaše fotografie byly úspěšně přijaty a budou použity pro výrobu.</p>` : '';
-        const shippingMethodMap: {[key: string]: string} = { zasilkovna: 'Zásilkovna', posta: 'Česká pošta', osobne: 'Osobní odběr'};
+        const shippingMethodMap: {[key: string]: string} = { zasilkovna: 'Zásilkovna', posta: 'Česká pošta', doporucene: 'Česká pošta - Doporučené psaní', osobne: 'Osobní odběr'};
         const paymentMethodMap: {[key: string]: string} = { prevodem: 'Bankovním převodem', dobirka: 'Na dobírku'};
         const additionalInfoHtml = order.contact.additionalInfo ? `<h3 style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">Doplňující informace od zákazníka:</h3><p style="padding: 10px; background-color: #f9f9f9; border-radius: 8px;">${order.contact.additionalInfo.replace(/\n/g, '<br>')}</p>` : '';
         
@@ -452,6 +465,11 @@ const CheckoutPage: React.FC = () => {
                                     </div>
                                 )}
                                 <RadioCard name="shipping" value="posta" checked={shippingMethod === 'posta'} onChange={() => { setShippingMethod('posta'); setFormErrors(p => ({...p, shipping: ''})) }} title="Česká pošta - Balík Do ruky" price={`${shippingCosts.posta} Kč`} />
+                                
+                                {isDoporuceneAvailable && (
+                                    <RadioCard name="shipping" value="doporucene" checked={shippingMethod === 'doporucene'} onChange={() => { setShippingMethod('doporucene'); setFormErrors(p => ({...p, shipping: ''})) }} title="Česká pošta - Doporučené psaní" price={`${shippingCosts.doporucene} Kč`} />
+                                )}
+                                
                                 <RadioCard name="shipping" value="osobne" checked={shippingMethod === 'osobne'} onChange={() => { setShippingMethod('osobne'); setFormErrors(p => ({...p, shipping: ''})) }} title="Osobní odběr - Turnov" price="Zdarma" />
                                 {formErrors.shipping && <p className="text-sm text-red-500">{formErrors.shipping}</p>}
                             </div>
