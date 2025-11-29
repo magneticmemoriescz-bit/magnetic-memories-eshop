@@ -259,13 +259,13 @@ const CheckoutPage: React.FC = () => {
             invoice_html: invoiceNoticeHtml,
         };
         
-        // Using Gmail service (service_2pkoish) because it works more reliably without advanced DNS setup
+        // Using SMTP service (service_m6t8eve)
         try {
-            await window.emailjs.send('service_2pkoish', 'template_8ax2a2w', ownerParams);
+            await window.emailjs.send('service_m6t8eve', 'template_8ax2a2w', ownerParams);
         } catch (e) {
             console.warn('Failed to send owner email notification', e);
         }
-        await window.emailjs.send('service_2pkoish', 'template_1v2vxgh', customerParams);
+        await window.emailjs.send('service_m6t8eve', 'template_1v2vxgh', customerParams);
     };
     
     const triggerMakeWebhook = (order: OrderDetails) => {
@@ -274,12 +274,22 @@ const CheckoutPage: React.FC = () => {
             return;
         }
 
-        // Create a lean, clean payload for Fakturoid
-        const invoiceItems = order.items.map(item => ({
-            name: `${item.product.name}${item.variant ? ` - ${item.variant.name}` : ''}`,
-            quantity: Number(item.quantity) || 1,
-            unit_price: Number(item.price) || 0,
-        }));
+        // Create a lean, clean payload for Fakturoid with fallback for empty names to prevent Make errors
+        const invoiceItems = order.items.map(item => {
+            let itemName = item.product.name;
+            if (item.variant && item.variant.name) {
+                itemName += ` - ${item.variant.name}`;
+            }
+            if (!itemName || itemName.trim() === '') {
+                itemName = 'Produkt bez názvu';
+            }
+
+            return {
+                name: itemName,
+                quantity: Number(item.quantity) || 1,
+                unit_price: Number(item.price) || 0,
+            };
+        });
 
         if (order.shippingCost > 0) {
             invoiceItems.push({
@@ -300,6 +310,7 @@ const CheckoutPage: React.FC = () => {
         const payload = {
             orderNumber: order.orderNumber,
             contact: {
+                name: `${order.contact.firstName} ${order.contact.lastName}`.trim(), // Combined name for systems that require a single name field
                 firstName: order.contact.firstName,
                 lastName: order.contact.lastName,
                 email: order.contact.email,
