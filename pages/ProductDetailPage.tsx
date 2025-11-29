@@ -34,8 +34,13 @@ const ProductDetailPage: React.FC = () => {
             
             // Logic to pick the correct initial variant based on product type
             if (currentProduct.id === 'wedding-announcement' && currentProduct.variants) {
+                // Default to A5 for wedding announcements
                 const initialVariant = currentProduct.variants.find(v => v.id.startsWith('a5'));
                 setSelectedVariant(initialVariant || currentProduct.variants[0]);
+            } else if (currentProduct.id === 'magnetic-calendar' && currentProduct.variants) {
+                // Default to A5 for calendar as requested
+                const a5Variant = currentProduct.variants.find(v => v.id === 'a5');
+                setSelectedVariant(a5Variant || currentProduct.variants[0]);
             } else {
                 setSelectedVariant(currentProduct.variants?.[0]);
             }
