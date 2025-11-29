@@ -12,7 +12,7 @@ export const PRODUCTS: Product[] = [
   {
     id: 'magnetic-calendar',
     name: 'Magnetický kalendář',
-    price: 990,
+    price: 495,
     shortDescription: 'Vytvořte si roční kalendář s vlastními fotografiemi.',
     description: 'Proměňte své nejoblíbenější momenty v praktický a krásný kalendář. Každý měsíc nová vzpomínka přímo na vaší lednici!',
     imageUrl: 'https://i.imgur.com/Yy9Rf5y.jpg',
@@ -29,6 +29,7 @@ export const PRODUCTS: Product[] = [
     ],
     requiredPhotos: 12,
     variants: [
+      { id: 'a6', name: 'A6', photoCount: 12, price: 495 },
       { id: 'a5', name: 'A5', photoCount: 12, price: 990 },
       { id: 'a4', name: 'A4', photoCount: 12, price: 1800 },
     ]
@@ -36,7 +37,7 @@ export const PRODUCTS: Product[] = [
   {
     id: 'wedding-announcement',
     name: 'Svatební oznámení',
-    price: 800,
+    price: 400,
     shortDescription: 'Originální magnetická oznámení pro váš velký den.',
     description: 'Originální a nezapomenutelné svatební oznámení, které hosté neztratí z očí. Vzpomínka na váš velký den, co drží!',
     imageUrl: 'https://i.imgur.com/ZteI9PG.jpeg',
@@ -48,16 +49,23 @@ export const PRODUCTS: Product[] = [
     requiredPhotos: 1,
     hasTextFields: false,
     variants: [
-        { id: '10-pcs', name: '10 ks', photoCount: 1, price: 800 },
-        { id: '20-pcs', name: '20 ks', photoCount: 1, price: 1550 },
-        { id: '50-pcs', name: '50 ks', photoCount: 1, price: 3850 },
-        { id: '100-pcs', name: '100 ks', photoCount: 1, price: 7650 },
+        // A5 Variants (Standard prices)
+        { id: 'a5-10-pcs', name: '10 ks', photoCount: 1, price: 800 },
+        { id: 'a5-20-pcs', name: '20 ks', photoCount: 1, price: 1550 },
+        { id: 'a5-50-pcs', name: '50 ks', photoCount: 1, price: 3850 },
+        { id: 'a5-100-pcs', name: '100 ks', photoCount: 1, price: 7650 },
+        
+        // A6 Variants (Half prices)
+        { id: 'a6-10-pcs', name: '10 ks', photoCount: 1, price: 400 },
+        { id: 'a6-20-pcs', name: '20 ks', photoCount: 1, price: 775 },
+        { id: 'a6-50-pcs', name: '50 ks', photoCount: 1, price: 1925 },
+        { id: 'a6-100-pcs', name: '100 ks', photoCount: 1, price: 3825 },
     ]
   },
   {
     id: 'photomagnets',
     name: 'Fotomagnety',
-    price: 100,
+    price: 15,
     shortDescription: 'Vaše fotky jako stylové magnety na lednici.',
     description: 'Vaše oblíbené fotografie ve formě magnetů. Ideální dárek nebo ozdoba pro každou lednici.',
     imageUrl: 'https://i.imgur.com/7U3iv2e.jpeg',
