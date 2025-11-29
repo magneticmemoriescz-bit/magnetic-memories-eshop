@@ -17,7 +17,7 @@ const ProductDetailPage: React.FC = () => {
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(product?.variants?.[0]);
     const [uploadedPhotoInfo, setUploadedPhotoInfo] = useState<UploadedFilesInfo>({ photos: [], groupId: null });
     const [customText, setCustomText] = useState<{ [key: string]: string }>({});
-    const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
+    // Removed explicit orientation state since it's no longer user-selectable
     const [error, setError] = useState<string | null>(null);
     const [quantity, setQuantity] = useState(1);
 
@@ -28,7 +28,6 @@ const ProductDetailPage: React.FC = () => {
             setUploadedPhotoInfo({ photos: [], groupId: null });
             setCustomText({});
             setSelectedVariant(currentProduct.variants?.[0]);
-            setOrientation('portrait');
             setQuantity(1);
             setError(null);
         }
@@ -49,17 +48,13 @@ const ProductDetailPage: React.FC = () => {
 
     const isCalendar = product.id === 'magnetic-calendar';
     
-    // Prioritize variant-specific image if available
+    // Prioritize variant-specific image if available, otherwise fallback to main image
+    // Note: Orientation logic for images removed as user selection is removed
     const variantImage = selectedVariant?.imageUrl;
-
-    const displayImage = variantImage ? variantImage : 
-        isCalendar ? 
-            (orientation === 'portrait' ? product.imageUrl_portrait : product.imageUrl_landscape) || product.imageUrl 
-        : product.imageUrl;
+    const displayImage = variantImage ? variantImage : product.imageUrl;
       
-    const displayGallery = isCalendar
-        ? (orientation === 'portrait' ? product.gallery_portrait : product.gallery_landscape) || product.gallery
-        : product.gallery;
+    // Removed orientation logic for gallery as well
+    const displayGallery = product.gallery;
 
     const handleFilesChange = (filesInfo: UploadedFilesInfo) => {
         setUploadedPhotoInfo(filesInfo);
@@ -76,7 +71,7 @@ const ProductDetailPage: React.FC = () => {
 
         setError(null);
         const cartItem: CartItem = {
-            id: `${product.id}-${selectedVariant?.id}-${isCalendar ? orientation : ''}-${Date.now()}`,
+            id: `${product.id}-${selectedVariant?.id}-${Date.now()}`,
             product,
             quantity: quantity,
             price: displayPrice,
@@ -84,7 +79,7 @@ const ProductDetailPage: React.FC = () => {
             photos: uploadedPhotoInfo.photos,
             photoGroupId: uploadedPhotoInfo.groupId,
             customText,
-            ...(isCalendar && { orientation: orientation })
+            // Orientation removed from cart payload
         };
         dispatch({ type: 'ADD_ITEM', payload: cartItem });
         navigate('/kosik');
@@ -104,11 +99,15 @@ const ProductDetailPage: React.FC = () => {
         ? "w-full h-full object-center object-contain sm:rounded-lg"   // Don't crop calendar
         : "w-full h-full object-center object-cover sm:rounded-lg";    // Crop/zoom others (including wedding announcement)
 
+    // Dynamic Title construction: Product Name - Variant Name (if selected and different)
+    const pageTitle = selectedVariant && selectedVariant.name !== product.name 
+        ? `${product.name} - ${selectedVariant.name} | Magnetic Memories`
+        : `${product.name} | Magnetic Memories`;
 
     return (
         <div className="bg-white">
             <Seo 
-                title={`${product.name} | Magnetic Memories`}
+                title={pageTitle}
                 description={product.shortDescription}
                 image={displayImage}
                 type="product"
@@ -148,25 +147,15 @@ const ProductDetailPage: React.FC = () => {
                                             ))}
                                         </div>
                                     </fieldset>
+                                    {isPhotomagnets && (
+                                        <p className="text-sm text-gray-500 mt-2">Vaše fotografie upravíme do vybraného formátu.</p>
+                                    )}
                                 </div>
                             )}
 
                             {isCalendar && (
-                                <div className="mt-10">
-                                    <h3 className="text-sm text-dark-gray font-medium">Orientace</h3>
-                                    <fieldset className="mt-4">
-                                        <legend className="sr-only">Vyberte orientaci</legend>
-                                        <div className="flex items-center space-x-4">
-                                            <label className={`relative border rounded-md p-4 flex items-center justify-center text-sm font-medium uppercase cursor-pointer focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple ${orientation === 'portrait' ? 'bg-brand-purple border-transparent text-white hover:opacity-90' : 'bg-white border-gray-200 text-dark-gray hover:bg-gray-50'}`}>
-                                                <input type="radio" name="orientation-option" value="portrait" className="sr-only" checked={orientation === 'portrait'} onChange={() => setOrientation('portrait')} />
-                                                <span>Na výšku</span>
-                                            </label>
-                                            <label className={`relative border rounded-md p-4 flex items-center justify-center text-sm font-medium uppercase cursor-pointer focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple ${orientation === 'landscape' ? 'bg-brand-purple border-transparent text-white hover:opacity-90' : 'bg-white border-gray-200 text-dark-gray hover:bg-gray-50'}`}>
-                                                <input type="radio" name="orientation-option" value="landscape" className="sr-only" checked={orientation === 'landscape'} onChange={() => setOrientation('landscape')} />
-                                                <span>Na šířku</span>
-                                            </label>
-                                        </div>
-                                    </fieldset>
+                                <div className="mt-6 text-sm text-gray-500 bg-gray-50 p-4 rounded-md border border-gray-200">
+                                    <p>Kalendář a jednotlivé jeho listy uzpůsobíme vašim fotografiím, můžete tak kombinovat fotografie na výšku i na šířku.</p>
                                 </div>
                             )}
 
