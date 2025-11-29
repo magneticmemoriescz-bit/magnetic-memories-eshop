@@ -17,9 +17,11 @@ const ProductDetailPage: React.FC = () => {
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(product?.variants?.[0]);
     const [uploadedPhotoInfo, setUploadedPhotoInfo] = useState<UploadedFilesInfo>({ photos: [], groupId: null });
     const [customText, setCustomText] = useState<{ [key: string]: string }>({});
-    // Removed explicit orientation state since it's no longer user-selectable
     const [error, setError] = useState<string | null>(null);
     const [quantity, setQuantity] = useState(1);
+    
+    // State for Wedding Announcement size toggle
+    const [announcementSize, setAnnouncementSize] = useState<'a5' | 'a6'>('a5');
 
 
     useEffect(() => {
@@ -27,7 +29,17 @@ const ProductDetailPage: React.FC = () => {
         if (currentProduct) {
             setUploadedPhotoInfo({ photos: [], groupId: null });
             setCustomText({});
-            setSelectedVariant(currentProduct.variants?.[0]);
+            // Reset to A5 default
+            setAnnouncementSize('a5');
+            
+            // Logic to pick the correct initial variant based on product type
+            if (currentProduct.id === 'wedding-announcement' && currentProduct.variants) {
+                const initialVariant = currentProduct.variants.find(v => v.id.startsWith('a5'));
+                setSelectedVariant(initialVariant || currentProduct.variants[0]);
+            } else {
+                setSelectedVariant(currentProduct.variants?.[0]);
+            }
+            
             setQuantity(1);
             setError(null);
         }
@@ -37,23 +49,23 @@ const ProductDetailPage: React.FC = () => {
         return <div className="text-center py-20">Produkt nenalezen.</div>;
     }
 
+    const isWeddingAnnouncement = product.id === 'wedding-announcement';
+    const isPhotomagnets = product.id === 'photomagnets';
+    const isCalendar = product.id === 'magnetic-calendar';
+
     // Specific logic for Photomagnets: 
     // If it's photomagnets, the required photos = variant.photoCount * quantity.
     // For other products (like calendars, or wedding announcements packs), it behaves differently (usually copies).
-    const isPhotomagnets = product.id === 'photomagnets';
     const basePhotoCount = selectedVariant ? selectedVariant.photoCount : product.requiredPhotos;
     const totalRequiredPhotos = isPhotomagnets ? basePhotoCount * quantity : basePhotoCount;
 
     const displayPrice = selectedVariant?.price ?? product.price;
 
-    const isCalendar = product.id === 'magnetic-calendar';
     
     // Prioritize variant-specific image if available, otherwise fallback to main image
-    // Note: Orientation logic for images removed as user selection is removed
     const variantImage = selectedVariant?.imageUrl;
     const displayImage = variantImage ? variantImage : product.imageUrl;
       
-    // Removed orientation logic for gallery as well
     const displayGallery = product.gallery;
 
     const handleFilesChange = (filesInfo: UploadedFilesInfo) => {
@@ -79,7 +91,6 @@ const ProductDetailPage: React.FC = () => {
             photos: uploadedPhotoInfo.photos,
             photoGroupId: uploadedPhotoInfo.groupId,
             customText,
-            // Orientation removed from cart payload
         };
         dispatch({ type: 'ADD_ITEM', payload: cartItem });
         navigate('/kosik');
@@ -95,6 +106,30 @@ const ProductDetailPage: React.FC = () => {
         setError(null);
     }
     
+    const handleAnnouncementSizeChange = (size: 'a5' | 'a6') => {
+        setAnnouncementSize(size);
+        if (selectedVariant) {
+            // Try to find the matching quantity in the new size
+            const suffix = selectedVariant.id.replace('a5-', '').replace('a6-', '');
+            const newVariantId = `${size}-${suffix}`;
+            const newVariant = product.variants?.find(v => v.id === newVariantId);
+            
+            if (newVariant) {
+                setSelectedVariant(newVariant);
+            } else {
+                // Fallback to first variant of that size
+                const firstOfSize = product.variants?.find(v => v.id.startsWith(size));
+                if (firstOfSize) setSelectedVariant(firstOfSize);
+            }
+        }
+    };
+    
+    // Filtering variants for display
+    let visibleVariants = product.variants;
+    if (isWeddingAnnouncement && product.variants) {
+        visibleVariants = product.variants.filter(v => v.id.startsWith(announcementSize));
+    }
+
     const imageClass = isCalendar
         ? "w-full h-full object-center object-contain sm:rounded-lg"   // Don't crop calendar
         : "w-full h-full object-center object-cover sm:rounded-lg";    // Crop/zoom others (including wedding announcement)
@@ -133,13 +168,37 @@ const ProductDetailPage: React.FC = () => {
                         </div>
 
                         <form className="mt-6" onSubmit={(e) => e.preventDefault()}>
-                            {product.variants && (
+                            
+                            {/* Wedding Announcement Size Toggle */}
+                            {isWeddingAnnouncement && (
+                                <div className="mt-8 pb-4 border-b border-gray-200">
+                                    <h3 className="text-sm text-dark-gray font-medium mb-3">Velikost oznámení</h3>
+                                    <div className="flex space-x-4">
+                                        <button 
+                                            type="button"
+                                            onClick={() => handleAnnouncementSizeChange('a5')}
+                                            className={`px-4 py-2 text-sm font-medium rounded-md border ${announcementSize === 'a5' ? 'bg-brand-purple text-white border-brand-purple' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+                                        >
+                                            A5 (15 x 21 cm)
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            onClick={() => handleAnnouncementSizeChange('a6')}
+                                            className={`px-4 py-2 text-sm font-medium rounded-md border ${announcementSize === 'a6' ? 'bg-brand-purple text-white border-brand-purple' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}
+                                        >
+                                            A6 (10 x 15 cm)
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {visibleVariants && (
                                 <div className="mt-10">
                                     <h3 className="text-sm text-dark-gray font-medium">Varianta</h3>
                                     <fieldset className="mt-4">
                                         <legend className="sr-only">Vyberte variantu</legend>
                                         <div className="flex items-center space-x-4 flex-wrap gap-y-4">
-                                            {product.variants.map((variant) => (
+                                            {visibleVariants.map((variant) => (
                                                 <label key={variant.id} className={`relative border rounded-md p-4 flex items-center justify-center text-sm font-medium uppercase cursor-pointer focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple ${selectedVariant?.id === variant.id ? 'bg-brand-purple border-transparent text-white hover:opacity-90' : 'bg-white border-gray-200 text-dark-gray hover:bg-gray-50'}`}>
                                                     <input type="radio" name="variant-option" value={variant.id} className="sr-only" checked={selectedVariant?.id === variant.id} onChange={() => handleVariantChange(variant)}/>
                                                     <span>{variant.name}</span>
