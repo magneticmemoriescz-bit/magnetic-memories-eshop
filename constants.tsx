@@ -73,9 +73,9 @@ export const PRODUCTS: Product[] = [
       { id: '5x10', name: '5x10 cm', photoCount: 1, price: 20, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
       { id: '10x10', name: '10x10 cm', photoCount: 1, price: 25, imageUrl: 'https://i.imgur.com/7U3iv2e.jpeg' },
       { id: '9x13', name: '9x13 cm', photoCount: 1, price: 30, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
-      { id: 'custom-a5', name: 'Libovolný rozměr < A5', photoCount: 1, price: 50, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
       { id: 'a5-sheet', name: 'A5', photoCount: 1, price: 70, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
       { id: 'a4-sheet', name: 'A4', photoCount: 1, price: 95, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: 'custom-a5', name: 'Libovolný rozměr < A5', photoCount: 1, price: 50, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
     ]
   }
 ];
