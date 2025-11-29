@@ -312,11 +312,19 @@ const CheckoutPage: React.FC = () => {
 
         const payload = {
             orderNumber: order.orderNumber,
+            // Compatibility: Provide both contact and billing objects to match common Make.com mappings
+            // This ensures '1. contact: email' and '1. billing: name' both work if configured in Make
             contact: {
-                name: fullName.length > 0 ? fullName : "Zákazník", // Fallback for name to avoid validation error
+                name: fullName.length > 0 ? fullName : "Zákazník", 
                 firstName: order.contact.firstName,
                 lastName: order.contact.lastName,
                 email: order.contact.email,
+                street: order.contact.street,
+                city: order.contact.city,
+                zip: order.contact.zip,
+            },
+            billing: {
+                name: fullName.length > 0 ? fullName : "Zákazník",
                 street: order.contact.street,
                 city: order.contact.city,
                 zip: order.contact.zip,
