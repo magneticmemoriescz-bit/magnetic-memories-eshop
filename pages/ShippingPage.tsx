@@ -9,6 +9,7 @@ const ShippingPage: React.FC = () => (
         <SectionTitle>Možnosti dopravy</SectionTitle>
         <ul className="list-disc pl-6 space-y-2">
             <li><strong>Zásilkovna - Výdejní místo:</strong> 89 Kč (Doručení obvykle do 2 pracovních dnů od expedice)</li>
+            <li><strong>Česká pošta - Doporučené psaní:</strong> 77 Kč (Ekonomická varianta pro menší zásilky do 1000 Kč, doručení do schránky)</li>
             <li><strong>Česká pošta - Balík Do ruky:</strong> 119 Kč (Doručení na Vaši adresu, obvykle do 2 pracovních dnů od expedice)</li>
             <li><strong>Osobní odběr - Turnov:</strong> Zdarma (Po předchozí domluvě)</li>
         </ul>
