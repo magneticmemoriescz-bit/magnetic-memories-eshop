@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
 import { Product } from '../types';
 import { PRODUCTS as INITIAL_PRODUCTS } from '../constants';
@@ -27,19 +28,37 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
         const storedProducts: Product[] = JSON.parse(storedProductsJSON);
         const processedIds = new Set<string>();
 
-        // Iterate stored products to preserve user changes and order
+        // Iterate stored products
         for (const storedProduct of storedProducts) {
             const initialProduct = initialProductsMap.get(storedProduct.id);
             if (initialProduct) {
-                // Product is defined in code. Sync its variants.
-                // This preserves any other edits (price, name, etc.) from the admin panel.
-                if (JSON.stringify(storedProduct.variants) !== JSON.stringify(initialProduct.variants)) {
-                    storedProduct.variants = initialProduct.variants;
+                // Product is defined in code.
+                // We MUST merge critical fields from code (constants.tsx) into the stored product.
+                // This ensures that if you change the price/name/variants in code, it updates on the website
+                // even if the user has visited before (and has old data in localStorage).
+                const mergedProduct: Product = {
+                    ...storedProduct,
+                    name: initialProduct.name,
+                    price: initialProduct.price,
+                    shortDescription: initialProduct.shortDescription,
+                    description: initialProduct.description,
+                    imageUrl: initialProduct.imageUrl,
+                    gallery: initialProduct.gallery,
+                    imageUrl_portrait: initialProduct.imageUrl_portrait,
+                    imageUrl_landscape: initialProduct.imageUrl_landscape,
+                    gallery_portrait: initialProduct.gallery_portrait,
+                    gallery_landscape: initialProduct.gallery_landscape,
+                    variants: initialProduct.variants,
+                    requiredPhotos: initialProduct.requiredPhotos,
+                    hasTextFields: initialProduct.hasTextFields
+                };
+
+                if (JSON.stringify(storedProduct) !== JSON.stringify(mergedProduct)) {
                     needsUpdateInStorage = true;
                 }
-                finalProducts.push(storedProduct);
+                finalProducts.push(mergedProduct);
             } else {
-                // This is a custom product created by the user via admin, keep it.
+                // This is a custom product created by the user via admin (not in code), keep it as is.
                 finalProducts.push(storedProduct);
             }
             processedIds.add(storedProduct.id);
@@ -53,9 +72,9 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
             }
         }
       } else {
-        // No products in storage, so we use the initial list.
+        // No products in storage, use initial list.
         finalProducts = INITIAL_PRODUCTS;
-        needsUpdateInStorage = true; // Needs to be saved to localStorage for the first time
+        needsUpdateInStorage = true;
       }
 
       if (needsUpdateInStorage) {
@@ -66,12 +85,12 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     } catch (error) {
       console.error("Failed to load or migrate products from localStorage", error);
-      // In case of any error, fallback to the default products from the code.
+      // Fallback
       setProducts(INITIAL_PRODUCTS);
     } finally {
       setLoading(false);
     }
-  }, []); // The empty dependency array ensures this logic runs only once on initial app load.
+  }, []);
 
   const updateProducts = useCallback((newProducts: Product[]) => {
     setProducts(newProducts);
@@ -96,7 +115,6 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
           const text = event.target?.result;
           if (typeof text === 'string') {
             const importedProducts = JSON.parse(text);
-            // Basic validation can be added here
             if (Array.isArray(importedProducts)) {
               updateProducts(importedProducts);
               resolve();
