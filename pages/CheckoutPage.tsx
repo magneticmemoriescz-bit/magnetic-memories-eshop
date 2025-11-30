@@ -17,11 +17,18 @@ interface OrderDetails {
     items: CartItem[];
     total: number;
     subtotal: number;
+    discountAmount: number;
+    couponCode?: string;
     shippingCost: number;
     paymentCost: number;
     orderNumber: string;
     marketingConsent: boolean;
 }
+
+const VALID_COUPONS: { [key: string]: number } = {
+    'VANOCE10': 0.10,
+    'LASKA10': 0.10
+};
 
 const CheckoutPage: React.FC = () => {
     const { state, dispatch } = useCart();
@@ -45,6 +52,11 @@ const CheckoutPage: React.FC = () => {
     const [packetaPoint, setPacketaPoint] = useState<any | null>(null);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
 
+    // Coupon State
+    const [couponCode, setCouponCode] = useState('');
+    const [appliedCoupon, setAppliedCoupon] = useState<{code: string, rate: number} | null>(null);
+    const [couponMessage, setCouponMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null);
+
     // New checkboxes state
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [marketingConsent, setMarketingConsent] = useState(false);
@@ -55,6 +67,29 @@ const CheckoutPage: React.FC = () => {
     };
 
     const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+    // Coupon Logic
+    const handleApplyCoupon = () => {
+        const normalizedCode = couponCode.trim().toUpperCase();
+        if (!normalizedCode) return;
+
+        if (VALID_COUPONS[normalizedCode]) {
+            setAppliedCoupon({ code: normalizedCode, rate: VALID_COUPONS[normalizedCode] });
+            setCouponMessage({ text: `Kód ${normalizedCode} byl úspěšně uplatněn.`, type: 'success' });
+        } else {
+            setAppliedCoupon(null);
+            setCouponMessage({ text: 'Neplatný slevový kód.', type: 'error' });
+        }
+    };
+
+    const handleRemoveCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponCode('');
+        setCouponMessage(null);
+    };
+
+    const discountAmount = appliedCoupon ? Math.round(subtotal * appliedCoupon.rate) : 0;
+    const discountedSubtotal = subtotal - discountAmount;
 
     // Shipping costs configuration
     const shippingCosts: { [key: string]: number } = {
@@ -69,6 +104,8 @@ const CheckoutPage: React.FC = () => {
     };
 
     // Only allow 'doporucene' if subtotal is less than 1000 CZK
+    // Note: Usually logic is based on pre-discount price for limits, but can be post-discount. 
+    // Keeping it simple based on subtotal (items value).
     const isDoporuceneAvailable = subtotal < 1000;
 
     // Effect to reset shipping method if 'doporucene' is selected but no longer valid
@@ -81,7 +118,7 @@ const CheckoutPage: React.FC = () => {
 
     const shippingCost = shippingMethod ? shippingCosts[shippingMethod] : 0;
     const paymentCost = paymentMethod ? paymentCosts[paymentMethod] : 0;
-    const total = subtotal + shippingCost + paymentCost;
+    const total = discountedSubtotal + shippingCost + paymentCost;
     
     const handleRemoveItem = (id: string) => {
         dispatch({ type: 'REMOVE_ITEM', payload: { id } });
@@ -154,6 +191,14 @@ const CheckoutPage: React.FC = () => {
                 <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">${formatPrice(item.price * item.quantity)} Kč</td>
             </tr>`).join('');
         
+        // Discount Row for Emails
+        const discountRowHtml = order.discountAmount > 0 ? `
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: left; color: green;">Sleva (${order.couponCode})</td>
+                <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">1</td>
+                <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right; color: green;">-${formatPrice(order.discountAmount)} Kč</td>
+            </tr>` : '';
+
         const photosConfirmationHtml = order.items.some(item => item.photos && item.photos.length > 0) ? `<p style="margin-top: 20px;">Vaše fotografie byly úspěšně přijaty a budou použity pro výrobu.</p>` : '';
         const shippingMethodMap: {[key: string]: string} = { zasilkovna: 'Zásilkovna', posta: 'Česká pošta', doporucene: 'Česká pošta - Doporučené psaní', osobne: 'Osobní odběr'};
         const paymentMethodMap: {[key: string]: string} = { prevodem: 'Bankovním převodem', dobirka: 'Na dobírku'};
@@ -175,7 +220,7 @@ const CheckoutPage: React.FC = () => {
             reply_to: 'objednavky@magnetify.cz', // When customer replies, it goes to you
             order_number: order.orderNumber,
             first_name: order.contact.firstName,
-            items_html: itemsHtml,
+            items_html: itemsHtml + discountRowHtml,
             subtotal: formatPrice(order.subtotal),
             shipping_cost: formatPrice(order.shippingCost),
             payment_cost: formatPrice(order.paymentCost),
@@ -243,14 +288,9 @@ const CheckoutPage: React.FC = () => {
 
         const ownerParams = {
             subject_line: `Nová objednávka č. ${order.orderNumber}`,
-            // 'email' is usually mapped to 'To Email' in EmailJS template.
-            // We use the domain email here as the destination.
             email: 'objednavky@magnetify.cz', 
-            // 'reply_to' must be the customer's email so you can reply to them.
             reply_to: order.contact.email, 
-            // 'from_name' helps avoid spam filters by identifying the system
             from_name: 'Magnetic Memories System',
-            // 'to_name' helps identify the recipient
             to_name: 'Admin',
             
             order_number: order.orderNumber,
@@ -261,10 +301,11 @@ const CheckoutPage: React.FC = () => {
             items_html_with_total: `
                 <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
                     <thead><tr><th style="padding: 10px; border-bottom: 1px solid #ddd; background-color: #f9f9f9; text-align: left;">Produkt</th><th style="padding: 10px; border-bottom: 1px solid #ddd; background-color: #f9f9f9; text-align: center;">Množství</th><th style="padding: 10px; border-bottom: 1px solid #ddd; background-color: #f9f9f9; text-align: right;">Cena</th></tr></thead>
-                    <tbody>${itemsHtml}</tbody>
+                    <tbody>${itemsHtml}${discountRowHtml}</tbody>
                 </table>
                 <div style="text-align: right; margin-top: 10px;">
                     <p>Mezisoučet: ${formatPrice(order.subtotal)} Kč</p>
+                    ${order.discountAmount > 0 ? `<p style="color: green;">Sleva: -${formatPrice(order.discountAmount)} Kč</p>` : ''}
                     <p>Doprava: ${formatPrice(order.shippingCost)} Kč</p>
                     <p>Platba: ${formatPrice(order.paymentCost)} Kč</p>
                     <h3 style="margin-top: 5px;">Celkem: ${formatPrice(order.total)} Kč</h3>
@@ -295,7 +336,6 @@ const CheckoutPage: React.FC = () => {
             if (item.variant && item.variant.name) {
                 itemName += ` - ${item.variant.name}`;
             }
-            // CRITICAL FIX: Ensure item name is never empty for Make.com/Fakturoid validation
             if (!itemName || itemName.trim() === '') {
                 itemName = 'Produkt';
             }
@@ -306,6 +346,15 @@ const CheckoutPage: React.FC = () => {
                 unit_price: Number(item.price) || 0,
             };
         });
+        
+        // Add Discount as a negative item
+        if (order.discountAmount > 0) {
+            invoiceItems.push({
+                name: `Sleva (${order.couponCode})`,
+                quantity: 1,
+                unit_price: -Number(order.discountAmount),
+            });
+        }
 
         if (order.shippingCost > 0) {
             invoiceItems.push({
@@ -328,7 +377,6 @@ const CheckoutPage: React.FC = () => {
         const payload = {
             orderNumber: order.orderNumber,
             // Compatibility: Provide both contact and billing objects to match common Make.com mappings
-            // This ensures '1. contact: email' and '1. billing: name' both work if configured in Make
             contact: {
                 name: fullName.length > 0 ? fullName : "Zákazník", 
                 firstName: order.contact.firstName,
@@ -348,7 +396,6 @@ const CheckoutPage: React.FC = () => {
             items: invoiceItems,
         };
         
-        // Using keepalive: true to ensure the request completes even if the page unloads
         fetch(MAKE_WEBHOOK_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -392,6 +439,8 @@ const CheckoutPage: React.FC = () => {
                 items: items,
                 total: total,
                 subtotal: subtotal,
+                discountAmount: discountAmount,
+                couponCode: appliedCoupon?.code,
                 shippingCost: shippingCost,
                 paymentCost: paymentCost,
                 orderNumber: orderNumber,
@@ -400,7 +449,6 @@ const CheckoutPage: React.FC = () => {
             
             try {
                 await sendEmailNotifications(orderDetails);
-                // Await the webhook trigger slightly to ensure browser processes it before navigation
                 await triggerMakeWebhook(orderDetails);
                 
                 dispatch({ type: 'CLEAR_CART' });
@@ -553,8 +601,54 @@ const CheckoutPage: React.FC = () => {
                             ))}
                         </ul>
 
+                         {/* Coupon Input */}
+                         <div className="mt-6 border-t border-gray-200 pt-6">
+                            <label htmlFor="coupon" className="block text-sm font-medium text-gray-700">Slevový kód</label>
+                            <div className="mt-2 flex space-x-2">
+                                <input
+                                    type="text"
+                                    id="coupon"
+                                    value={couponCode}
+                                    onChange={(e) => setCouponCode(e.target.value)}
+                                    placeholder="Zadejte kód"
+                                    disabled={!!appliedCoupon}
+                                    className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-purple focus:border-brand-purple sm:text-sm disabled:bg-gray-100 disabled:text-gray-500"
+                                />
+                                {appliedCoupon ? (
+                                    <button
+                                        type="button"
+                                        onClick={handleRemoveCoupon}
+                                        className="bg-red-100 text-red-600 hover:bg-red-200 px-4 py-2 border border-transparent rounded-md text-sm font-medium"
+                                    >
+                                        Odebrat
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={handleApplyCoupon}
+                                        className="bg-brand-purple/10 text-brand-purple hover:bg-brand-purple/20 px-4 py-2 border border-transparent rounded-md text-sm font-medium"
+                                    >
+                                        Použít
+                                    </button>
+                                )}
+                            </div>
+                            {couponMessage && (
+                                <p className={`mt-2 text-sm ${couponMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                                    {couponMessage.text}
+                                </p>
+                            )}
+                        </div>
+
                         <dl className="mt-6 space-y-4 border-t border-gray-200 pt-6">
                             <div className="flex items-center justify-between"><dt className="text-sm text-gray-600">Mezisoučet</dt><dd className="text-sm font-medium text-dark-gray">{formatPrice(subtotal)} Kč</dd></div>
+                            
+                            {discountAmount > 0 && (
+                                <div className="flex items-center justify-between text-green-600">
+                                    <dt className="text-sm">Sleva ({appliedCoupon?.code})</dt>
+                                    <dd className="text-sm font-medium">-{formatPrice(discountAmount)} Kč</dd>
+                                </div>
+                            )}
+
                             <div className="flex items-center justify-between"><dt className="text-sm text-gray-600">Doprava</dt><dd className="text-sm font-medium text-dark-gray">{formatPrice(shippingCost)} Kč</dd></div>
                              <div className="flex items-center justify-between"><dt className="text-sm text-gray-600">Platba</dt><dd className="text-sm font-medium text-dark-gray">{formatPrice(paymentCost)} Kč</dd></div>
                             <div className="flex items-center justify-between border-t border-gray-200 pt-4"><dt className="text-base font-medium text-dark-gray">Celkem</dt><dd className="text-base font-medium text-dark-gray">{formatPrice(total)} Kč</dd></div>
