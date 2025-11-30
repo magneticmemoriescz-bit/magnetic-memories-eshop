@@ -13,6 +13,7 @@ interface OrderDetails {
     items: CartItem[];
     total: number;
     subtotal: number;
+    discountAmount?: number;
     shippingCost: number;
     paymentCost: number;
     orderNumber: string;
