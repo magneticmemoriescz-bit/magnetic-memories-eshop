@@ -33,7 +33,7 @@ const HomePage: React.FC = () => {
 
                         {/* Right Column: Text & Icons - takes 8/12 columns (66%) */}
                         <div className="text-center md:text-left md:col-span-8">
-                            <h1 className="text-4xl font-extrabold text-dark-gray mb-6">Proměňte své fotky v jedinečné magnetické vzpomínky</h1>
+                            <h1 className="text-4xl font-extrabold text-dark-gray mb-6">Proměňte své fotky v jedinečné magnetické produkty</h1>
                             <p className="mt-4 text-lg text-gray-600">
                                 Máte telefon plný krásných fotek z dovolené, oslav nebo všedních okamžiků? Vytvořte si kvalitní fotomagnetky, které vám budou dělat radost každý den na lednici, magnetické tabuli nebo jako originální dárek pro vaše blízké.
                             </p>
