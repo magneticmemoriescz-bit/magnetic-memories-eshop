@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import { useProducts } from '../context/ProductContext';
 import { HOW_IT_WORKS_STEPS } from '../constants';
 import { ProductCard } from '../components/ProductCard';
-import { Logo } from '../components/Logo';
 import { Seo } from '../components/Seo';
+import { Logo } from '../components/Logo';
 
 const buttonStyles = [
     { gradient: 'bg-gradient-to-r from-brand-cyan to-brand-purple', focusRing: 'focus:ring-brand-purple/50' },
@@ -20,38 +20,50 @@ const HomePage: React.FC = () => {
     return (
         <>
             <Seo />
-            {/* Hero Section */}
-            <section className="relative bg-white flex items-center justify-center min-h-screen text-white p-4 sm:p-6 lg:p-8">
-                <div className="absolute inset-0">
-                    <img className="w-full h-full object-cover blur-[1px]" src="https://i.imgur.com/xZl1oox.jpeg" alt="Lednice s magnety" />
-                    <div className="absolute inset-0 bg-black opacity-40"></div>
-                </div>
+            {/* Intro Section with Logo and Icons */}
+            <section className="py-12 sm:py-20 bg-white">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    {/* Changed to 12-column grid for 1/3 vs 2/3 split */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
+                        {/* Left Column: Big Logo - takes 4/12 columns (33%) */}
+                        <div className="flex justify-center md:col-span-4">
+                            {/* Reduced max-width from sm to xs */}
+                            <Logo className="w-full max-w-xs h-auto drop-shadow-lg" />
+                        </div>
 
-                <div className="absolute top-0 left-0 p-4 sm:p-6 lg:p-8">
-                    <Logo className="h-36 sm:h-56 w-auto" />
-                </div>
+                        {/* Right Column: Text & Icons - takes 8/12 columns (66%) */}
+                        <div className="text-center md:text-left md:col-span-8">
+                            <h1 className="text-4xl font-extrabold text-dark-gray mb-6">Proměňte své fotky v jedinečné magnetické vzpomínky</h1>
+                            <p className="mt-4 text-lg text-gray-600">
+                                Máte telefon plný krásných fotek z dovolené, oslav nebo všedních okamžiků? Nenechávejte je jen v digitální podobě! Vytvořte si kvalitní fotomagnetky, které vám budou dělat radost každý den na lednici, magnetické tabuli nebo jako originální dárek pro vaše blízké.
+                            </p>
 
-                <div className="relative z-10 max-w-2xl text-center transform translate-y-40">
-                    <h1 className="text-4xl md:text-5xl font-bold tracking-normal [text-shadow:0_2px_4px_rgba(0,0,0,0.5)] leading-relaxed">
-                        Vaše vzpomínky jsou to nejcennější.
-                    </h1>
-                    <Link to="/produkty" className="mt-8 inline-block bg-gradient-to-r from-brand-cyan via-brand-purple to-brand-orange text-white font-bold py-3 px-8 rounded-full shadow-lg hover:opacity-90 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brand-purple/50">
-                        Prohlédnout produkty
-                    </Link>
-                </div>
-            </section>
-            
-            <section className="py-16 sm:py-24 bg-white">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <h2 className="text-3xl font-extrabold text-dark-gray">Proměňte své fotky v jedinečné magnetické vzpomínky</h2>
-                    <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
-                        Máte telefon plný krásných fotek z dovolené, oslav nebo všedních okamžiků? Nenechávejte je jen v digitální podobě! Vytvořte si kvalitní fotomagnetky, které vám budou dělat radost každý den na lednici, magnetické tabuli nebo jako originální dárek pro vaše blízké.
-                    </p>
+                            {/* Process Icons Mini-row with Labels */}
+                            <div className="mt-10 flex flex-wrap justify-center md:justify-start gap-6">
+                                {HOW_IT_WORKS_STEPS.map((step, index) => (
+                                    <div key={index} className="flex flex-col items-center w-24">
+                                        <div className={`flex items-center justify-center h-12 w-12 rounded-full ${iconColors[index]} text-white shadow-md mb-3`} title={step.title}>
+                                            <div className="transform scale-75">
+                                                {step.icon}
+                                            </div>
+                                        </div>
+                                        <p className="text-xs font-bold text-gray-800 text-center leading-tight">
+                                            {step.title}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            <p className="mt-8 text-xl sm:text-2xl font-bold text-brand-purple">
+                                Celý proces je snadný a zabere jen chvilku.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </section>
 
             {/* Product Overview Section */}
-            <section className="py-16 sm:py-24">
+            <section className="pb-16 sm:pb-24">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <h2 className="text-3xl font-extrabold text-center text-dark-gray">Naše Produkty</h2>
                     {/* FIX: Changed from grid to a centered flex layout */}
@@ -86,7 +98,7 @@ const HomePage: React.FC = () => {
             </section>
 
              {/* How It Works Section */}
-            <section className="py-16 sm:py-24 bg-white">
+            <section className="py-16 sm:py-24 bg-white border-t border-gray-100">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <h2 className="text-3xl font-extrabold text-center text-dark-gray">Jak to funguje?</h2>
                     <div className="mt-12 grid md:grid-cols-4 gap-10">
