@@ -17,8 +17,8 @@ const ContactPage: React.FC = () => {
             return;
         }
 
-        // Using Gmail service (service_2pkoish) as requested
-        window.emailjs.sendForm('service_2pkoish', 'template_ajmxwjd', formRef.current)
+        // Using SMTP service (service_m6t8eve) as requested to use hosting email
+        window.emailjs.sendForm('service_m6t8eve', 'template_ajmxwjd', formRef.current)
             .then(() => {
                 setStatus('success');
             }, (error: any) => {
@@ -80,6 +80,13 @@ const ContactPage: React.FC = () => {
                             </div>
                         </form>
                     )}
+                </div>
+
+                <div className="mt-16 border-t border-gray-200 pt-8 text-center">
+                    <h3 className="text-lg font-medium text-dark-gray">Adresa sídla a fakturační adresa</h3>
+                    <p className="mt-2 text-gray-500">
+                        Dlouhý Most 374, 463 12 Liberec
+                    </p>
                 </div>
             </div>
         </div>
