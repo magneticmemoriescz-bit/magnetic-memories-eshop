@@ -30,6 +30,8 @@ const VALID_COUPONS: { [key: string]: number } = {
     'LASKA10': 0.10
 };
 
+const FREE_SHIPPING_THRESHOLD = 800;
+
 const CheckoutPage: React.FC = () => {
     const { state, dispatch } = useCart();
     const { items } = state;
@@ -90,12 +92,15 @@ const CheckoutPage: React.FC = () => {
 
     const discountAmount = appliedCoupon ? Math.round(subtotal * appliedCoupon.rate) : 0;
     const discountedSubtotal = subtotal - discountAmount;
+    
+    // Check for free shipping eligibility based on subtotal (before discount is usually standard, but logic here uses items subtotal)
+    const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
 
     // Shipping costs configuration
     const shippingCosts: { [key: string]: number } = {
-        'zasilkovna': 89,
-        'posta': 119,
-        'doporucene': 77,
+        'zasilkovna': isFreeShipping ? 0 : 89,
+        'posta': isFreeShipping ? 0 : 119,
+        'doporucene': isFreeShipping ? 0 : 77,
         'osobne': 0
     };
     const paymentCosts: { [key: string]: number } = {
@@ -104,8 +109,6 @@ const CheckoutPage: React.FC = () => {
     };
 
     // Only allow 'doporucene' if subtotal is less than 1000 CZK
-    // Note: Usually logic is based on pre-discount price for limits, but can be post-discount. 
-    // Keeping it simple based on subtotal (items value).
     const isDoporuceneAvailable = subtotal < 1000;
 
     // Effect to reset shipping method if 'doporucene' is selected but no longer valid
@@ -501,8 +504,20 @@ const CheckoutPage: React.FC = () => {
                         
                         <div className="mt-8">
                             <h2 className="text-2xl font-bold text-dark-gray mb-6">Doprava</h2>
+                             {isFreeShipping && (
+                                <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md border border-green-200">
+                                    <span className="font-bold">Gratulujeme!</span> Máte dopravu zdarma (nákup nad {FREE_SHIPPING_THRESHOLD} Kč).
+                                </div>
+                            )}
                             <div className="space-y-4">
-                               <RadioCard name="shipping" value="zasilkovna" checked={shippingMethod === 'zasilkovna'} onChange={() => { setShippingMethod('zasilkovna'); setFormErrors(p => ({...p, shipping: ''})) }} title="Zásilkovna - Výdejní místo" price={`${shippingCosts.zasilkovna} Kč`} />
+                               <RadioCard 
+                                    name="shipping" 
+                                    value="zasilkovna" 
+                                    checked={shippingMethod === 'zasilkovna'} 
+                                    onChange={() => { setShippingMethod('zasilkovna'); setFormErrors(p => ({...p, shipping: ''})) }} 
+                                    title="Zásilkovna - Výdejní místo" 
+                                    price={isFreeShipping ? "Zdarma" : "89 Kč"} 
+                                />
                                 {shippingMethod === 'zasilkovna' && (
                                     <div className="pl-4">
                                         <button type="button" onClick={openPacketaWidget} className="text-brand-purple font-medium hover:opacity-80">
@@ -512,10 +527,24 @@ const CheckoutPage: React.FC = () => {
                                         {formErrors.packetaPoint && <p className="text-sm text-red-500 mt-1">{formErrors.packetaPoint}</p>}
                                     </div>
                                 )}
-                                <RadioCard name="shipping" value="posta" checked={shippingMethod === 'posta'} onChange={() => { setShippingMethod('posta'); setFormErrors(p => ({...p, shipping: ''})) }} title="Česká pošta - Balík Do ruky" price={`${shippingCosts.posta} Kč`} />
+                                <RadioCard 
+                                    name="shipping" 
+                                    value="posta" 
+                                    checked={shippingMethod === 'posta'} 
+                                    onChange={() => { setShippingMethod('posta'); setFormErrors(p => ({...p, shipping: ''})) }} 
+                                    title="Česká pošta - Balík Do ruky" 
+                                    price={isFreeShipping ? "Zdarma" : "119 Kč"} 
+                                />
                                 
                                 {isDoporuceneAvailable && (
-                                    <RadioCard name="shipping" value="doporucene" checked={shippingMethod === 'doporucene'} onChange={() => { setShippingMethod('doporucene'); setFormErrors(p => ({...p, shipping: ''})) }} title="Česká pošta - Doporučené psaní" price={`${shippingCosts.doporucene} Kč`} />
+                                    <RadioCard 
+                                        name="shipping" 
+                                        value="doporucene" 
+                                        checked={shippingMethod === 'doporucene'} 
+                                        onChange={() => { setShippingMethod('doporucene'); setFormErrors(p => ({...p, shipping: ''})) }} 
+                                        title="Česká pošta - Doporučené psaní" 
+                                        price={isFreeShipping ? "Zdarma" : "77 Kč"} 
+                                    />
                                 )}
                                 
                                 <RadioCard name="shipping" value="osobne" checked={shippingMethod === 'osobne'} onChange={() => { setShippingMethod('osobne'); setFormErrors(p => ({...p, shipping: ''})) }} title="Osobní odběr - Turnov" price="Zdarma" />
