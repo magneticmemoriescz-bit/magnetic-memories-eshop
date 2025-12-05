@@ -1,7 +1,6 @@
 
-
 import React, { useState } from 'react';
-import { NavLink, Link, useLocation } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { NAV_LINKS } from '../constants';
 import { useCart } from '../context/CartContext';
 import { Logo } from './Logo';
@@ -26,38 +25,28 @@ export const CartIcon: React.FC = () => {
 
 export const Header: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const location = useLocation();
-    const isHomePage = location.pathname === '/';
 
     const linkBaseClass = "block py-2 px-3 rounded md:border-0 md:p-0 transition-colors";
-    const homePageLinkClass = `${linkBaseClass} text-white hover:text-gray-200 [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]`;
-    const otherPageLinkClass = `${linkBaseClass} text-gray-300 hover:bg-gray-700 md:hover:bg-transparent md:hover:text-white`;
+    const defaultLinkClass = `${linkBaseClass} text-gray-300 hover:bg-gray-700 md:hover:bg-transparent md:hover:text-white`;
     
     const activeLinkBaseClass = "font-bold";
-    const activeHomePageLinkClass = `${homePageLinkClass} ${activeLinkBaseClass}`;
-    const activeOtherPageLinkClass = `${otherPageLinkClass} text-white md:bg-transparent`;
+    const activeLinkClass = `${defaultLinkClass} text-white md:bg-transparent`;
 
     const getLinkClass = ({ isActive }: { isActive: boolean }) => {
-        if (isHomePage) {
-            return isActive ? activeHomePageLinkClass : homePageLinkClass;
-        }
-        return isActive ? activeOtherPageLinkClass : otherPageLinkClass;
+        return isActive ? `${activeLinkClass} ${activeLinkBaseClass}` : defaultLinkClass;
     };
     
-    const headerClasses = isHomePage
-        ? "absolute top-0 left-0 right-0 z-50 bg-transparent"
-        : "bg-black sticky top-0 z-50";
+    // Always black and sticky, regardless of page
+    const headerClasses = "bg-black sticky top-0 z-50";
 
     return (
         <header className={headerClasses}>
             <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     <div className="flex-1">
-                        {!isHomePage && (
-                            <NavLink to="/" className="flex items-center">
-                               <Logo className="h-14 w-auto" />
-                            </NavLink>
-                        )}
+                        <NavLink to="/" className="flex items-center">
+                           <Logo className="h-14 w-auto" />
+                        </NavLink>
                     </div>
                     
                     <div className="hidden md:flex items-center space-x-8">
@@ -83,7 +72,7 @@ export const Header: React.FC = () => {
                 </div>
             </nav>
 
-            <div className={`${isOpen ? 'block' : 'hidden'} md:hidden ${isHomePage ? 'bg-black/80' : 'bg-black'}`} id="mobile-menu">
+            <div className={`${isOpen ? 'block' : 'hidden'} md:hidden bg-black`} id="mobile-menu">
                 <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
                     {NAV_LINKS.map(link => (
                         <NavLink key={link.name} to={link.path} className={getLinkClass} onClick={() => setIsOpen(false)}>
