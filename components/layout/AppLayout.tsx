@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useProducts } from '../../context/ProductContext';
@@ -45,31 +46,63 @@ export const AppLayout: React.FC = () => {
         return <div className="flex justify-center items-center min-h-screen">Načítání...</div>;
     }
 
+    const marqueeText = "DOPRAVA ZDARMA PŘI NÁKUPU NAD 800 KČ";
+
     return (
         <div className="flex flex-col min-h-screen">
-            <Header />
-            <main className="flex-grow">
-                <ScrollToTop />
-                <Routes>
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/produkty" element={<ProductsPage />} />
-                    <Route path="/produkty/:id" element={<ProductDetailPage />} />
-                    <Route path="/jak-to-funguje" element={<HowItWorksPage />} />
-                    <Route path="/kontakt" element={<ContactPage />} />
-                    <Route path="/kosik" element={<CheckoutPage />} />
-                    <Route path="/dekujeme" element={<OrderConfirmationPage />} />
-                    <Route path="/obchodni-podminky" element={<TermsPage />} />
-                    <Route path="/ochrana-udaju" element={<PrivacyPage />} />
-                    <Route path="/doprava" element={<ShippingPage />} />
-                    
-                    {/* Admin Routes */}
-                    <Route path="/admin/login" element={<AdminLoginPage />} />
-                    <Route path="/admin" element={<ProtectedRoute />}>
-                        <Route index element={<AdminDashboardPage />} />
-                        <Route path="product/:id" element={<AdminProductEditPage />} />
-                    </Route>
-                </Routes>
-            </main>
+            <style>{`
+                @keyframes marquee {
+                    0% { transform: translateX(100vw); }
+                    100% { transform: translateX(-100%); }
+                }
+                .animate-marquee {
+                    display: inline-block;
+                    animation: marquee 20s linear infinite;
+                    will-change: transform;
+                }
+                .marquee-container {
+                    overflow: hidden;
+                    width: 100%;
+                    background-color: black;
+                    color: white;
+                    position: relative;
+                    z-index: 60; /* Higher than header */
+                    white-space: nowrap;
+                }
+            `}</style>
+            
+            <div className="marquee-container">
+                <div className="animate-marquee py-2">
+                    <span className="text-sm font-bold tracking-wider">{marqueeText}</span>
+                </div>
+            </div>
+
+            {/* Wrapper to ensure Header is positioned relative to the content flow below the marquee */}
+            <div className="relative flex flex-col flex-grow">
+                <Header />
+                <main className="flex-grow">
+                    <ScrollToTop />
+                    <Routes>
+                        <Route path="/" element={<HomePage />} />
+                        <Route path="/produkty" element={<ProductsPage />} />
+                        <Route path="/produkty/:id" element={<ProductDetailPage />} />
+                        <Route path="/jak-to-funguje" element={<HowItWorksPage />} />
+                        <Route path="/kontakt" element={<ContactPage />} />
+                        <Route path="/kosik" element={<CheckoutPage />} />
+                        <Route path="/dekujeme" element={<OrderConfirmationPage />} />
+                        <Route path="/obchodni-podminky" element={<TermsPage />} />
+                        <Route path="/ochrana-udaju" element={<PrivacyPage />} />
+                        <Route path="/doprava" element={<ShippingPage />} />
+                        
+                        {/* Admin Routes */}
+                        <Route path="/admin/login" element={<AdminLoginPage />} />
+                        <Route path="/admin" element={<ProtectedRoute />}>
+                            <Route index element={<AdminDashboardPage />} />
+                            <Route path="product/:id" element={<AdminProductEditPage />} />
+                        </Route>
+                    </Routes>
+                </main>
+            </div>
             <Footer />
         </div>
     );
