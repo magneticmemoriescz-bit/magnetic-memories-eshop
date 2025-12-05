@@ -36,7 +36,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'wedding-announcement',
-    name: 'Svatební oznámení',
+    name: 'Magnetická svatební oznámení',
     price: 400,
     shortDescription: 'Originální magnetická oznámení pro váš velký den.',
     description: 'Originální a nezapomenutelné svatební oznámení, které hosté neztratí z očí. Vzpomínka na váš velký den, co drží!',
