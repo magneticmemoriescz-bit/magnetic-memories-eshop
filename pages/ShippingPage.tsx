@@ -6,6 +6,11 @@ const ShippingPage: React.FC = () => (
     <PageWrapper title="Doprava a platba">
         <SectionTitle>Doba výroby</SectionTitle>
         <p>Každý produkt je vyráběn na zakázku s maximální péčí. Doba výroby je obvykle 3-5 pracovních dnů od přijetí platby. Po dokončení výroby je zásilka předána dopravci.</p>
+        
+        <div className="my-6 p-4 bg-green-50 border border-green-200 rounded-md">
+            <p className="font-bold text-green-800 text-center">DOPRAVA ZDARMA při nákupu nad 800 Kč!</p>
+        </div>
+
         <SectionTitle>Možnosti dopravy</SectionTitle>
         <ul className="list-disc pl-6 space-y-2">
             <li><strong>Zásilkovna - Výdejní místo:</strong> 89 Kč (Doručení obvykle do 2 pracovních dnů od expedice)</li>
