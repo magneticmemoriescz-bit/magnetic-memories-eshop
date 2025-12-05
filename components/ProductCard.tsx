@@ -39,7 +39,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, buttonStyle }
             to={`/produkty/${product.id}`} 
             className={`text-center block w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${buttonStyle.gradient} hover:opacity-90 transition-opacity focus:outline-none focus:ring-4 ${buttonStyle.focusRing}`}
         >
-            Zjistit více
+            Vytvoř si magnety
         </Link>
       </div>
     </div>
