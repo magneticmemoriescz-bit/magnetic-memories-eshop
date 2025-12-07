@@ -176,63 +176,85 @@ const CheckoutPage: React.FC = () => {
     const sendEmailNotifications = async (order: OrderDetails) => {
         console.log("Starting email notifications...");
         const vs = order.orderNumber;
-        const invoiceNoticeHtml = `<p style="margin-top:20px; color: #555;">Fakturu (daňový doklad) Vám zašleme v samostatném e-mailu.</p>`;
+        const currentDate = new Date().toLocaleDateString('cs-CZ');
         
+        // HTML pro platební instrukce
         let paymentDetailsHtml = '';
         if (order.payment === 'prevodem') {
             paymentDetailsHtml = `
-                <div style="margin-top: 30px; padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
-                    <h2 style="border-bottom: 2px solid #8D7EEF; padding-bottom: 10px; margin-bottom: 20px;">Platební instrukce</h2>
-                    <p>Pro dokončení objednávky prosím uhraďte částku <strong>${formatPrice(order.total)} Kč</strong> na níže uvedený účet.</p>
-                    <table style="width: 100%; margin-top: 15px;">
-                        <tr><td style="padding: 5px; color: #666;">Číslo účtu:</td><td style="padding: 5px; font-weight: bold;">3524601011/3030</td></tr>
-                        <tr><td style="padding: 5px; color: #666;">Částka:</td><td style="padding: 5px; font-weight: bold;">${formatPrice(order.total)} Kč</td></tr>
-                        <tr><td style="padding: 5px; color: #666;">Variabilní symbol:</td><td style="padding: 5px; font-weight: bold;">${vs}</td></tr>
-                    </table>
-                </div>
+                <br>
+                <h3>Platební instrukce</h3>
+                <p><strong>Číslo účtu:</strong> 3524601011/3030</p>
+                <p><strong>Částka:</strong> ${formatPrice(order.total)} Kč</p>
+                <p><strong>Variabilní symbol:</strong> ${vs}</p>
+                <br>
+                <p><em>Fakturu Vám zašleme po přijetí platby.</em></p>
             `;
         } else if (order.payment === 'dobirka') {
-             paymentDetailsHtml = `<p style="margin-top: 20px;"><strong>Platba proběhne na dobírku při převzetí zboží.</strong> Připravte si prosím hotovost nebo kartu.</p>`;
+             paymentDetailsHtml = `
+                <br>
+                <p><strong>Zvolili jste platbu na dobírku.</strong></p>
+                <p>Částku ${formatPrice(order.total)} Kč uhradíte při převzetí zásilky.</p>
+             `;
         }
 
-        let itemsHtml = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px;">';
-        itemsHtml += '<tr style="background-color: #f3f3f3;"><th style="padding: 10px; text-align: left;">Produkt</th><th style="padding: 10px; text-align: center;">Množství</th><th style="padding: 10px; text-align: right;">Cena</th></tr>';
+        // HTML pro seznam produktů
+        let itemsHtml = '<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">';
+        itemsHtml += '<tr style="background-color: #eee;"><th>Produkt</th><th>Množství</th><th>Cena</th></tr>';
         
         order.items.forEach(item => {
-            let variantInfo = item.variant ? `<br><small style="color: #666;">Varianta: ${item.variant.name}</small>` : '';
+            let variantInfo = item.variant ? ` (${item.variant.name})` : '';
             itemsHtml += `<tr>
-                <td style="padding: 10px; border-bottom: 1px solid #ddd;">
-                    <strong>${item.product.name}</strong>${variantInfo}
-                </td>
-                <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity} ks</td>
-                <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">${formatPrice(item.price * item.quantity)} Kč</td>
+                <td>${item.product.name}${variantInfo}</td>
+                <td style="text-align: center;">${item.quantity} ks</td>
+                <td style="text-align: right;">${formatPrice(item.price * item.quantity)} Kč</td>
             </tr>`;
         });
         
         if (order.discountAmount > 0) {
              itemsHtml += `<tr style="color: green;">
-                <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Sleva (${order.couponCode})</strong></td>
-                <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">1</td>
-                <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">-${formatPrice(order.discountAmount)} Kč</td>
+                <td>Sleva (${order.couponCode})</td>
+                <td style="text-align: center;">1</td>
+                <td style="text-align: right;">-${formatPrice(order.discountAmount)} Kč</td>
             </tr>`;
         }
+        
+        // Doprava a platba do tabulky
+        itemsHtml += `<tr>
+            <td>Doprava: ${order.shipping}</td>
+            <td style="text-align: center;">1</td>
+            <td style="text-align: right;">${formatPrice(order.shippingCost)} Kč</td>
+        </tr>`;
+        
+        itemsHtml += `<tr>
+            <td>Platba: ${order.payment}</td>
+            <td style="text-align: center;">1</td>
+            <td style="text-align: right;">${formatPrice(order.paymentCost)} Kč</td>
+        </tr>`;
+
+        itemsHtml += `<tr style="font-weight: bold; background-color: #f9f9f9;">
+            <td colspan="2">CELKEM K ÚHRADĚ</td>
+            <td style="text-align: right;">${formatPrice(order.total)} Kč</td>
+        </tr>`;
 
         itemsHtml += '</table>';
 
         const templateParams = {
+            subject: `Objednávka č. ${order.orderNumber}`, // Předmět e-mailu pro zákazníka
             order_number: order.orderNumber,
+            date: currentDate,
             to_name: `${order.contact.firstName} ${order.contact.lastName}`,
             to_email: order.contact.email, 
             email: order.contact.email, 
             from_name: 'Magnetic Memories',
-            message: order.contact.additionalInfo,
-            total_price: formatPrice(order.total),
-            subtotal: formatPrice(order.subtotal),
-            shipping_cost: formatPrice(order.shippingCost),
+            message: order.contact.additionalInfo || 'Bez poznámky',
+            total_price: formatPrice(order.total) + ' Kč',
+            subtotal: formatPrice(order.subtotal) + ' Kč',
+            shipping_cost: formatPrice(order.shippingCost) + ' Kč',
             shipping_method: order.shipping,
             payment_method: order.payment,
-            items_html: itemsHtml,
-            payment_details: paymentDetailsHtml + invoiceNoticeHtml,
+            items_html: itemsHtml, 
+            payment_details: paymentDetailsHtml,
             street: order.contact.street,
             city: order.contact.city,
             zip: order.contact.zip,
@@ -240,29 +262,27 @@ const CheckoutPage: React.FC = () => {
             reply_to: 'magnetic.memories.cz@gmail.com'
         };
         
-        // Admin Notification Params (send to YOU)
+        // Parametry pro Admina (upravený předmět a příjemce)
         const adminTemplateParams = {
             ...templateParams,
+            subject: `Nová objednávka: ${order.orderNumber} - ${order.contact.lastName} (${formatPrice(order.total)} Kč)`,
+            to_name: 'Admin',
             to_email: 'magnetic.memories.cz@gmail.com', // Admin email
-            email: 'magnetic.memories.cz@gmail.com'
+            email: order.contact.email // Email zákazníka (pro odpověď)
         };
 
         try {
-            console.log("Sending Customer Email to:", order.contact.email, "Template:", EMAILJS_TEMPLATE_ID_USER);
-            // 1. Send confirmation to customer (Auto-Reply)
+            console.log("Sending Customer Email...");
             await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_USER, templateParams);
             
-            console.log("Sending Admin Email to: magnetic.memories.cz@gmail.com", "Template:", EMAILJS_TEMPLATE_ID_ADMIN);
-            // 2. Send notification to admin (Order Confirmation)
+            console.log("Sending Admin Email...");
             await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, adminTemplateParams);
             
             console.log("Emails sent successfully.");
 
         } catch (error: any) {
             console.error('Email sending failed:', error);
-            // Alert only on hard failure during testing, in production we might log it silenty.
-            // But since you are debugging, we keep the alert.
-            alert(`CHYBA PŘI ODESÍLÁNÍ EMAILU: ${error.text || JSON.stringify(error)}\n\nPokud se objednávka dokončí, ale email nepřijde, zkontrolujte "To Email" v nastavení šablony na EmailJS.`);
+            alert(`CHYBA PŘI ODESÍLÁNÍ EMAILU: ${error.text || JSON.stringify(error)}\n\nUjistěte se, že v šabloně EmailJS používáte proměnné: {{order_number}}, {{{items_html}}}, {{total_price}} atd.`);
         }
     };
     
@@ -272,9 +292,9 @@ const CheckoutPage: React.FC = () => {
             const webhookItems = order.items.map(item => ({
                 id: item.product.id,
                 name: item.product.name + (item.variant ? ` - ${item.variant.name}` : ''),
-                quantity: item.quantity,
+                quantity: Number(item.quantity),
                 unit_price: Number(item.price), // FORCE NUMBER for Make.com
-                vat_rate: 0, // Default to 0 if not specified
+                vat_rate: 0, // Důležité pro Fakturoid
                 price: Number(item.price),
                 photos: item.photos.map(p => p.url)
             }));
@@ -297,13 +317,17 @@ const CheckoutPage: React.FC = () => {
                 contact: {
                     ...order.contact,
                     name: `${order.contact.firstName} ${order.contact.lastName}`,
+                    full_name: `${order.contact.firstName} ${order.contact.lastName}`, // Pro jistotu
                 },
+                // Rozšířené billing údaje pro lepší matching kontaktů ve Fakturoidu
                 billing: {
                     name: `${order.contact.firstName} ${order.contact.lastName}`,
                     street: order.contact.street,
                     city: order.contact.city,
                     zip: order.contact.zip,
-                    country: 'CZ'
+                    country: 'CZ',
+                    email: order.contact.email, // Přidáno pro Fakturoid
+                    phone: order.contact.phone  // Přidáno pro Fakturoid
                 },
                 shipping: {
                     method: order.shipping,
@@ -330,9 +354,11 @@ const CheckoutPage: React.FC = () => {
             });
             
             if (!response.ok) {
-                throw new Error(`Make webhook responded with status ${response.status}`);
+                // Log only, don't throw to user
+                console.warn(`Make webhook responded with status ${response.status}`);
+            } else {
+                console.log("Make webhook success");
             }
-            console.log("Make webhook success");
             
         } catch (error) {
             // We catch the error here so it doesn't block the user from seeing the Thank You page
@@ -388,12 +414,9 @@ const CheckoutPage: React.FC = () => {
             await sendEmailNotifications(orderDetails);
             
             // 2. Send to Make.com (Independent try/catch inside)
-            // Even if this fails, we want to redirect the user to Thank You page
             await sendToMakeWebhook(orderDetails);
             
             // 3. Clear Cart & Redirect
-            // We do this regardless of Make/Email success because we don't want the user to pay twice
-            // or get stuck. Errors are logged for Admin.
             dispatch({ type: 'CLEAR_CART' });
             navigate('/dekujeme', { state: { order: orderDetails } });
 
