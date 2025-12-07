@@ -62,7 +62,7 @@ const HomePage: React.FC = () => {
                                 ))}
                             </div>
                             
-                            <p className="mt-6 text-xl sm:text-2xl font-bold text-brand-purple">
+                            <p className="mt-6 text-xl sm:text-2xl font-bold text-brand-pink">
                                 Celý proces je snadný a zabere jen chvilku.
                             </p>
                         </div>
