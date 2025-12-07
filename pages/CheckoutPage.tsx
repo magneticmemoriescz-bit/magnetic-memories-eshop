@@ -204,8 +204,22 @@ const CheckoutPage: React.FC = () => {
         
         order.items.forEach(item => {
             let variantInfo = item.variant ? ` (${item.variant.name})` : '';
+            
+            // Generování odkazů na fotky
+            let photosHtml = '';
+            if (item.photos && item.photos.length > 0) {
+                photosHtml = '<br><br><strong>Fotografie ke stažení:</strong><br>';
+                item.photos.forEach((photo, index) => {
+                     // Použijeme originální URL z Uploadcare
+                     photosHtml += `<a href="${photo.url}" target="_blank" style="color: #8D7EEF; text-decoration: none;">Fotka ${index + 1}</a> &nbsp;`;
+                });
+            }
+
             itemsHtml += `<tr>
-                <td>${item.product.name}${variantInfo}</td>
+                <td>
+                    <strong>${item.product.name}${variantInfo}</strong>
+                    ${photosHtml}
+                </td>
                 <td style="text-align: center;">${item.quantity} ks</td>
                 <td style="text-align: right;">${formatPrice(item.price * item.quantity)} Kč</td>
             </tr>`;
