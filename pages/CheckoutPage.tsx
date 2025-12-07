@@ -178,80 +178,101 @@ const CheckoutPage: React.FC = () => {
         const vs = order.orderNumber;
         const currentDate = new Date().toLocaleDateString('cs-CZ');
         
+        // --- STYLY PRO E-MAIL ---
+        const styleTable = 'width: 100%; border-collapse: collapse; font-family: Helvetica, Arial, sans-serif; font-size: 14px;';
+        const styleTh = 'text-align: left; padding: 12px; background-color: #f3f4f6; color: #374151; border-bottom: 2px solid #e5e7eb; font-weight: bold;';
+        const styleTd = 'padding: 12px; border-bottom: 1px solid #e5e7eb; color: #4b5563; vertical-align: top;';
+        const styleTdPrice = 'padding: 12px; border-bottom: 1px solid #e5e7eb; color: #111827; text-align: right; font-weight: bold; white-space: nowrap;';
+        const styleLink = 'color: #EA5C9D; text-decoration: none; font-weight: bold;';
+        const styleBox = 'background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-top: 20px;';
+
         // HTML pro platební instrukce
         let paymentDetailsHtml = '';
         if (order.payment === 'prevodem') {
             paymentDetailsHtml = `
-                <br>
-                <h3>Platební instrukce</h3>
-                <p><strong>Číslo účtu:</strong> 3524601011/3030</p>
-                <p><strong>Částka:</strong> ${formatPrice(order.total)} Kč</p>
-                <p><strong>Variabilní symbol:</strong> ${vs}</p>
-                <br>
-                <p><em>Fakturu Vám zašleme po přijetí platby.</em></p>
+                <div style="${styleBox}">
+                    <h3 style="margin-top: 0; color: #8D7EEF; font-size: 16px;">Platební instrukce</h3>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 4px 0; color: #6b7280;">Číslo účtu:</td>
+                            <td style="padding: 4px 0; font-weight: bold; color: #111827;">3524601011/3030</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 4px 0; color: #6b7280;">Částka:</td>
+                            <td style="padding: 4px 0; font-weight: bold; color: #EA5C9D; font-size: 16px;">${formatPrice(order.total)} Kč</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 4px 0; color: #6b7280;">Variabilní symbol:</td>
+                            <td style="padding: 4px 0; font-weight: bold; color: #111827;">${vs}</td>
+                        </tr>
+                    </table>
+                    <p style="margin: 12px 0 0 0; font-size: 12px; color: #9ca3af; font-style: italic;">Fakturu Vám zašleme po přijetí platby.</p>
+                </div>
             `;
         } else if (order.payment === 'dobirka') {
              paymentDetailsHtml = `
-                <br>
-                <p><strong>Zvolili jste platbu na dobírku.</strong></p>
-                <p>Částku ${formatPrice(order.total)} Kč uhradíte při převzetí zásilky.</p>
+                <div style="${styleBox}">
+                    <p style="margin: 0; font-weight: bold; color: #111827;">Zvolili jste platbu na dobírku.</p>
+                    <p style="margin: 4px 0 0 0; color: #4b5563;">Částku <strong>${formatPrice(order.total)} Kč</strong> uhradíte při převzetí zásilky.</p>
+                </div>
              `;
         }
 
         // HTML pro seznam produktů
-        let itemsHtml = '<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">';
-        itemsHtml += '<tr style="background-color: #eee;"><th>Produkt</th><th>Množství</th><th>Cena</th></tr>';
+        let itemsHtml = `<table style="${styleTable}">`;
+        itemsHtml += `<thead><tr><th style="${styleTh}">Produkt</th><th style="${styleTh} text-align: center;">Ks</th><th style="${styleTh} text-align: right;">Cena</th></tr></thead><tbody>`;
         
         order.items.forEach(item => {
-            let variantInfo = item.variant ? ` (${item.variant.name})` : '';
+            let variantInfo = item.variant ? `<br><span style="font-size: 12px; color: #6b7280;">Varianta: ${item.variant.name}</span>` : '';
             
             // Generování odkazů na fotky
             let photosHtml = '';
             if (item.photos && item.photos.length > 0) {
-                photosHtml = '<br><br><strong>Fotografie ke stažení:</strong><br>';
+                photosHtml = '<div style="margin-top: 8px; font-size: 12px;">';
                 item.photos.forEach((photo, index) => {
-                     // Použijeme originální URL z Uploadcare
-                     photosHtml += `<a href="${photo.url}" target="_blank" style="color: #8D7EEF; text-decoration: none;">Fotka ${index + 1}</a> &nbsp;`;
+                     photosHtml += `<a href="${photo.url}" target="_blank" style="${styleLink}">Fotka ${index + 1}</a> &nbsp;`;
                 });
+                photosHtml += '</div>';
             }
 
             itemsHtml += `<tr>
-                <td>
-                    <strong>${item.product.name}${variantInfo}</strong>
+                <td style="${styleTd}">
+                    <strong style="color: #111827;">${item.product.name}</strong>
+                    ${variantInfo}
                     ${photosHtml}
                 </td>
-                <td style="text-align: center;">${item.quantity} ks</td>
-                <td style="text-align: right;">${formatPrice(item.price * item.quantity)} Kč</td>
+                <td style="${styleTd} text-align: center;">${item.quantity}</td>
+                <td style="${styleTdPrice}">${formatPrice(item.price * item.quantity)} Kč</td>
             </tr>`;
         });
         
         if (order.discountAmount > 0) {
-             itemsHtml += `<tr style="color: green;">
-                <td>Sleva (${order.couponCode})</td>
-                <td style="text-align: center;">1</td>
-                <td style="text-align: right;">-${formatPrice(order.discountAmount)} Kč</td>
+             itemsHtml += `<tr>
+                <td style="${styleTd} color: #059669;">Sleva (${order.couponCode})</td>
+                <td style="${styleTd} text-align: center;">1</td>
+                <td style="${styleTdPrice} color: #059669;">-${formatPrice(order.discountAmount)} Kč</td>
             </tr>`;
         }
         
         // Doprava a platba do tabulky
         itemsHtml += `<tr>
-            <td>Doprava: ${order.shipping}</td>
-            <td style="text-align: center;">1</td>
-            <td style="text-align: right;">${formatPrice(order.shippingCost)} Kč</td>
+            <td style="${styleTd}">Doprava: ${order.shipping}</td>
+            <td style="${styleTd} text-align: center;">1</td>
+            <td style="${styleTdPrice}">${formatPrice(order.shippingCost)} Kč</td>
         </tr>`;
         
         itemsHtml += `<tr>
-            <td>Platba: ${order.payment}</td>
-            <td style="text-align: center;">1</td>
-            <td style="text-align: right;">${formatPrice(order.paymentCost)} Kč</td>
+            <td style="${styleTd}">Platba: ${order.payment}</td>
+            <td style="${styleTd} text-align: center;">1</td>
+            <td style="${styleTdPrice}">${formatPrice(order.paymentCost)} Kč</td>
         </tr>`;
 
-        itemsHtml += `<tr style="font-weight: bold; background-color: #f9f9f9;">
-            <td colspan="2">CELKEM K ÚHRADĚ</td>
-            <td style="text-align: right;">${formatPrice(order.total)} Kč</td>
+        itemsHtml += `<tr style="background-color: #fdf2f8;">
+            <td colspan="2" style="padding: 16px 12px; text-align: right; font-weight: bold; color: #831843; border-top: 2px solid #EA5C9D;">CELKEM K ÚHRADĚ</td>
+            <td style="padding: 16px 12px; text-align: right; font-weight: bold; font-size: 18px; color: #831843; border-top: 2px solid #EA5C9D; white-space: nowrap;">${formatPrice(order.total)} Kč</td>
         </tr>`;
 
-        itemsHtml += '</table>';
+        itemsHtml += '</tbody></table>';
 
         const templateParams = {
             subject: `Objednávka č. ${order.orderNumber}`, // Předmět e-mailu pro zákazníka
