@@ -9,6 +9,15 @@ import { RadioCard } from '../components/forms/RadioCard';
 import { MAKE_WEBHOOK_URL } from '../constants';
 import { formatPrice } from '../utils/format';
 
+// --- KONFIGURACE EMAILJS ---
+const EMAILJS_SERVICE_ID = 'service_2pkoish';
+
+// ID šablony "Auto-Reply Magnetic Memories" (pro ZÁKAZNÍKA)
+const EMAILJS_TEMPLATE_ID_USER = 'template_1v2vxgh'; 
+
+// ID šablony "Order Confirmation" (pro VÁS/ADMINA)
+const EMAILJS_TEMPLATE_ID_ADMIN = 'template_8ax2a2w'; 
+
 interface OrderDetails {
     contact: { [key: string]: string };
     shipping: string;
@@ -243,15 +252,16 @@ const CheckoutPage: React.FC = () => {
         };
 
         try {
-            // 1. Send confirmation to customer
-            // NOTE: Using 'service_2pkoish' (Gmail)
-            await window.emailjs.send('service_2pkoish', 'template_order_confirmation', templateParams);
+            // 1. Send confirmation to customer (Auto-Reply)
+            await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_USER, templateParams);
             
-            // 2. Send notification to admin
-            await window.emailjs.send('service_2pkoish', 'template_order_notification', adminTemplateParams);
+            // 2. Send notification to admin (Order Confirmation)
+            await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, adminTemplateParams);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Email sending failed:', error);
+            // Zobrazit alert, aby uživatel věděl, že se něco pokazilo a mohl to nahlásit/opravit
+            alert(`CHYBA PŘI ODESÍLÁNÍ EMAILU: ${error.text || JSON.stringify(error)}\n\nZkontrolujte prosím: 1) Public Key v AppLayout.tsx, 2) Template ID v CheckoutPage.tsx`);
             // We don't stop the process if email fails, but we log it.
         }
     };
@@ -263,6 +273,7 @@ const CheckoutPage: React.FC = () => {
                 id: item.product.id,
                 name: item.product.name + (item.variant ? ` - ${item.variant.name}` : ''),
                 quantity: item.quantity,
+                unit_price: item.price, // Required by Make.com/Fakturoid
                 price: item.price,
                 photos: item.photos.map(p => p.url)
             }));
@@ -272,6 +283,7 @@ const CheckoutPage: React.FC = () => {
                     id: 'discount',
                     name: `Sleva (${order.couponCode})`,
                     quantity: 1,
+                    unit_price: -order.discountAmount, // Required by Make.com/Fakturoid
                     price: -order.discountAmount,
                     photos: []
                 });
