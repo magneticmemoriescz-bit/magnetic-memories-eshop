@@ -22,7 +22,7 @@ export const Seo: React.FC<SeoProps> = ({
     // 1. Update Document Title
     document.title = title;
 
-    // 2. Helper to update meta tags
+    // Helper to update meta tags
     const updateMeta = (selectorAttr: string, selectorValue: string, content: string) => {
         let element = document.querySelector(`meta[${selectorAttr}="${selectorValue}"]`);
         if (!element) {
@@ -34,7 +34,21 @@ export const Seo: React.FC<SeoProps> = ({
         element.setAttribute('content', content);
     };
 
+    // Helper to update link tags (for canonical)
+    const updateLink = (rel: string, href: string) => {
+        let element = document.querySelector(`link[rel="${rel}"]`);
+        if (!element) {
+            element = document.createElement('link');
+            element.setAttribute('rel', rel);
+            document.head.appendChild(element);
+        }
+        element.setAttribute('href', href);
+    };
+
     const currentUrl = window.location.href;
+
+    // 2. Canonical URL (Important for SEO to resolve redirects/duplicates)
+    updateLink('canonical', currentUrl);
 
     // 3. Standard SEO
     updateMeta('name', 'description', description);
