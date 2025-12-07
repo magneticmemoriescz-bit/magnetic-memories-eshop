@@ -6,6 +6,10 @@ const ContactPage: React.FC = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const formRef = useRef<HTMLFormElement>(null);
 
+    // ID šablony "Contact Us Magnetic Memories"
+    const CONTACT_TEMPLATE_ID = 'template_ajmxwjd';
+    const SERVICE_ID = 'service_2pkoish'; // Gmail service
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setStatus('sending');
@@ -17,14 +21,17 @@ const ContactPage: React.FC = () => {
             return;
         }
 
-        // Using Gmail service (service_2pkoish)
-        window.emailjs.sendForm('service_2pkoish', 'template_ajmxwjd', formRef.current)
+        window.emailjs.sendForm(SERVICE_ID, CONTACT_TEMPLATE_ID, formRef.current)
             .then(() => {
                 setStatus('success');
             }, (error: any) => {
                 console.error('FAILED to send contact form:', error);
-                setErrorMessage(`Odeslání zprávy se nezdařilo: ${error.text || 'Zkuste to prosím znovu.'}`);
+                const errorMsg = error.text || 'Neznámá chyba';
+                setErrorMessage(`Odeslání zprávy se nezdařilo: ${errorMsg}`);
                 setStatus('error');
+                
+                // Alert pro rychlou diagnostiku (stejně jako v košíku)
+                alert(`CHYBA PŘI ODESÍLÁNÍ KONTAKTNÍHO FORMULÁŘE:\n${errorMsg}\n\nZkontrolujte Public Key a Template ID.`);
             });
     };
 
@@ -56,6 +63,9 @@ const ContactPage: React.FC = () => {
                         </div>
                     ) : (
                         <form ref={formRef} onSubmit={handleSubmit} className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8">
+                            {/* SKRYTÉ POLE: Zajišťuje, že email přijde VÁM (adminovi) */}
+                            <input type="hidden" name="to_email" value="magnetic.memories.cz@gmail.com" />
+                            
                             <div>
                                 <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">Jméno</label>
                                 <div className="mt-1"><input type="text" name="first_name" id="first_name" autoComplete="given-name" className={inputStyles} required /></div>
@@ -65,7 +75,7 @@ const ContactPage: React.FC = () => {
                                 <div className="mt-1"><input type="text" name="last_name" id="last_name" autoComplete="family-name" className={inputStyles} required /></div>
                             </div>
                             <div className="sm:col-span-2">
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+                                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Váš Email</label>
                                 <div className="mt-1"><input id="email" name="email" type="email" autoComplete="email" className={inputStyles} required /></div>
                             </div>
                             <div className="sm:col-span-2">
