@@ -72,6 +72,27 @@
     <script>
       UPLOADCARE_PUBLIC_KEY = 'aa96da339a5d48983ea2';
       UPLOADCARE_LOCALE = 'cs';
+      // Custom translations to replace "Computer" with "Device/Gallery" for mobile friendliness
+      UPLOADCARE_LOCALE_TRANSLATIONS = {
+        buttons: {
+          choose: {
+            files: {
+              one: 'Vybrat fotku',
+              other: 'Vybrat fotky'
+            }
+          }
+        },
+        dialog: {
+          tabs: {
+            file: {
+              button: 'Vybrat z počítače / mobilu',
+              title: 'Z počítače / mobilu',
+              drag: 'Přetáhněte fotky sem',
+              dragAny: 'Přetáhněte soubory sem'
+            }
+          }
+        }
+      };
     </script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script type="importmap">
