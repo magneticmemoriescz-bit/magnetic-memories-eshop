@@ -10,7 +10,7 @@ import { MAKE_WEBHOOK_URL } from '../constants';
 import { formatPrice } from '../utils/format';
 
 // --- KONFIGURACE EMAILJS ---
-const EMAILJS_SERVICE_ID = 'service_2pkoish';
+const EMAILJS_SERVICE_ID = 'service_2pkoish'; // Gmail Service
 
 // ID šablony "Auto-Reply Magnetic Memories" (pro ZÁKAZNÍKA)
 const EMAILJS_TEMPLATE_ID_USER = 'template_1v2vxgh'; 
@@ -120,7 +120,6 @@ const CheckoutPage: React.FC = () => {
     // Only allow 'doporucene' if subtotal is less than 1000 CZK
     const isDoporuceneAvailable = subtotal < 1000;
 
-    // Effect to reset shipping method if 'doporucene' is selected but no longer valid
     useEffect(() => {
         if (shippingMethod === 'doporucene' && !isDoporuceneAvailable) {
             setShippingMethod(null);
@@ -134,10 +133,6 @@ const CheckoutPage: React.FC = () => {
     
     const handleRemoveItem = (id: string) => {
         dispatch({ type: 'REMOVE_ITEM', payload: { id } });
-    };
-
-    const handleUpdateQuantity = (id: string, newQuantity: number) => {
-        dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity: newQuantity } });
     };
 
     const openPacketaWidget = () => {
@@ -179,6 +174,7 @@ const CheckoutPage: React.FC = () => {
     };
 
     const sendEmailNotifications = async (order: OrderDetails) => {
+        console.log("Starting email notifications...");
         const vs = order.orderNumber;
         const invoiceNoticeHtml = `<p style="margin-top:20px; color: #555;">Fakturu (daňový doklad) Vám zašleme v samostatném e-mailu.</p>`;
         
@@ -226,8 +222,8 @@ const CheckoutPage: React.FC = () => {
         const templateParams = {
             order_number: order.orderNumber,
             to_name: `${order.contact.firstName} ${order.contact.lastName}`,
-            to_email: order.contact.email, // Standard EmailJS recipient
-            email: order.contact.email, // Duplicate for template compatibility
+            to_email: order.contact.email, 
+            email: order.contact.email, 
             from_name: 'Magnetic Memories',
             message: order.contact.additionalInfo,
             total_price: formatPrice(order.total),
@@ -247,22 +243,26 @@ const CheckoutPage: React.FC = () => {
         // Admin Notification Params (send to YOU)
         const adminTemplateParams = {
             ...templateParams,
-            to_email: 'magnetic.memories.cz@gmail.com', // Admin email for notifications
+            to_email: 'magnetic.memories.cz@gmail.com', // Admin email
             email: 'magnetic.memories.cz@gmail.com'
         };
 
         try {
+            console.log("Sending Customer Email to:", order.contact.email, "Template:", EMAILJS_TEMPLATE_ID_USER);
             // 1. Send confirmation to customer (Auto-Reply)
             await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_USER, templateParams);
             
+            console.log("Sending Admin Email to: magnetic.memories.cz@gmail.com", "Template:", EMAILJS_TEMPLATE_ID_ADMIN);
             // 2. Send notification to admin (Order Confirmation)
             await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, adminTemplateParams);
+            
+            console.log("Emails sent successfully.");
 
         } catch (error: any) {
             console.error('Email sending failed:', error);
-            // Zobrazit alert, aby uživatel věděl, že se něco pokazilo a mohl to nahlásit/opravit
-            alert(`CHYBA PŘI ODESÍLÁNÍ EMAILU: ${error.text || JSON.stringify(error)}\n\nZkontrolujte prosím: 1) Public Key v AppLayout.tsx, 2) Template ID v CheckoutPage.tsx`);
-            // We don't stop the process if email fails, but we log it.
+            // Alert only on hard failure during testing, in production we might log it silenty.
+            // But since you are debugging, we keep the alert.
+            alert(`CHYBA PŘI ODESÍLÁNÍ EMAILU: ${error.text || JSON.stringify(error)}\n\nPokud se objednávka dokončí, ale email nepřijde, zkontrolujte "To Email" v nastavení šablony na EmailJS.`);
         }
     };
     
@@ -273,8 +273,9 @@ const CheckoutPage: React.FC = () => {
                 id: item.product.id,
                 name: item.product.name + (item.variant ? ` - ${item.variant.name}` : ''),
                 quantity: item.quantity,
-                unit_price: item.price, // Required by Make.com/Fakturoid
-                price: item.price,
+                unit_price: Number(item.price), // FORCE NUMBER for Make.com
+                vat_rate: 0, // Default to 0 if not specified
+                price: Number(item.price),
                 photos: item.photos.map(p => p.url)
             }));
 
@@ -283,8 +284,9 @@ const CheckoutPage: React.FC = () => {
                     id: 'discount',
                     name: `Sleva (${order.couponCode})`,
                     quantity: 1,
-                    unit_price: -order.discountAmount, // Required by Make.com/Fakturoid
-                    price: -order.discountAmount,
+                    unit_price: Number(-order.discountAmount), // FORCE NUMBER
+                    vat_rate: 0,
+                    price: Number(-order.discountAmount),
                     photos: []
                 });
             }
@@ -294,10 +296,10 @@ const CheckoutPage: React.FC = () => {
                 created: new Date().toISOString(),
                 contact: {
                     ...order.contact,
-                    name: `${order.contact.firstName} ${order.contact.lastName}`, // Ensure full name for billing
+                    name: `${order.contact.firstName} ${order.contact.lastName}`,
                 },
                 billing: {
-                    name: `${order.contact.firstName} ${order.contact.lastName}`, // Explicit billing object for Make mapping
+                    name: `${order.contact.firstName} ${order.contact.lastName}`,
                     street: order.contact.street,
                     city: order.contact.city,
                     zip: order.contact.zip,
@@ -305,27 +307,36 @@ const CheckoutPage: React.FC = () => {
                 },
                 shipping: {
                     method: order.shipping,
-                    cost: order.shippingCost,
+                    cost: Number(order.shippingCost),
                     packetaPoint: order.packetaPoint
                 },
                 payment: {
                     method: order.payment,
-                    cost: order.paymentCost
+                    cost: Number(order.paymentCost)
                 },
                 items: webhookItems,
                 totals: {
-                    subtotal: order.subtotal - order.discountAmount,
-                    total: order.total
+                    subtotal: Number(order.subtotal - order.discountAmount),
+                    total: Number(order.total)
                 }
             };
             
-            await fetch(MAKE_WEBHOOK_URL, {
+            console.log("Sending payload to Make:", payload);
+
+            const response = await fetch(MAKE_WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
+            
+            if (!response.ok) {
+                throw new Error(`Make webhook responded with status ${response.status}`);
+            }
+            console.log("Make webhook success");
+            
         } catch (error) {
-            console.error('Webhook sending failed:', error);
+            // We catch the error here so it doesn't block the user from seeing the Thank You page
+            console.error('Webhook sending failed (non-critical for user flow):', error);
         }
     }
 
@@ -373,21 +384,22 @@ const CheckoutPage: React.FC = () => {
                 marketingConsent
             };
 
-            // 1. Send Emails
+            // 1. Send Emails (Independent try/catch inside)
             await sendEmailNotifications(orderDetails);
             
-            // 2. Send to Make.com (Invoice)
+            // 2. Send to Make.com (Independent try/catch inside)
+            // Even if this fails, we want to redirect the user to Thank You page
             await sendToMakeWebhook(orderDetails);
             
-            // 3. Clear Cart
+            // 3. Clear Cart & Redirect
+            // We do this regardless of Make/Email success because we don't want the user to pay twice
+            // or get stuck. Errors are logged for Admin.
             dispatch({ type: 'CLEAR_CART' });
-            
-            // 4. Redirect
             navigate('/dekujeme', { state: { order: orderDetails } });
 
         } catch (error) {
-            console.error("Order submission failed:", error);
-            setSubmitError('Omlouváme se, došlo k chybě při odesílání objednávky. Zkuste to prosím znovu nebo nás kontaktujte.');
+            console.error("Order submission critical failure:", error);
+            setSubmitError('Omlouváme se, došlo k neočekávané chybě. Pokud se vám částka strhla, kontaktujte nás.');
         } finally {
             setIsSubmitting(false);
         }
