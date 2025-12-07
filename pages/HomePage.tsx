@@ -20,27 +20,34 @@ const HomePage: React.FC = () => {
     return (
         <>
             <Seo />
-            {/* Intro Section with Logo and Icons */}
-            <section className="py-12 sm:py-20 bg-white">
+            {/* Hero Section */}
+            <section className="py-12 sm:py-20 bg-brand-pink/10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     {/* Changed to 12-column grid for 1/3 vs 2/3 split */}
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
                         {/* Left Column: Big Logo - takes 4/12 columns (33%) */}
                         <div className="flex justify-center md:col-span-4">
-                            {/* Reduced max-width from sm to xs */}
-                            <Logo className="w-full max-w-xs h-auto drop-shadow-lg" />
+                            {/* Mobile: significantly smaller (w-40), Desktop: max-w-xs */}
+                            <Logo className="w-40 md:w-full md:max-w-xs h-auto drop-shadow-lg" />
                         </div>
 
                         {/* Right Column: Text & Icons - takes 8/12 columns (66%) */}
                         <div className="text-center md:text-left md:col-span-8">
                             <h1 className="text-4xl font-extrabold text-dark-gray mb-6">Proměňte své fotky v jedinečné magnetické produkty</h1>
-                            <p className="mt-4 text-lg text-gray-600">
-                                Máte telefon plný krásných fotek z dovolené, oslav nebo všedních okamžiků? Vytvořte si kvalitní fotomagnetky, které vám budou dělat radost každý den na lednici, magnetické tabuli nebo jako originální dárek pro vaše blízké.
+                            <p className="mt-4 text-lg text-gray-700 font-medium leading-relaxed">
+                                Máte telefon plný krásných fotek telefonu nebo PC? Vytvořte si fotomagnetky pro radost nebo jako originální dárek.
                             </p>
 
-                            {/* Process Icons Mini-row with Labels */}
-                            <div className="mt-10 flex flex-wrap justify-center md:justify-start gap-6">
-                                {HOW_IT_WORKS_STEPS.map((step, index) => (
+                            {/* Main CTA Button - High Visibility */}
+                            <div className="mt-8 mb-10">
+                                <Link to="/produkty" className="inline-block bg-brand-purple text-white font-bold py-4 px-10 rounded-full shadow-xl hover:opacity-90 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brand-purple/50 text-lg">
+                                    VYTVOŘIT MAGNETKY
+                                </Link>
+                            </div>
+
+                            {/* Process Icons Mini-row with Labels - Only first 3 steps */}
+                            <div className="flex flex-wrap justify-center md:justify-start gap-6">
+                                {HOW_IT_WORKS_STEPS.slice(0, 3).map((step, index) => (
                                     <div key={index} className="flex flex-col items-center w-24">
                                         <div className={`flex items-center justify-center h-12 w-12 rounded-full ${iconColors[index]} text-white shadow-md mb-3`} title={step.title}>
                                             <div className="transform scale-75">
@@ -63,7 +70,7 @@ const HomePage: React.FC = () => {
             </section>
 
             {/* Product Overview Section */}
-            <section className="pb-16 sm:pb-24">
+            <section className="pb-16 sm:pb-24 pt-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <h2 className="text-3xl font-extrabold text-center text-dark-gray">Naše Produkty</h2>
                     {/* FIX: Changed from grid to a centered flex layout */}
