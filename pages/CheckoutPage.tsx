@@ -183,7 +183,6 @@ const CheckoutPage: React.FC = () => {
         const styleTh = 'text-align: left; padding: 12px; background-color: #f3f4f6; color: #374151; border-bottom: 2px solid #e5e7eb; font-weight: bold;';
         const styleTd = 'padding: 12px; border-bottom: 1px solid #e5e7eb; color: #4b5563; vertical-align: top;';
         const styleTdPrice = 'padding: 12px; border-bottom: 1px solid #e5e7eb; color: #111827; text-align: right; font-weight: bold; white-space: nowrap;';
-        const styleLink = 'color: #EA5C9D; text-decoration: none; font-weight: bold;';
         const styleBox = 'background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-top: 20px;';
 
         // HTML pro platební instrukce
@@ -225,19 +224,29 @@ const CheckoutPage: React.FC = () => {
         order.items.forEach(item => {
             let variantInfo = item.variant ? `<br><span style="font-size: 12px; color: #6b7280;">Varianta: ${item.variant.name}</span>` : '';
             
-            // Generování odkazů na fotky
+            // Generování odkazů na fotky - UPRAVENO NA TLAČÍTKA
             let photosHtml = '';
             if (item.photos && item.photos.length > 0) {
-                photosHtml = '<div style="margin-top: 8px; font-size: 12px;">';
+                photosHtml = '<div style="margin-top: 12px;">';
                 item.photos.forEach((photo, index) => {
-                     photosHtml += `<a href="${photo.url}" target="_blank" style="${styleLink}">Fotka ${index + 1}</a> &nbsp;`;
+                     let url = photo.url;
+                     if (url && !url.startsWith('http')) {
+                         url = 'https://' + url;
+                     }
+                     
+                     photosHtml += `
+                        <div style="margin-bottom: 6px;">
+                            <a href="${url}" target="_blank" style="display: inline-block; background-color: #8D7EEF; color: #ffffff; text-decoration: none; padding: 8px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; border: 1px solid #7c6fd0;">
+                                STÁHNOUT FOTKU ${index + 1}
+                            </a>
+                        </div>`;
                 });
                 photosHtml += '</div>';
             }
 
             itemsHtml += `<tr>
                 <td style="${styleTd}">
-                    <strong style="color: #111827;">${item.product.name}</strong>
+                    <strong style="color: #111827; font-size: 15px;">${item.product.name}</strong>
                     ${variantInfo}
                     ${photosHtml}
                 </td>
