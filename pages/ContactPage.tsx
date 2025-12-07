@@ -17,8 +17,8 @@ const ContactPage: React.FC = () => {
             return;
         }
 
-        // Using SMTP service (service_m6t8eve) as requested to use hosting email
-        window.emailjs.sendForm('service_m6t8eve', 'template_ajmxwjd', formRef.current)
+        // Using Gmail service (service_2pkoish)
+        window.emailjs.sendForm('service_2pkoish', 'template_ajmxwjd', formRef.current)
             .then(() => {
                 setStatus('success');
             }, (error: any) => {
@@ -39,8 +39,8 @@ const ContactPage: React.FC = () => {
                     <div className="mt-4">
                          <p className="text-base text-gray-500">
                             Napsat nám můžete také přímo na email: <br />
-                            <a href="mailto:magnetic.memories@magnetify.cz" className="font-medium text-brand-purple hover:text-brand-pink transition-colors">
-                                magnetic.memories@magnetify.cz
+                            <a href="mailto:magnetic.memories.cz@gmail.com" className="font-medium text-brand-purple hover:text-brand-pink transition-colors">
+                                magnetic.memories.cz@gmail.com
                             </a>
                         </p>
                     </div>
