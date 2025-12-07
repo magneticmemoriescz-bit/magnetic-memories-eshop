@@ -306,10 +306,11 @@ const CheckoutPage: React.FC = () => {
             reply_to: 'magnetic.memories.cz@gmail.com'
         };
         
-        // Parametry pro Admina (upravený předmět a příjemce)
+        // Parametry pro Admina (upravený předmět s typem platby)
+        const paymentLabel = order.payment === 'dobirka' ? 'DOBÍRKA' : 'PŘEVOD';
         const adminTemplateParams = {
             ...templateParams,
-            subject: `Nová objednávka: ${order.orderNumber} - ${order.contact.lastName} (${formatPrice(order.total)} Kč)`,
+            subject: `NOVÁ OBJEDNÁVKA: ${order.orderNumber} - ${order.contact.lastName} (${formatPrice(order.total)} Kč, ${paymentLabel})`,
             to_name: 'Admin',
             to_email: 'magnetic.memories.cz@gmail.com', // Admin email
             email: order.contact.email // Email zákazníka (pro odpověď)
@@ -326,26 +327,29 @@ const CheckoutPage: React.FC = () => {
 
         } catch (error: any) {
             console.error('Email sending failed:', error);
-            alert(`CHYBA PŘI ODESÍLÁNÍ EMAILU: ${error.text || JSON.stringify(error)}\n\nUjistěte se, že v šabloně EmailJS používáte proměnné: {{order_number}}, {{{items_html}}}, {{total_price}} atd.`);
+            // Alert only on email failure to let admin know, but allow flow to continue if needed
+            alert(`CHYBA PŘI ODESÍLÁNÍ EMAILU: ${error.text || JSON.stringify(error)}`);
         }
     };
     
     const sendToMakeWebhook = async (order: OrderDetails) => {
         try {
             // Prepare items payload with discount as a negative line item if exists
+            // FIX: Removed 'id' property to prevent Fakturoid from trying to look up inventory items (404 error)
+            // Renamed to 'product_code' which is just informational
             const webhookItems = order.items.map(item => ({
-                id: item.product.id,
+                product_code: item.product.id + (item.variant ? `-${item.variant.id}` : ''),
                 name: item.product.name + (item.variant ? ` - ${item.variant.name}` : ''),
                 quantity: Number(item.quantity),
                 unit_price: Number(item.price), // FORCE NUMBER for Make.com
-                vat_rate: 0, // Důležité pro Fakturoid
+                vat_rate: 0, // Důležité pro Fakturoid (neplátce = 0, nebo 21)
                 price: Number(item.price),
                 photos: item.photos.map(p => p.url)
             }));
 
             if (order.discountAmount > 0) {
                 webhookItems.push({
-                    id: 'discount',
+                    product_code: 'DISCOUNT',
                     name: `Sleva (${order.couponCode})`,
                     quantity: 1,
                     unit_price: Number(-order.discountAmount), // FORCE NUMBER
@@ -361,7 +365,7 @@ const CheckoutPage: React.FC = () => {
                 contact: {
                     ...order.contact,
                     name: `${order.contact.firstName} ${order.contact.lastName}`,
-                    full_name: `${order.contact.firstName} ${order.contact.lastName}`, // Pro jistotu
+                    full_name: `${order.contact.firstName} ${order.contact.lastName}`,
                 },
                 // Rozšířené billing údaje pro lepší matching kontaktů ve Fakturoidu
                 billing: {
@@ -369,7 +373,7 @@ const CheckoutPage: React.FC = () => {
                     street: order.contact.street,
                     city: order.contact.city,
                     zip: order.contact.zip,
-                    country: 'CZ',
+                    country: 'CZ', // Standard ISO code
                     email: order.contact.email, // Přidáno pro Fakturoid
                     phone: order.contact.phone  // Přidáno pro Fakturoid
                 },
