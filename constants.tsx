@@ -12,7 +12,7 @@ export const PRODUCTS: Product[] = [
   {
     id: 'magnetic-calendar',
     name: 'Magnetický kalendář',
-    price: 495,
+    price: 350,
     shortDescription: 'Vytvořte si roční kalendář s vlastními fotografiemi.',
     description: 'Proměňte své nejoblíbenější momenty v praktický a krásný kalendář. Každý měsíc nová vzpomínka přímo na vaší lednici!',
     imageUrl: 'https://i.imgur.com/Yy9Rf5y.jpg',
@@ -29,9 +29,9 @@ export const PRODUCTS: Product[] = [
     ],
     requiredPhotos: 12,
     variants: [
-      { id: 'a6', name: 'A6', photoCount: 12, price: 495 },
-      { id: 'a5', name: 'A5', photoCount: 12, price: 990 },
-      { id: 'a4', name: 'A4', photoCount: 12, price: 1800 },
+      { id: '8x10', name: '8x10 cm', photoCount: 12, price: 350 },
+      { id: 'a5', name: 'A5', photoCount: 12, price: 600 },
+      { id: 'a4', name: 'A4', photoCount: 12, price: 900 },
     ]
   },
   {
