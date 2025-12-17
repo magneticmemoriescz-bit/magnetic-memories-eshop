@@ -228,7 +228,16 @@ const CheckoutPage: React.FC = () => {
         try {
             const fullName = `${order.contact.firstName} ${order.contact.lastName}`;
             
+            // Map common labels for shipping
+            const shippingLabels: { [key: string]: string } = {
+                'zasilkovna': 'Zásilkovna - Výdejní místo',
+                'posta': 'Česká pošta - Balík Do ruky',
+                'doporucene': 'Česká pošta - Doporučené psaní',
+                'osobne': 'Osobní odběr (Turnov)'
+            };
+
             const payload = {
+                // Nested structure to match your screenshot pills: "1. billing: name", "1. contact: email", etc.
                 billing: {
                     name: fullName
                 },
@@ -243,6 +252,7 @@ const CheckoutPage: React.FC = () => {
                     additionalInfo: order.contact.additionalInfo
                 },
 
+                // Flat fields for robustness
                 email: order.contact.email,
                 fullName: fullName,
                 firstName: order.contact.firstName,
@@ -269,7 +279,7 @@ const CheckoutPage: React.FC = () => {
                 
                 marketingConsent: order.marketingConsent,
                 
-                // Item details
+                // Item details - these are mapped to Fakturoid invoice lines
                 items: order.items.map(item => ({
                     product_code: item.product.id + (item.variant ? `-${item.variant.id}` : ''),
                     name: item.product.name + (item.variant ? ` - ${item.variant.name}` : ''),
@@ -280,6 +290,31 @@ const CheckoutPage: React.FC = () => {
                 }))
             };
 
+            // ADDED: Push Shipping to items to ensure it appears on the invoice
+            if (order.shippingCost > 0) {
+                payload.items.push({
+                    product_code: 'SHIPPING',
+                    name: `Doprava: ${shippingLabels[order.shipping] || order.shipping}`,
+                    quantity: 1,
+                    unit_price: Number(order.shippingCost),
+                    vat_rate: 0,
+                    photos: []
+                } as any);
+            }
+
+            // ADDED: Push Payment cost (cod fee) to items to ensure it appears on the invoice
+            if (order.paymentCost > 0) {
+                payload.items.push({
+                    product_code: 'PAYMENT_FEE',
+                    name: `Poplatek za platbu: Dobírka`,
+                    quantity: 1,
+                    unit_price: Number(order.paymentCost),
+                    vat_rate: 0,
+                    photos: []
+                } as any);
+            }
+
+            // Push Discount as a line item if it exists
             if (order.discountAmount > 0) {
                 payload.items.push({
                     product_code: 'DISCOUNT',
@@ -474,3 +509,4 @@ const CheckoutPage: React.FC = () => {
 };
 
 export default CheckoutPage;
+
