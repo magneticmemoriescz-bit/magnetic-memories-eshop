@@ -169,13 +169,22 @@ const CheckoutPage: React.FC = () => {
         order.items.forEach(item => {
             let variantInfo = item.variant ? `<br><span style="font-size: 12px; color: #6b7280;">Varianta: ${item.variant.name}</span>` : '';
             let photosHtml = '<div style="margin-top: 12px;">';
+            
+            // Generate robust download buttons for the admin
             item.photos.forEach((photo, idx) => {
-                let url = photo.url.startsWith('http') ? photo.url : 'https://' + photo.url;
-                photosHtml += `<div style="margin-bottom: 6px;"><a href="${url}" target="_blank" style="display: inline-block; background-color: #8D7EEF; color: #ffffff; text-decoration: none; padding: 8px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; border: 1px solid #7c6fd0;">STÁHNOUT FOTKU ${idx + 1}</a></div>`;
+                const url = photo.url;
+                photosHtml += `
+                    <div style="margin-bottom: 8px;">
+                        <a href="${url}" target="_blank" style="display: inline-block; background-color: #8D7EEF; color: #ffffff; text-decoration: none; padding: 10px 16px; border-radius: 6px; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #7c6fd0;">
+                            STÁHNOUT FOTKU ${idx + 1}
+                        </a>
+                    </div>`;
             });
             photosHtml += '</div>';
+            
             itemsHtml += `<tr><td style="${styleTd}"><strong style="color: #111827; font-size: 15px;">${item.product.name}</strong>${variantInfo}${photosHtml}</td><td style="${styleTd} text-align: center;">${item.quantity}</td><td style="${styleTdPrice}">${formatPrice(item.price * item.quantity)} Kč</td></tr>`;
         });
+        
         if (order.discountAmount > 0) {
             itemsHtml += `<tr><td style="${styleTd} color: #059669;">Sleva (${order.couponCode})</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice} color: #059669;">-${formatPrice(order.discountAmount)} Kč</td></tr>`;
         }
@@ -183,9 +192,8 @@ const CheckoutPage: React.FC = () => {
         itemsHtml += `<tr><td style="${styleTd}">Platba: ${order.payment}</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice}">${formatPrice(order.paymentCost)} Kč</td></tr>`;
         itemsHtml += `<tr style="background-color: #fdf2f8;"><td colspan="2" style="padding: 16px 12px; text-align: right; font-weight: bold; color: #831843; border-top: 2px solid #EA5C9D;">CELKEM K ÚHRADĚ</td><td style="padding: 16px 12px; text-align: right; font-weight: bold; font-size: 18px; color: #831843; border-top: 2px solid #EA5C9D; white-space: nowrap;">${formatPrice(order.total)} Kč</td></tr></tbody></table>`;
 
-        // DYNAMICKÝ TEXT SOUHLASU (ZELENĚ) PRO EMAILJS
         const consentHtml = order.marketingConsent 
-            ? '<span style="color: #059669; font-weight: bold;">Zákazník souhlasí se zveřejněním produktů pro reklamní účely</span>'
+            ? '<span style="color: #059669; font-weight: bold;">Zákazník SOUHLASÍ se zveřejněním produktů pro reklamní účely</span>'
             : '<span style="color: #dc2626;">Zákazník NESOUHLASÍ se zveřejněním produktů pro reklamní účely</span>';
 
         const templateParams = {
@@ -227,8 +235,6 @@ const CheckoutPage: React.FC = () => {
     const sendToMakeWebhook = async (order: OrderDetails) => {
         try {
             const fullName = `${order.contact.firstName} ${order.contact.lastName}`;
-            
-            // Map common labels for shipping
             const shippingLabels: { [key: string]: string } = {
                 'zasilkovna': 'Zásilkovna - Výdejní místo',
                 'posta': 'Česká pošta - Balík Do ruky',
@@ -237,10 +243,7 @@ const CheckoutPage: React.FC = () => {
             };
 
             const payload = {
-                // Nested structure to match your screenshot pills: "1. billing: name", "1. contact: email", etc.
-                billing: {
-                    name: fullName
-                },
+                billing: { name: fullName },
                 contact: {
                     email: order.contact.email,
                     phone: order.contact.phone,
@@ -251,46 +254,29 @@ const CheckoutPage: React.FC = () => {
                     lastName: order.contact.lastName,
                     additionalInfo: order.contact.additionalInfo
                 },
-
-                // Flat fields for robustness
-                email: order.contact.email,
-                fullName: fullName,
-                firstName: order.contact.firstName,
-                lastName: order.contact.lastName,
-                phone: order.contact.phone,
-                street: order.contact.street,
-                city: order.contact.city,
-                zip: order.contact.zip,
-                
                 orderNumber: order.orderNumber,
                 orderDate: new Date().toISOString(),
-                
                 shippingMethod: order.shipping,
                 shippingCost: Number(order.shippingCost),
                 packetaPoint: order.packetaPoint?.name || '',
-                
                 paymentMethod: order.payment,
                 paymentCost: Number(order.paymentCost),
-                
                 total: Number(order.total),
                 subtotal: Number(order.subtotal),
                 discountAmount: Number(order.discountAmount),
                 couponCode: order.couponCode || '',
-                
                 marketingConsent: order.marketingConsent,
-                
-                // Item details - these are mapped to Fakturoid invoice lines
                 items: order.items.map(item => ({
                     product_code: item.product.id + (item.variant ? `-${item.variant.id}` : ''),
                     name: item.product.name + (item.variant ? ` - ${item.variant.name}` : ''),
                     quantity: Number(item.quantity),
                     unit_price: Number(item.price),
                     vat_rate: 0,
+                    // Direct photo URLs for processing in Make/Fakturoid
                     photos: item.photos.map(p => p.url)
                 }))
             };
 
-            // ADDED: Push Shipping to items to ensure it appears on the invoice
             if (order.shippingCost > 0) {
                 payload.items.push({
                     product_code: 'SHIPPING',
@@ -302,7 +288,6 @@ const CheckoutPage: React.FC = () => {
                 } as any);
             }
 
-            // ADDED: Push Payment cost (cod fee) to items to ensure it appears on the invoice
             if (order.paymentCost > 0) {
                 payload.items.push({
                     product_code: 'PAYMENT_FEE',
@@ -314,7 +299,6 @@ const CheckoutPage: React.FC = () => {
                 } as any);
             }
 
-            // Push Discount as a line item if it exists
             if (order.discountAmount > 0) {
                 payload.items.push({
                     product_code: 'DISCOUNT',
@@ -326,7 +310,6 @@ const CheckoutPage: React.FC = () => {
                 } as any);
             }
             
-            console.log("Sending fixed payload to Make:", payload);
             await fetch(MAKE_WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -509,4 +492,3 @@ const CheckoutPage: React.FC = () => {
 };
 
 export default CheckoutPage;
-
