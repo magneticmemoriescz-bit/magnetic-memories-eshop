@@ -170,7 +170,6 @@ const CheckoutPage: React.FC = () => {
             let variantInfo = item.variant ? `<br><span style="font-size: 12px; color: #6b7280;">Varianta: ${item.variant.name}</span>` : '';
             let photosHtml = '<div style="margin-top: 12px;">';
             
-            // Generate robust download buttons for the admin
             item.photos.forEach((photo, idx) => {
                 const url = photo.url;
                 photosHtml += `
@@ -190,11 +189,11 @@ const CheckoutPage: React.FC = () => {
         }
         itemsHtml += `<tr><td style="${styleTd}">Doprava: ${order.shipping}</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice}">${formatPrice(order.shippingCost)} Kč</td></tr>`;
         itemsHtml += `<tr><td style="${styleTd}">Platba: ${order.payment}</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice}">${formatPrice(order.paymentCost)} Kč</td></tr>`;
-        itemsHtml += `<tr style="background-color: #fdf2f8;"><td colspan="2" style="padding: 16px 12px; text-align: right; font-weight: bold; color: #831843; border-top: 2px solid #EA5C9D;">CELKEM K ÚHRADĚ</td><td style="padding: 16px 12px; text-align: right; font-weight: bold; font-size: 18px; color: #831843; border-top: 2px solid #EA5C9D; white-space: nowrap;">${formatPrice(order.total)} Kč</td></tr></tbody></table>`;
+        itemsHtml += `<tr style="background-color: #fdf2f8;"><td colspan="2" style="padding: 166px 12px; text-align: right; font-weight: bold; color: #831843; border-top: 2px solid #EA5C9D;">CELKEM K ÚHRADĚ</td><td style="padding: 16px 12px; text-align: right; font-weight: bold; font-size: 18px; color: #831843; border-top: 2px solid #EA5C9D; white-space: nowrap;">${formatPrice(order.total)} Kč</td></tr></tbody></table>`;
 
-        const consentHtml = order.marketingConsent 
-            ? '<span style="color: #059669; font-weight: bold;">Zákazník SOUHLASÍ se zveřejněním produktů pro reklamní účely</span>'
-            : '<span style="color: #dc2626;">Zákazník NESOUHLASÍ se zveřejněním produktů pro reklamní účely</span>';
+        const consentText = order.marketingConsent 
+            ? '✅ Zákazník SOUHLASÍ se zveřejněním produktů pro reklamní účely'
+            : '❌ Zákazník NESOUHLASÍ se zveřejněním produktů pro reklamní účely';
 
         const templateParams = {
             subject: `Objednávka č. ${order.orderNumber}`,
@@ -212,7 +211,7 @@ const CheckoutPage: React.FC = () => {
             zip: order.contact.zip,
             phone: order.contact.phone,
             reply_to: 'magnetic.memories.cz@gmail.com',
-            marketing_consent: consentHtml
+            marketing_consent: consentText
         };
         
         const paymentLabel = order.payment === 'dobirka' ? 'DOBÍRKA' : 'PŘEVOD';
@@ -242,18 +241,19 @@ const CheckoutPage: React.FC = () => {
                 'osobne': 'Osobní odběr (Turnov)'
             };
 
+            // FLATTENED PAYLOAD: All critical fields are now at the root level for easier Make.com mapping
             const payload = {
-                billing: { name: fullName },
-                contact: {
-                    email: order.contact.email,
-                    phone: order.contact.phone,
-                    street: order.contact.street,
-                    city: order.contact.city,
-                    zip: order.contact.zip,
-                    firstName: order.contact.firstName,
-                    lastName: order.contact.lastName,
-                    additionalInfo: order.contact.additionalInfo
-                },
+                // Root level fields for Fakturoid subjects
+                name: fullName,
+                email: order.contact.email,
+                phone: order.contact.phone,
+                street: order.contact.street,
+                city: order.contact.city,
+                zip: order.contact.zip,
+                firstName: order.contact.firstName,
+                lastName: order.contact.lastName,
+                
+                // Order metadata
                 orderNumber: order.orderNumber,
                 orderDate: new Date().toISOString(),
                 shippingMethod: order.shipping,
@@ -266,17 +266,20 @@ const CheckoutPage: React.FC = () => {
                 discountAmount: Number(order.discountAmount),
                 couponCode: order.couponCode || '',
                 marketingConsent: order.marketingConsent,
+                additionalInfo: order.contact.additionalInfo,
+
+                // Items list
                 items: order.items.map(item => ({
                     product_code: item.product.id + (item.variant ? `-${item.variant.id}` : ''),
                     name: item.product.name + (item.variant ? ` - ${item.variant.name}` : ''),
                     quantity: Number(item.quantity),
                     unit_price: Number(item.price),
                     vat_rate: 0,
-                    // Direct photo URLs for processing in Make/Fakturoid
                     photos: item.photos.map(p => p.url)
                 }))
             };
 
+            // Add shipping as an item line
             if (order.shippingCost > 0) {
                 payload.items.push({
                     product_code: 'SHIPPING',
@@ -288,6 +291,7 @@ const CheckoutPage: React.FC = () => {
                 } as any);
             }
 
+            // Add payment fee as an item line
             if (order.paymentCost > 0) {
                 payload.items.push({
                     product_code: 'PAYMENT_FEE',
@@ -299,6 +303,7 @@ const CheckoutPage: React.FC = () => {
                 } as any);
             }
 
+            // Add discount as a negative item line
             if (order.discountAmount > 0) {
                 payload.items.push({
                     product_code: 'DISCOUNT',
