@@ -39,4 +39,5 @@ export interface CartItem {
   photoGroupId: string | null;
   customText?: { [key: string]: string };
   orientation?: 'portrait' | 'landscape';
+  directMailing?: boolean; // New field for mailing service
 }
