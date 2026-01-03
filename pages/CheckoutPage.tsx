@@ -14,6 +14,8 @@ const EMAILJS_SERVICE_ID = 'service_2pkoish'; // Gmail Service
 const EMAILJS_TEMPLATE_ID_USER = 'template_1v2vxgh'; // Pro zákazníka
 const EMAILJS_TEMPLATE_ID_ADMIN = 'template_8ax2a2w'; // Pro admina
 
+const DIRECT_MAILING_FEE = 100;
+
 interface OrderDetails {
     contact: { [key: string]: string };
     shipping: string;
@@ -71,7 +73,11 @@ const CheckoutPage: React.FC = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const subtotal = items.reduce((acc, item) => {
+        const itemBasePrice = item.price * item.quantity;
+        const mailingFee = item.directMailing ? (DIRECT_MAILING_FEE * item.quantity) : 0;
+        return acc + itemBasePrice + mailingFee;
+    }, 0);
 
     const handleApplyCoupon = () => {
         const normalizedCode = couponCode.trim().toUpperCase();
@@ -157,6 +163,7 @@ const CheckoutPage: React.FC = () => {
         const styleTd = 'padding: 12px; border-bottom: 1px solid #e5e7eb; color: #4b5563; vertical-align: top;';
         const styleTdPrice = 'padding: 12px; border-bottom: 1px solid #e5e7eb; color: #111827; text-align: right; font-weight: bold; white-space: nowrap;';
         const styleBox = 'background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-top: 20px;';
+        const styleTdTotal = 'padding: 12px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: bold; background-color: #f9fafb;';
 
         let paymentDetailsHtml = '';
         if (order.payment === 'prevodem') {
@@ -165,9 +172,20 @@ const CheckoutPage: React.FC = () => {
             paymentDetailsHtml = `<div style="${styleBox}"><p style="margin: 0; font-weight: bold; color: #111827;">Zvolili jste platbu na dobírku.</p><p style="margin: 4px 0 0 0; color: #4b5563;">Částku <strong>${formatPrice(order.total)} Kč</strong> uhradíte při převzetí zásilky.</p></div>`;
         }
 
+        let totalItemsQuantity = 0;
+        let totalItemsPrice = 0;
+
         let itemsHtml = `<table style="${styleTable}"><thead><tr><th style="${styleTh}">Produkt</th><th style="${styleTh} text-align: center;">Ks</th><th style="${styleTh} text-align: right;">Cena</th></tr></thead><tbody>`;
         order.items.forEach(item => {
+            const itemMailingFeeTotal = item.directMailing ? (DIRECT_MAILING_FEE * item.quantity) : 0;
+            const itemPriceTotal = (item.price * item.quantity) + itemMailingFeeTotal;
+            
+            totalItemsQuantity += item.quantity;
+            totalItemsPrice += itemPriceTotal;
+
             let variantInfo = item.variant ? `<br><span style="font-size: 12px; color: #6b7280;">Varianta: ${item.variant.name}</span>` : '';
+            let mailingInfo = item.directMailing ? `<br><span style="font-size: 12px; color: #EA5C9D; font-weight: bold;">+ Rozesílka na adresy (${formatPrice(itemMailingFeeTotal)} Kč)</span>` : '';
+            
             let photosHtml = '<div style="margin-top: 12px;">';
             
             item.photos.forEach((photo, idx) => {
@@ -181,25 +199,32 @@ const CheckoutPage: React.FC = () => {
             });
             photosHtml += '</div>';
             
-            itemsHtml += `<tr><td style="${styleTd}"><strong style="color: #111827; font-size: 15px;">${item.product.name}</strong>${variantInfo}${photosHtml}</td><td style="${styleTd} text-align: center;">${item.quantity}</td><td style="${styleTdPrice}">${formatPrice(item.price * item.quantity)} Kč</td></tr>`;
+            itemsHtml += `<tr><td style="${styleTd}"><strong style="color: #111827; font-size: 15px;">${item.product.name}</strong>${variantInfo}${mailingInfo}${photosHtml}</td><td style="${styleTd} text-align: center;">${item.quantity}</td><td style="${styleTdPrice}">${formatPrice(itemPriceTotal)} Kč</td></tr>`;
         });
         
+        itemsHtml += `<tr><td style="${styleTdTotal}">CELKEM ZA ZBOŽÍ</td><td style="${styleTdTotal} text-align: center;">${totalItemsQuantity}</td><td style="${styleTdTotal} text-align: right;">${formatPrice(totalItemsPrice)} Kč</td></tr>`;
+
         if (order.discountAmount > 0) {
-            itemsHtml += `<tr><td style="${styleTd} color: #059669;">Sleva (${order.couponCode})</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice} color: #059669;">-${formatPrice(order.discountAmount)} Kč</td></tr>`;
+            itemsHtml += `<tr><td style="${styleTd} color: #059669;">Sleva (${order.couponCode})</td><td style="${styleTd} text-align: center;">-</td><td style="${styleTdPrice} color: #059669;">-${formatPrice(order.discountAmount)} Kč</td></tr>`;
         }
         itemsHtml += `<tr><td style="${styleTd}">Doprava: ${order.shipping}</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice}">${formatPrice(order.shippingCost)} Kč</td></tr>`;
         itemsHtml += `<tr><td style="${styleTd}">Platba: ${order.payment}</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice}">${formatPrice(order.paymentCost)} Kč</td></tr>`;
-        itemsHtml += `<tr style="background-color: #fdf2f8;"><td colspan="2" style="padding: 166px 12px; text-align: right; font-weight: bold; color: #831843; border-top: 2px solid #EA5C9D;">CELKEM K ÚHRADĚ</td><td style="padding: 16px 12px; text-align: right; font-weight: bold; font-size: 18px; color: #831843; border-top: 2px solid #EA5C9D; white-space: nowrap;">${formatPrice(order.total)} Kč</td></tr></tbody></table>`;
+        itemsHtml += `<tr style="background-color: #fdf2f8;"><td colspan="2" style="padding: 16px 12px; text-align: right; font-weight: bold; color: #831843; border-top: 2px solid #EA5C9D;">CELKEM K ÚHRADĚ</td><td style="padding: 16px 12px; text-align: right; font-weight: bold; font-size: 18px; color: #831843; border-top: 2px solid #EA5C9D; white-space: nowrap;">${formatPrice(order.total)} Kč</td></tr></tbody></table>`;
 
         const consentText = order.marketingConsent 
             ? '✅ Zákazník SOUHLASÍ se zveřejněním produktů pro reklamní účely'
             : '❌ Zákazník NESOUHLASÍ se zveřejněním produktů pro reklamní účely';
 
+        const customerName = `${order.contact.firstName} ${order.contact.lastName}`;
+        const customerAddress = `${order.contact.street}, ${order.contact.city}, ${order.contact.zip}`;
+
         const templateParams = {
             subject: `Objednávka č. ${order.orderNumber}`,
             order_number: order.orderNumber,
             date: currentDate,
-            to_name: `${order.contact.firstName} ${order.contact.lastName}`,
+            to_name: customerName,
+            customer_name: customerName,
+            customer_address: customerAddress,
             to_email: order.contact.email, 
             email: order.contact.email, 
             message: order.contact.additionalInfo || 'Bez poznámky',
@@ -233,7 +258,10 @@ const CheckoutPage: React.FC = () => {
     
     const sendToMakeWebhook = async (order: OrderDetails) => {
         try {
-            const fullName = `${order.contact.firstName} ${order.contact.lastName}`;
+            const fname = (order.contact['firstName'] || '').trim();
+            const lname = (order.contact['lastName'] || '').trim();
+            const fullName = `${fname} ${lname}`.trim() || 'Zákazník';
+
             const shippingLabels: { [key: string]: string } = {
                 'zasilkovna': 'Zásilkovna - Výdejní místo',
                 'posta': 'Česká pošta - Balík Do ruky',
@@ -241,19 +269,16 @@ const CheckoutPage: React.FC = () => {
                 'osobne': 'Osobní odběr (Turnov)'
             };
 
-            // FLATTENED PAYLOAD: All critical fields are now at the root level for easier Make.com mapping
             const payload = {
-                // Root level fields for Fakturoid subjects
                 name: fullName,
-                email: order.contact.email,
-                phone: order.contact.phone,
-                street: order.contact.street,
-                city: order.contact.city,
-                zip: order.contact.zip,
-                firstName: order.contact.firstName,
-                lastName: order.contact.lastName,
+                email: order.contact['email'] || '',
+                phone: order.contact['phone'] || '',
+                street: order.contact['street'] || '',
+                city: order.contact['city'] || '',
+                zip: order.contact['zip'] || '',
+                firstName: fname,
+                lastName: lname,
                 
-                // Order metadata
                 orderNumber: order.orderNumber,
                 orderDate: new Date().toISOString(),
                 shippingMethod: order.shipping,
@@ -266,20 +291,24 @@ const CheckoutPage: React.FC = () => {
                 discountAmount: Number(order.discountAmount),
                 couponCode: order.couponCode || '',
                 marketingConsent: order.marketingConsent,
-                additionalInfo: order.contact.additionalInfo,
+                additionalInfo: order.contact['additionalInfo'] || '',
 
-                // Items list
-                items: order.items.map(item => ({
-                    product_code: item.product.id + (item.variant ? `-${item.variant.id}` : ''),
-                    name: item.product.name + (item.variant ? ` - ${item.variant.name}` : ''),
-                    quantity: Number(item.quantity),
-                    unit_price: Number(item.price),
-                    vat_rate: 0,
-                    photos: item.photos.map(p => p.url)
-                }))
+                items: order.items.map(item => {
+                    const itemMailingFeeTotal = item.directMailing ? (DIRECT_MAILING_FEE * item.quantity) : 0;
+                    const itemPriceTotal = (item.price * item.quantity) + itemMailingFeeTotal;
+                    
+                    return {
+                        product_code: (item.product.id || 'PRODUCT') + (item.variant ? `-${item.variant.id}` : '') + (item.directMailing ? '-MAILING' : ''),
+                        name: (item.product.name || 'Produkt') + (item.variant ? ` - ${item.variant.name}` : '') + (item.directMailing ? ' (+ Rozesílka)' : ''),
+                        quantity: Number(item.quantity),
+                        unit_price: Number(itemPriceTotal / item.quantity), // unit price including divided mailing fee
+                        vat_rate: 0,
+                        photos: item.photos.map(p => p.url)
+                    };
+                })
             };
 
-            // Add shipping as an item line
+            // Přidání dopravy jako položky
             if (order.shippingCost > 0) {
                 payload.items.push({
                     product_code: 'SHIPPING',
@@ -291,7 +320,7 @@ const CheckoutPage: React.FC = () => {
                 } as any);
             }
 
-            // Add payment fee as an item line
+            // Přidání poplatku za dobírku jako položky
             if (order.paymentCost > 0) {
                 payload.items.push({
                     product_code: 'PAYMENT_FEE',
@@ -303,11 +332,11 @@ const CheckoutPage: React.FC = () => {
                 } as any);
             }
 
-            // Add discount as a negative item line
+            // Přidání slevy jako položky
             if (order.discountAmount > 0) {
                 payload.items.push({
                     product_code: 'DISCOUNT',
-                    name: `Sleva (${order.couponCode})`,
+                    name: `Sleva (${order.couponCode || 'Slevový kód'})`,
                     quantity: 1,
                     unit_price: Number(-order.discountAmount),
                     vat_rate: 0,
@@ -315,11 +344,18 @@ const CheckoutPage: React.FC = () => {
                 } as any);
             }
             
-            await fetch(MAKE_WEBHOOK_URL, {
+            console.log('Odesílám payload do Make.com:', JSON.stringify(payload, null, 2));
+
+            const response = await fetch(MAKE_WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Make Webhook error response:', errorText);
+            }
         } catch (error) {
             console.error('Make Webhook failed:', error);
         }
@@ -443,18 +479,32 @@ const CheckoutPage: React.FC = () => {
                     <div className="bg-gray-50 rounded-lg shadow-md p-6 sticky top-24">
                         <h2 className="text-lg font-medium text-dark-gray mb-4">Souhrn objednávky</h2>
                         <ul className="divide-y divide-gray-200">
-                            {items.map((item) => (
-                                <li key={item.id} className="py-4 flex">
-                                    <div className="flex-shrink-0 w-16 h-16 border border-gray-200 rounded-md overflow-hidden"><img src={item.variant?.imageUrl || item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" /></div>
-                                    <div className="ml-4 flex-1 flex flex-col">
-                                        <div className="flex justify-between text-base font-medium text-gray-900"><h3>{item.product.name}</h3><p className="ml-4">{formatPrice(item.price * item.quantity)} Kč</p></div>
-                                        <div className="flex-1 flex items-end justify-between text-sm">
-                                            <p className="text-gray-500">Množství: {item.quantity}</p>
-                                            <button type="button" onClick={() => handleRemoveItem(item.id)} className="font-medium text-brand-pink hover:text-brand-orange">Odstranit</button>
+                            {items.map((item) => {
+                                const mailingFee = item.directMailing ? (DIRECT_MAILING_FEE * item.quantity) : 0;
+                                const itemTotal = (item.price * item.quantity) + mailingFee;
+                                
+                                return (
+                                    <li key={item.id} className="py-4 flex">
+                                        <div className="flex-shrink-0 w-16 h-16 border border-gray-200 rounded-md overflow-hidden"><img src={item.variant?.imageUrl || item.product.imageUrl} alt={item.product.name} className="w-full h-full object-cover" /></div>
+                                        <div className="ml-4 flex-1 flex flex-col">
+                                            <div className="flex justify-between text-base font-medium text-gray-900">
+                                                <h3 className="pr-4">{item.product.name}</h3>
+                                                <p className="ml-4 whitespace-nowrap">{formatPrice(itemTotal)} Kč</p>
+                                            </div>
+                                            <div className="flex-1 flex flex-col justify-between text-sm">
+                                                <div className="text-gray-500 mt-1">
+                                                    <p>Množství: {item.quantity}</p>
+                                                    {item.variant && <p className="text-xs">Varianta: {item.variant.name}</p>}
+                                                    {item.directMailing && <p className="text-xs text-brand-pink font-medium">+ Rozesílka na adresy</p>}
+                                                </div>
+                                                <div className="mt-2 text-right">
+                                                    <button type="button" onClick={() => handleRemoveItem(item.id)} className="font-medium text-brand-pink hover:text-brand-orange">Odstranit</button>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </li>
-                            ))}
+                                    </li>
+                                );
+                            })}
                         </ul>
                         <div className="py-4 border-t border-gray-200">
                             <label className="block text-sm font-medium text-gray-700">Slevový kód</label>
@@ -469,7 +519,7 @@ const CheckoutPage: React.FC = () => {
                             {appliedCoupon && <div className="flex justify-between text-green-600"><span>Sleva {Math.round(appliedCoupon.rate * 100)}%</span><span>-{formatPrice(discountAmount)} Kč</span></div>}
                             <div className="flex justify-between"><span>Doprava</span><span>{shippingMethod ? `${shippingCost} Kč` : '–'}</span></div>
                             <div className="flex justify-between"><span>Platba</span><span>{paymentMethod ? `${paymentCost} Kč` : '–'}</span></div>
-                            <div className="border-t pt-4 flex justify-between text-xl font-bold text-gray-900"><span>Celkem k úhradě</span><span>{formatPrice(total)} Kč</span></div>
+                            <div className="border-t pt-4 flex justify-between text-xl font-bold text-gray-900"><span>Celkem k úhraně</span><span>{formatPrice(total)} Kč</span></div>
                         </div>
                         <div className="mt-6 space-y-3">
                              <div className="flex items-start">
