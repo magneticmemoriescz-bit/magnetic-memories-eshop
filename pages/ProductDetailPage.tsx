@@ -66,21 +66,28 @@ const ProductDetailPage: React.FC = () => {
     const isPhotomagnets = product.id === 'photomagnets';
     const isCalendar = product.id === 'magnetic-calendar';
 
-    // Required photos logic
-    const basePhotoCount = selectedVariant ? selectedVariant.photoCount : product.requiredPhotos;
-    const totalRequiredPhotos = isPhotomagnets ? basePhotoCount * quantity : basePhotoCount;
-
-    const basePrice = (selectedVariant?.price ?? product.price) * quantity;
+    // Calculate Dynamic Discounts for Photomagnets
+    const unitPrice = selectedVariant?.price ?? product.price;
+    let basePriceTotal = unitPrice * quantity;
+    
+    if (isPhotomagnets) {
+        if (quantity === 9) basePriceTotal -= 10;
+        else if (quantity === 15) basePriceTotal -= 20;
+        else if (quantity === 30) basePriceTotal -= 50;
+    }
     
     // Calculate total physical pieces for mailing fee
     const itemsInVariant = selectedVariant?.itemCount || 1;
     const totalPhysicalPieces = itemsInVariant * quantity;
     const mailingFeeTotal = isWeddingAnnouncement && directMailing ? (DIRECT_MAILING_FEE * totalPhysicalPieces) : 0;
     
-    const displayPriceTotal = basePrice + mailingFeeTotal;
+    const displayPriceTotal = basePriceTotal + mailingFeeTotal;
 
-    // REVERTED: Always use product main image unless it's a specific variant gallery request
-    // "Vrat tam puvodni obrazek jako před upravou"
+    // Required photos logic
+    const basePhotoCount = selectedVariant ? selectedVariant.photoCount : product.requiredPhotos;
+    const totalRequiredPhotos = isPhotomagnets ? basePhotoCount * quantity : basePhotoCount;
+
+    // Always use product main image for display
     const displayImage = product.imageUrl;
 
     const handleFilesChange = (filesInfo: UploadedFilesInfo) => {
@@ -101,7 +108,8 @@ const ProductDetailPage: React.FC = () => {
             id: `${product.id}-${selectedVariant?.id}-${Date.now()}`,
             product,
             quantity: quantity,
-            price: selectedVariant?.price ?? product.price,
+            // Calculate effective unit price for cart (including discount)
+            price: basePriceTotal / quantity,
             variant: selectedVariant,
             photos: uploadedPhotoInfo.photos,
             photoGroupId: uploadedPhotoInfo.groupId,
@@ -170,7 +178,7 @@ const ProductDetailPage: React.FC = () => {
                     <div className="mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0 lg:col-span-5">
                         <h1 className="text-3xl font-extrabold tracking-tight text-dark-gray">{product.name}</h1>
                         <div className="mt-3">
-                            <p className="text-3xl text-dark-gray">{formatPrice(selectedVariant?.price ?? product.price)} Kč</p>
+                            <p className="text-3xl text-dark-gray">{formatPrice(selectedVariant?.price ?? product.price)} Kč / ks</p>
                         </div>
                         <div className="mt-6">
                             <div className="text-base text-gray-700 space-y-6" dangerouslySetInnerHTML={{ __html: product.description }} />
@@ -201,31 +209,19 @@ const ProductDetailPage: React.FC = () => {
 
                             {visibleVariants && (
                                 <div className="mt-10 space-y-6">
-                                    {isPhotomagnets ? (
-                                        <div>
-                                            <h3 className="text-sm text-dark-gray font-medium mb-4">Vyberte rozměr (vlastní výběr kusů)</h3>
-                                            <div className="flex items-center space-x-4 flex-wrap gap-y-4">
-                                                {visibleVariants.filter(v => !v.id.startsWith('set-')).map((variant) => (
-                                                    <label key={variant.id} className={`relative border rounded-md px-4 py-2 flex items-center justify-center text-sm font-medium uppercase cursor-pointer focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple ${selectedVariant?.id === variant.id ? 'bg-brand-purple border-transparent text-white hover:opacity-90' : 'bg-white border-gray-200 text-dark-gray hover:bg-gray-50'}`}>
-                                                        <input type="radio" name="variant-option" value={variant.id} className="sr-only" checked={selectedVariant?.id === variant.id} onChange={() => handleVariantChange(variant)}/>
-                                                        <span>{variant.name}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
+                                    <div>
+                                        <h3 className="text-sm text-dark-gray font-medium mb-4">
+                                            {isPhotomagnets ? 'Vyberte rozměr magnetek' : 'Varianta'}
+                                        </h3>
+                                        <div className="flex items-center space-x-4 flex-wrap gap-y-4">
+                                            {visibleVariants.map((variant) => (
+                                                <label key={variant.id} className={`relative border rounded-md px-4 py-2 flex items-center justify-center text-sm font-medium uppercase cursor-pointer focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple ${selectedVariant?.id === variant.id ? 'bg-brand-purple border-transparent text-white hover:opacity-90' : 'bg-white border-gray-200 text-dark-gray hover:bg-gray-50'}`}>
+                                                    <input type="radio" name="variant-option" value={variant.id} className="sr-only" checked={selectedVariant?.id === variant.id} onChange={() => handleVariantChange(variant)}/>
+                                                    <span>{variant.name}</span>
+                                                </label>
+                                            ))}
                                         </div>
-                                    ) : (
-                                        <div>
-                                            <h3 className="text-sm text-dark-gray font-medium mb-4">Varianta</h3>
-                                            <fieldset className="flex items-center space-x-4 flex-wrap gap-y-4">
-                                                {visibleVariants.map((variant) => (
-                                                    <label key={variant.id} className={`relative border rounded-md p-4 flex items-center justify-center text-sm font-medium uppercase cursor-pointer focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple ${selectedVariant?.id === variant.id ? 'bg-brand-purple border-transparent text-white hover:opacity-90' : 'bg-white border-gray-200 text-dark-gray hover:bg-gray-50'}`}>
-                                                        <input type="radio" name="variant-option" value={variant.id} className="sr-only" checked={selectedVariant?.id === variant.id} onChange={() => handleVariantChange(variant)}/>
-                                                        <span>{variant.name}</span>
-                                                    </label>
-                                                ))}
-                                            </fieldset>
-                                        </div>
-                                    )}
+                                    </div>
                                 </div>
                             )}
 
@@ -267,31 +263,40 @@ const ProductDetailPage: React.FC = () => {
                                 <div className="flex flex-col sm:flex-row sm:items-end gap-6">
                                     {/* Počet kusů Dropdown */}
                                     <div className="flex-shrink-0">
-                                        <h3 className="text-sm text-dark-gray font-medium mb-3">
-                                            {selectedVariant?.id.startsWith('set-') ? 'Počet sad' : 'Počet kusů'}
-                                        </h3>
+                                        <h3 className="text-sm text-dark-gray font-medium mb-3">Počet kusů</h3>
                                         <select
                                             value={quantity}
                                             onChange={(e) => setQuantity(Number(e.target.value))}
                                             className="block w-32 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-brand-purple focus:border-brand-purple sm:text-sm rounded-md border bg-white"
                                         >
                                             {[...Array(100)].map((_, i) => (
-                                                <option key={i + 1} value={i + 1}>{i + 1} {selectedVariant?.id.startsWith('set-') ? 'sada' : 'ks'}</option>
+                                                <option key={i + 1} value={i + 1}>{i + 1} ks</option>
                                             ))}
                                         </select>
                                     </div>
 
                                     {/* Zvýhodněné sady (Only for photomagnets) */}
-                                    {isPhotomagnets && visibleVariants && (
+                                    {isPhotomagnets && (
                                         <div className="flex-grow">
                                             <h3 className="text-sm text-dark-gray font-medium mb-3">Nebo zvolte zvýhodněnou sadu</h3>
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                {visibleVariants.filter(v => v.id.startsWith('set-')).map((variant) => (
-                                                    <label key={variant.id} className={`relative border rounded-md px-3 py-2 flex items-center justify-center text-xs font-semibold uppercase cursor-pointer transition-all focus-within:ring-2 focus-within:ring-brand-purple ${selectedVariant?.id === variant.id ? 'bg-brand-pink border-transparent text-white' : 'bg-gray-100 border-gray-200 text-dark-gray hover:bg-gray-200'}`}>
-                                                        <input type="radio" name="variant-option" value={variant.id} className="sr-only" checked={selectedVariant?.id === variant.id} onChange={() => handleVariantChange(variant)}/>
-                                                        <span>{variant.name}</span>
-                                                    </label>
-                                                ))}
+                                                {[9, 15, 30].map((setQty) => {
+                                                    const discount = setQty === 9 ? 10 : setQty === 15 ? 20 : 50;
+                                                    const setPrice = (unitPrice * setQty) - discount;
+                                                    const isActive = quantity === setQty;
+                                                    
+                                                    return (
+                                                        <button
+                                                            key={setQty}
+                                                            type="button"
+                                                            onClick={() => setQuantity(setQty)}
+                                                            className={`relative border rounded-md px-3 py-2 flex flex-col items-center justify-center text-xs font-semibold uppercase transition-all focus:outline-none focus:ring-2 focus:ring-brand-purple ${isActive ? 'bg-brand-pink border-transparent text-white' : 'bg-gray-100 border-gray-200 text-dark-gray hover:bg-gray-200'}`}
+                                                        >
+                                                            <span>Sada {setQty} ks</span>
+                                                            <span className={isActive ? 'text-white/90' : 'text-brand-pink'}>{formatPrice(setPrice)} Kč</span>
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}
@@ -299,7 +304,7 @@ const ProductDetailPage: React.FC = () => {
                             </div>
 
                             <div className="mt-10">
-                                <h3 className="text-sm text-dark-gray font-medium">Nahrajte fotografie</h3>
+                                <h3 className="text-sm text-dark-gray font-medium">Nahrajte fotografie (celkem {totalRequiredPhotos})</h3>
                                 <div className="mt-4">
                                     <FileUpload 
                                         maxFiles={totalRequiredPhotos} 
@@ -314,6 +319,9 @@ const ProductDetailPage: React.FC = () => {
                                 <div className="mb-4 text-right">
                                     <p className="text-sm text-gray-500 italic">Celková cena za tuto položku:</p>
                                     <p className="text-2xl font-bold text-dark-gray">{formatPrice(displayPriceTotal)} Kč</p>
+                                    {isPhotomagnets && (quantity === 9 || quantity === 15 || quantity === 30) && (
+                                        <p className="text-xs text-green-600 font-medium">Uplatněna množstevní sleva</p>
+                                    )}
                                 </div>
                                 {error && <p className="text-red-600 text-sm text-center mb-4">{error}</p>}
                                 <button type="button" onClick={handleAddToCart} className="w-full bg-brand-pink border border-transparent rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink">
