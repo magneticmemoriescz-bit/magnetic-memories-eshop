@@ -64,20 +64,21 @@ const ProductDetailPage: React.FC = () => {
 
     // Specific logic for Photomagnets: 
     // If it's photomagnets, the required photos = variant.photoCount * quantity.
-    // For other products (like calendars, or wedding announcements packs), it behaves differently (usually copies).
     const basePhotoCount = selectedVariant ? selectedVariant.photoCount : product.requiredPhotos;
     const totalRequiredPhotos = isPhotomagnets ? basePhotoCount * quantity : basePhotoCount;
 
-    const basePrice = selectedVariant?.price ?? product.price;
-    const mailingFeeTotal = isWeddingAnnouncement && directMailing ? (DIRECT_MAILING_FEE * quantity) : 0;
-    const displayPrice = basePrice; // We display base price in the header, total is in summary/cart
-
+    const basePrice = (selectedVariant?.price ?? product.price) * quantity;
     
+    // Calculate total physical pieces for mailing fee
+    const itemsInVariant = selectedVariant?.itemCount || 1;
+    const totalPhysicalPieces = itemsInVariant * quantity;
+    const mailingFeeTotal = isWeddingAnnouncement && directMailing ? (DIRECT_MAILING_FEE * totalPhysicalPieces) : 0;
+    
+    const displayPriceTotal = basePrice + mailingFeeTotal;
+
     // Prioritize variant-specific image if available, otherwise fallback to main image
     const variantImage = selectedVariant?.imageUrl;
     const displayImage = variantImage ? variantImage : product.imageUrl;
-      
-    const displayGallery = product.gallery;
 
     const handleFilesChange = (filesInfo: UploadedFilesInfo) => {
         setUploadedPhotoInfo(filesInfo);
@@ -97,7 +98,7 @@ const ProductDetailPage: React.FC = () => {
             id: `${product.id}-${selectedVariant?.id}-${Date.now()}`,
             product,
             quantity: quantity,
-            price: basePrice,
+            price: selectedVariant?.price ?? product.price,
             variant: selectedVariant,
             photos: uploadedPhotoInfo.photos,
             photoGroupId: uploadedPhotoInfo.groupId,
@@ -121,7 +122,6 @@ const ProductDetailPage: React.FC = () => {
     const handleAnnouncementSizeChange = (size: 'a5' | 'a6') => {
         setAnnouncementSize(size);
         if (selectedVariant) {
-            // Try to find the matching quantity in the new size
             const suffix = selectedVariant.id.replace('a5-', '').replace('a6-', '');
             const newVariantId = `${size}-${suffix}`;
             const newVariant = product.variants?.find(v => v.id === newVariantId);
@@ -129,24 +129,21 @@ const ProductDetailPage: React.FC = () => {
             if (newVariant) {
                 setSelectedVariant(newVariant);
             } else {
-                // Fallback to first variant of that size
                 const firstOfSize = product.variants?.find(v => v.id.startsWith(size));
                 if (firstOfSize) setSelectedVariant(firstOfSize);
             }
         }
     };
     
-    // Filtering variants for display
     let visibleVariants = product.variants;
     if (isWeddingAnnouncement && product.variants) {
         visibleVariants = product.variants.filter(v => v.id.startsWith(announcementSize));
     }
 
     const imageClass = isCalendar
-        ? "w-full h-full object-center object-contain sm:rounded-lg"   // Don't crop calendar
-        : "w-full h-full object-center object-cover sm:rounded-lg";    // Crop/zoom others (including wedding announcement)
+        ? "w-full h-full object-center object-contain sm:rounded-lg"
+        : "w-full h-full object-center object-cover sm:rounded-lg";
 
-    // Dynamic Title construction: Product Name - Variant Name (if selected and different)
     const pageTitle = selectedVariant && selectedVariant.name !== product.name 
         ? `${product.name} - ${selectedVariant.name} | Magnetic Memories`
         : `${product.name} | Magnetic Memories`;
@@ -158,30 +155,25 @@ const ProductDetailPage: React.FC = () => {
                 description={product.shortDescription}
                 image={displayImage}
                 type="product"
-                price={displayPrice}
+                price={selectedVariant?.price ?? product.price}
                 availability="InStock"
             />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 lg:items-start">
-                    {/* Image gallery */}
                     <div className="lg:col-span-7">
                         <img src={displayImage} alt={product.name} className={imageClass} />
                     </div>
 
-                    {/* Product info */}
                     <div className="mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0 lg:col-span-5">
                         <h1 className="text-3xl font-extrabold tracking-tight text-dark-gray">{product.name}</h1>
                         <div className="mt-3">
-                            <p className="text-3xl text-dark-gray">{formatPrice(displayPrice)} Kč</p>
+                            <p className="text-3xl text-dark-gray">{formatPrice(selectedVariant?.price ?? product.price)} Kč</p>
                         </div>
                         <div className="mt-6">
-                            <h3 className="sr-only">Description</h3>
                             <div className="text-base text-gray-700 space-y-6" dangerouslySetInnerHTML={{ __html: product.description }} />
                         </div>
 
                         <form className="mt-6" onSubmit={(e) => e.preventDefault()}>
-                            
-                            {/* Wedding Announcement Size Toggle */}
                             {isWeddingAnnouncement && (
                                 <div className="mt-8 pb-4 border-b border-gray-200">
                                     <h3 className="text-sm text-dark-gray font-medium mb-3">Velikost oznámení</h3>
@@ -205,28 +197,45 @@ const ProductDetailPage: React.FC = () => {
                             )}
 
                             {visibleVariants && (
-                                <div className="mt-10">
-                                    <h3 className="text-sm text-dark-gray font-medium">Varianta</h3>
-                                    <fieldset className="mt-4">
-                                        <legend className="sr-only">Vyberte variantu</legend>
-                                        <div className="flex items-center space-x-4 flex-wrap gap-y-4">
-                                            {visibleVariants.map((variant) => (
-                                                <label key={variant.id} className={`relative border rounded-md p-4 flex items-center justify-center text-sm font-medium uppercase cursor-pointer focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple ${selectedVariant?.id === variant.id ? 'bg-brand-purple border-transparent text-white hover:opacity-90' : 'bg-white border-gray-200 text-dark-gray hover:bg-gray-50'}`}>
-                                                    <input type="radio" name="variant-option" value={variant.id} className="sr-only" checked={selectedVariant?.id === variant.id} onChange={() => handleVariantChange(variant)}/>
-                                                    <span>{variant.name}</span>
-                                                </label>
-                                            ))}
+                                <div className="mt-10 space-y-8">
+                                    {isPhotomagnets ? (
+                                        <>
+                                            <div>
+                                                <h3 className="text-sm text-dark-gray font-medium mb-4">Zvýhodněné sady</h3>
+                                                <div className="flex items-center space-x-4 flex-wrap gap-y-4">
+                                                    {visibleVariants.filter(v => v.id.startsWith('set-')).map((variant) => (
+                                                        <label key={variant.id} className={`relative border rounded-md p-4 flex items-center justify-center text-sm font-medium uppercase cursor-pointer focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple ${selectedVariant?.id === variant.id ? 'bg-brand-purple border-transparent text-white hover:opacity-90' : 'bg-white border-gray-200 text-dark-gray hover:bg-gray-50'}`}>
+                                                            <input type="radio" name="variant-option" value={variant.id} className="sr-only" checked={selectedVariant?.id === variant.id} onChange={() => handleVariantChange(variant)}/>
+                                                            <span>{variant.name}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm text-dark-gray font-medium mb-4">Jednotlivé rozměry (vlastní výběr kusů)</h3>
+                                                <div className="flex items-center space-x-4 flex-wrap gap-y-4">
+                                                    {visibleVariants.filter(v => !v.id.startsWith('set-')).map((variant) => (
+                                                        <label key={variant.id} className={`relative border rounded-md p-4 flex items-center justify-center text-sm font-medium uppercase cursor-pointer focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple ${selectedVariant?.id === variant.id ? 'bg-brand-purple border-transparent text-white hover:opacity-90' : 'bg-white border-gray-200 text-dark-gray hover:bg-gray-50'}`}>
+                                                            <input type="radio" name="variant-option" value={variant.id} className="sr-only" checked={selectedVariant?.id === variant.id} onChange={() => handleVariantChange(variant)}/>
+                                                            <span>{variant.name}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div>
+                                            <h3 className="text-sm text-dark-gray font-medium mb-4">Varianta</h3>
+                                            <fieldset className="flex items-center space-x-4 flex-wrap gap-y-4">
+                                                {visibleVariants.map((variant) => (
+                                                    <label key={variant.id} className={`relative border rounded-md p-4 flex items-center justify-center text-sm font-medium uppercase cursor-pointer focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple ${selectedVariant?.id === variant.id ? 'bg-brand-purple border-transparent text-white hover:opacity-90' : 'bg-white border-gray-200 text-dark-gray hover:bg-gray-50'}`}>
+                                                        <input type="radio" name="variant-option" value={variant.id} className="sr-only" checked={selectedVariant?.id === variant.id} onChange={() => handleVariantChange(variant)}/>
+                                                        <span>{variant.name}</span>
+                                                    </label>
+                                                ))}
+                                            </fieldset>
                                         </div>
-                                    </fieldset>
-                                    {isPhotomagnets && (
-                                        <p className="text-sm text-gray-500 mt-2">Vaše fotografie upravíme do vybraného formátu.</p>
                                     )}
-                                </div>
-                            )}
-
-                            {isCalendar && (
-                                <div className="mt-6 text-sm text-gray-500 bg-gray-50 p-4 rounded-md border border-gray-200">
-                                    <p>Kalendář a jednotlivé jeho listy uzpůsobíme vašim fotografiím, můžete tak kombinovat fotografie na výšku i na šířku.</p>
                                 </div>
                             )}
 
@@ -245,7 +254,7 @@ const ProductDetailPage: React.FC = () => {
                                         </div>
                                         <div className="ml-3 text-sm">
                                             <label htmlFor="direct-mailing" className="font-medium text-gray-700">Přeji si rozeslat oznámení na jednotlivé adresy</label>
-                                            <p className="text-gray-500">Příplatek {DIRECT_MAILING_FEE} Kč / ks (+ {formatPrice(mailingFeeTotal)} Kč celkem)</p>
+                                            <p className="text-gray-500">Příplatek 100 Kč / ks (tj. {formatPrice(itemsInVariant * 100)} Kč za balení)</p>
                                             <p className="text-xs text-gray-400 mt-1 italic">V tomto případě nás prosím kontaktujte pro zaslání seznamu adres.</p>
                                         </div>
                                     </div>
@@ -264,13 +273,13 @@ const ProductDetailPage: React.FC = () => {
                             )}
                             
                             <div className="mt-10">
-                                <h3 className="text-sm text-dark-gray font-medium">Počet kusů</h3>
+                                <h3 className="text-sm text-dark-gray font-medium">
+                                    {selectedVariant?.id.startsWith('set-') ? 'Počet sad' : 'Počet kusů (balení)'}
+                                </h3>
                                 <div className="mt-4">
                                     <select
                                         value={quantity}
-                                        onChange={(e) => {
-                                            setQuantity(Number(e.target.value));
-                                        }}
+                                        onChange={(e) => setQuantity(Number(e.target.value))}
                                         className="mt-1 block w-24 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-brand-purple focus:border-brand-purple sm:text-sm rounded-md border bg-white"
                                     >
                                         {[...Array(100)].map((_, i) => (
@@ -282,9 +291,6 @@ const ProductDetailPage: React.FC = () => {
 
                             <div className="mt-10">
                                 <h3 className="text-sm text-dark-gray font-medium">Nahrajte fotografie</h3>
-                                <p className="text-xs text-gray-500 mb-2">
-                                    {isPhotomagnets ? `Pro ${quantity} ks magnetek nahrajte ${totalRequiredPhotos} fotografií.` : `Požadovaný počet fotografií: ${totalRequiredPhotos}.`}
-                                </p>
                                 <div className="mt-4">
                                     <FileUpload 
                                         maxFiles={totalRequiredPhotos} 
@@ -298,7 +304,7 @@ const ProductDetailPage: React.FC = () => {
                             <div className="mt-10">
                                 <div className="mb-4 text-right">
                                     <p className="text-sm text-gray-500 italic">Celková cena za tuto položku:</p>
-                                    <p className="text-2xl font-bold text-dark-gray">{formatPrice(basePrice + mailingFeeTotal)} Kč</p>
+                                    <p className="text-2xl font-bold text-dark-gray">{formatPrice(displayPriceTotal)} Kč</p>
                                 </div>
                                 {error && <p className="text-red-600 text-sm text-center mb-4">{error}</p>}
                                 <button type="button" onClick={handleAddToCart} className="w-full bg-brand-pink border border-transparent rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink">
