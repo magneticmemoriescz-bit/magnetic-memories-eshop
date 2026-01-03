@@ -10,6 +10,33 @@ export const MAKE_WEBHOOK_URL = 'https://hook.eu1.make.com/ka7qi8xh2kear7rhbyg2r
 
 export const PRODUCTS: Product[] = [
   {
+    id: 'photomagnets',
+    name: 'Fotomagnety',
+    price: 20,
+    shortDescription: 'Vaše fotky jako stylové magnety na lednici.',
+    description: 'Vaše oblíbené fotografie ve formě magnetů. Ideální dárek nebo ozdoba pro každou lednici.',
+    imageUrl: 'https://i.imgur.com/7U3iv2e.jpeg',
+    gallery: [
+      'https://i.imgur.com/uD4fN2y.jpeg',
+      'https://i.imgur.com/wE5nF8Q.jpeg',
+      'https://i.imgur.com/sS8tT7s.jpeg',
+    ],
+    requiredPhotos: 6, // Default, will be updated by variant
+    variants: [
+      { id: 'set-9', name: 'Sada 9 ks', photoCount: 9, itemCount: 9, price: 170, imageUrl: 'https://i.imgur.com/uD4fN2y.jpeg' },
+      { id: 'set-15', name: 'Sada 15 ks', photoCount: 15, itemCount: 15, price: 280, imageUrl: 'https://i.imgur.com/wE5nF8Q.jpeg' },
+      { id: 'set-30', name: 'Sada 30 ks', photoCount: 30, itemCount: 30, price: 550, imageUrl: 'https://i.imgur.com/sS8tT7s.jpeg' },
+      { id: '5x5', name: '5x5 cm', photoCount: 1, itemCount: 1, price: 20, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
+      { id: '7x7', name: '7x7 cm', photoCount: 1, itemCount: 1, price: 25, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
+      { id: '5x10', name: '5x10 cm', photoCount: 1, itemCount: 1, price: 25, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: '10x10', name: '10x10 cm', photoCount: 1, itemCount: 1, price: 30, imageUrl: 'https://i.imgur.com/7U3iv2e.jpeg' },
+      { id: '9x13', name: '9x13 cm', photoCount: 1, itemCount: 1, price: 35, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: 'a5-sheet', name: 'A5', photoCount: 1, itemCount: 1, price: 75, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: 'a4-sheet', name: 'A4', photoCount: 1, itemCount: 1, price: 100, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: 'custom-a5', name: 'Libovolný rozměr < A5', photoCount: 1, itemCount: 1, price: 55, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+    ]
+  },
+  {
     id: 'magnetic-calendar',
     name: 'Magnetický kalendář',
     price: 350,
@@ -29,9 +56,9 @@ export const PRODUCTS: Product[] = [
     ],
     requiredPhotos: 12,
     variants: [
-      { id: '8x10', name: '8x10 cm', photoCount: 12, price: 350 },
-      { id: 'a5', name: 'A5', photoCount: 12, price: 600 },
-      { id: 'a4', name: 'A4', photoCount: 12, price: 900 },
+      { id: '8x10', name: '8x10 cm', photoCount: 12, itemCount: 1, price: 350 },
+      { id: 'a5', name: 'A5', photoCount: 12, itemCount: 1, price: 600 },
+      { id: 'a4', name: 'A4', photoCount: 12, itemCount: 1, price: 900 },
     ]
   },
   {
@@ -49,41 +76,17 @@ export const PRODUCTS: Product[] = [
     requiredPhotos: 1,
     hasTextFields: false,
     variants: [
-        // A5 Variants (Standard prices)
-        { id: 'a5-10-pcs', name: '10 ks', photoCount: 1, price: 800 },
-        { id: 'a5-20-pcs', name: '20 ks', photoCount: 1, price: 1550 },
-        { id: 'a5-50-pcs', name: '50 ks', photoCount: 1, price: 3850 },
-        { id: 'a5-100-pcs', name: '100 ks', photoCount: 1, price: 7650 },
+        // A5 Variants
+        { id: 'a5-10-pcs', name: '10 ks', photoCount: 1, itemCount: 10, price: 800 },
+        { id: 'a5-20-pcs', name: '20 ks', photoCount: 1, itemCount: 20, price: 1550 },
+        { id: 'a5-50-pcs', name: '50 ks', photoCount: 1, itemCount: 50, price: 3850 },
+        { id: 'a5-100-pcs', name: '100 ks', photoCount: 1, itemCount: 100, price: 7650 },
         
-        // A6 Variants (Half prices)
-        { id: 'a6-10-pcs', name: '10 ks', photoCount: 1, price: 400 },
-        { id: 'a6-20-pcs', name: '20 ks', photoCount: 1, price: 775 },
-        { id: 'a6-50-pcs', name: '50 ks', photoCount: 1, price: 1925 },
-        { id: 'a6-100-pcs', name: '100 ks', photoCount: 1, price: 3825 },
-    ]
-  },
-  {
-    id: 'photomagnets',
-    name: 'Fotomagnety',
-    price: 20,
-    shortDescription: 'Vaše fotky jako stylové magnety na lednici.',
-    description: 'Vaše oblíbené fotografie ve formě magnetů. Ideální dárek nebo ozdoba pro každou lednici.',
-    imageUrl: 'https://i.imgur.com/7U3iv2e.jpeg',
-    gallery: [
-      'https://i.imgur.com/uD4fN2y.jpeg',
-      'https://i.imgur.com/wE5nF8Q.jpeg',
-      'https://i.imgur.com/sS8tT7s.jpeg',
-    ],
-    requiredPhotos: 6, // Default, will be updated by variant
-    variants: [
-      { id: '5x5', name: '5x5 cm', photoCount: 1, price: 20, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
-      { id: '7x7', name: '7x7 cm', photoCount: 1, price: 25, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
-      { id: '5x10', name: '5x10 cm', photoCount: 1, price: 25, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
-      { id: '10x10', name: '10x10 cm', photoCount: 1, price: 30, imageUrl: 'https://i.imgur.com/7U3iv2e.jpeg' },
-      { id: '9x13', name: '9x13 cm', photoCount: 1, price: 35, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
-      { id: 'a5-sheet', name: 'A5', photoCount: 1, price: 75, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
-      { id: 'a4-sheet', name: 'A4', photoCount: 1, price: 100, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
-      { id: 'custom-a5', name: 'Libovolný rozměr < A5', photoCount: 1, price: 55, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+        // A6 Variants
+        { id: 'a6-10-pcs', name: '10 ks', photoCount: 1, itemCount: 10, price: 400 },
+        { id: 'a6-20-pcs', name: '20 ks', photoCount: 1, itemCount: 20, price: 775 },
+        { id: 'a6-50-pcs', name: '50 ks', photoCount: 1, itemCount: 50, price: 1925 },
+        { id: 'a6-100-pcs', name: '100 ks', photoCount: 1, itemCount: 100, price: 3825 },
     ]
   }
 ];
