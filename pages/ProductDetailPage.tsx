@@ -42,9 +42,13 @@ const ProductDetailPage: React.FC = () => {
                 const initialVariant = currentProduct.variants.find(v => v.id.startsWith('a5'));
                 setSelectedVariant(initialVariant || currentProduct.variants[0]);
             } else if (currentProduct.id === 'magnetic-calendar' && currentProduct.variants) {
-                // Default to A5 for calendar as requested
+                // Default to A5 for calendar
                 const a5Variant = currentProduct.variants.find(v => v.id === 'a5');
                 setSelectedVariant(a5Variant || currentProduct.variants[0]);
+            } else if (currentProduct.id === 'photomagnets' && currentProduct.variants) {
+                // For photomagnets, default to the first individual size (e.g. 5x5) instead of a set
+                const firstSize = currentProduct.variants.find(v => !v.id.startsWith('set-'));
+                setSelectedVariant(firstSize || currentProduct.variants[0]);
             } else {
                 setSelectedVariant(currentProduct.variants?.[0]);
             }
@@ -62,8 +66,7 @@ const ProductDetailPage: React.FC = () => {
     const isPhotomagnets = product.id === 'photomagnets';
     const isCalendar = product.id === 'magnetic-calendar';
 
-    // Specific logic for Photomagnets: 
-    // If it's photomagnets, the required photos = variant.photoCount * quantity.
+    // Required photos logic
     const basePhotoCount = selectedVariant ? selectedVariant.photoCount : product.requiredPhotos;
     const totalRequiredPhotos = isPhotomagnets ? basePhotoCount * quantity : basePhotoCount;
 
@@ -76,9 +79,9 @@ const ProductDetailPage: React.FC = () => {
     
     const displayPriceTotal = basePrice + mailingFeeTotal;
 
-    // Prioritize variant-specific image if available, otherwise fallback to main image
-    const variantImage = selectedVariant?.imageUrl;
-    const displayImage = variantImage ? variantImage : product.imageUrl;
+    // REVERTED: Always use product main image unless it's a specific variant gallery request
+    // "Vrat tam puvodni obrazek jako před upravou"
+    const displayImage = product.imageUrl;
 
     const handleFilesChange = (filesInfo: UploadedFilesInfo) => {
         setUploadedPhotoInfo(filesInfo);
@@ -197,32 +200,19 @@ const ProductDetailPage: React.FC = () => {
                             )}
 
                             {visibleVariants && (
-                                <div className="mt-10 space-y-8">
+                                <div className="mt-10 space-y-6">
                                     {isPhotomagnets ? (
-                                        <>
-                                            <div>
-                                                <h3 className="text-sm text-dark-gray font-medium mb-4">Zvýhodněné sady</h3>
-                                                <div className="flex items-center space-x-4 flex-wrap gap-y-4">
-                                                    {visibleVariants.filter(v => v.id.startsWith('set-')).map((variant) => (
-                                                        <label key={variant.id} className={`relative border rounded-md p-4 flex items-center justify-center text-sm font-medium uppercase cursor-pointer focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple ${selectedVariant?.id === variant.id ? 'bg-brand-purple border-transparent text-white hover:opacity-90' : 'bg-white border-gray-200 text-dark-gray hover:bg-gray-50'}`}>
-                                                            <input type="radio" name="variant-option" value={variant.id} className="sr-only" checked={selectedVariant?.id === variant.id} onChange={() => handleVariantChange(variant)}/>
-                                                            <span>{variant.name}</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
+                                        <div>
+                                            <h3 className="text-sm text-dark-gray font-medium mb-4">Vyberte rozměr (vlastní výběr kusů)</h3>
+                                            <div className="flex items-center space-x-4 flex-wrap gap-y-4">
+                                                {visibleVariants.filter(v => !v.id.startsWith('set-')).map((variant) => (
+                                                    <label key={variant.id} className={`relative border rounded-md px-4 py-2 flex items-center justify-center text-sm font-medium uppercase cursor-pointer focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple ${selectedVariant?.id === variant.id ? 'bg-brand-purple border-transparent text-white hover:opacity-90' : 'bg-white border-gray-200 text-dark-gray hover:bg-gray-50'}`}>
+                                                        <input type="radio" name="variant-option" value={variant.id} className="sr-only" checked={selectedVariant?.id === variant.id} onChange={() => handleVariantChange(variant)}/>
+                                                        <span>{variant.name}</span>
+                                                    </label>
+                                                ))}
                                             </div>
-                                            <div>
-                                                <h3 className="text-sm text-dark-gray font-medium mb-4">Jednotlivé rozměry (vlastní výběr kusů)</h3>
-                                                <div className="flex items-center space-x-4 flex-wrap gap-y-4">
-                                                    {visibleVariants.filter(v => !v.id.startsWith('set-')).map((variant) => (
-                                                        <label key={variant.id} className={`relative border rounded-md p-4 flex items-center justify-center text-sm font-medium uppercase cursor-pointer focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple ${selectedVariant?.id === variant.id ? 'bg-brand-purple border-transparent text-white hover:opacity-90' : 'bg-white border-gray-200 text-dark-gray hover:bg-gray-50'}`}>
-                                                            <input type="radio" name="variant-option" value={variant.id} className="sr-only" checked={selectedVariant?.id === variant.id} onChange={() => handleVariantChange(variant)}/>
-                                                            <span>{variant.name}</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </>
+                                        </div>
                                     ) : (
                                         <div>
                                             <h3 className="text-sm text-dark-gray font-medium mb-4">Varianta</h3>
@@ -272,20 +262,39 @@ const ProductDetailPage: React.FC = () => {
                                 </div>
                             )}
                             
-                            <div className="mt-10">
-                                <h3 className="text-sm text-dark-gray font-medium">
-                                    {selectedVariant?.id.startsWith('set-') ? 'Počet sad' : 'Počet kusů (balení)'}
-                                </h3>
-                                <div className="mt-4">
-                                    <select
-                                        value={quantity}
-                                        onChange={(e) => setQuantity(Number(e.target.value))}
-                                        className="mt-1 block w-24 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-brand-purple focus:border-brand-purple sm:text-sm rounded-md border bg-white"
-                                    >
-                                        {[...Array(100)].map((_, i) => (
-                                            <option key={i + 1} value={i + 1}>{i + 1}</option>
-                                        ))}
-                                    </select>
+                            {/* Quantity and Sets Section */}
+                            <div className="mt-10 flex flex-col space-y-4">
+                                <div className="flex flex-col sm:flex-row sm:items-end gap-6">
+                                    {/* Počet kusů Dropdown */}
+                                    <div className="flex-shrink-0">
+                                        <h3 className="text-sm text-dark-gray font-medium mb-3">
+                                            {selectedVariant?.id.startsWith('set-') ? 'Počet sad' : 'Počet kusů'}
+                                        </h3>
+                                        <select
+                                            value={quantity}
+                                            onChange={(e) => setQuantity(Number(e.target.value))}
+                                            className="block w-32 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-brand-purple focus:border-brand-purple sm:text-sm rounded-md border bg-white"
+                                        >
+                                            {[...Array(100)].map((_, i) => (
+                                                <option key={i + 1} value={i + 1}>{i + 1} {selectedVariant?.id.startsWith('set-') ? 'sada' : 'ks'}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Zvýhodněné sady (Only for photomagnets) */}
+                                    {isPhotomagnets && visibleVariants && (
+                                        <div className="flex-grow">
+                                            <h3 className="text-sm text-dark-gray font-medium mb-3">Nebo zvolte zvýhodněnou sadu</h3>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                {visibleVariants.filter(v => v.id.startsWith('set-')).map((variant) => (
+                                                    <label key={variant.id} className={`relative border rounded-md px-3 py-2 flex items-center justify-center text-xs font-semibold uppercase cursor-pointer transition-all focus-within:ring-2 focus-within:ring-brand-purple ${selectedVariant?.id === variant.id ? 'bg-brand-pink border-transparent text-white' : 'bg-gray-100 border-gray-200 text-dark-gray hover:bg-gray-200'}`}>
+                                                        <input type="radio" name="variant-option" value={variant.id} className="sr-only" checked={selectedVariant?.id === variant.id} onChange={() => handleVariantChange(variant)}/>
+                                                        <span>{variant.name}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
