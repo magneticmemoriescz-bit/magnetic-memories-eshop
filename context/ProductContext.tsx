@@ -26,18 +26,17 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
 
       if (storedProductsJSON) {
         const storedProducts: Product[] = JSON.parse(storedProductsJSON);
-        const processedIds = new Set<string>();
-
-        // Iterate stored products
-        for (const storedProduct of storedProducts) {
-            const initialProduct = initialProductsMap.get(storedProduct.id);
-            if (initialProduct) {
-                // Product is defined in code.
-                // We MUST merge critical fields from code (constants.tsx) into the stored product.
-                // This ensures that if you change the price/name/variants in code, it updates on the website
-                // even if the user has visited before (and has old data in localStorage).
+        const storedProductsMap = new Map(storedProducts.map(p => [p.id, p]));
+        
+        // 1. Nejprve přidáme produkty z INITIAL_PRODUCTS v pořadí, jak jsou v kódu (constants.tsx).
+        // Tím zajistíme, že "Fotomagnety" budou vždy první, pokud jsou v constants.tsx na prvním místě.
+        for (const initialProduct of INITIAL_PRODUCTS) {
+            const stored = storedProductsMap.get(initialProduct.id);
+            if (stored) {
+                // Sloučíme data z paměti (např. pokud byla změněna přes admin) s kritickými poli z kódu.
+                // Prioritu mají pole v constants.tsx (cena, název, pořadí).
                 const mergedProduct: Product = {
-                    ...storedProduct,
+                    ...stored,
                     name: initialProduct.name,
                     price: initialProduct.price,
                     shortDescription: initialProduct.shortDescription,
@@ -52,27 +51,26 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
                     requiredPhotos: initialProduct.requiredPhotos,
                     hasTextFields: initialProduct.hasTextFields
                 };
-
-                if (JSON.stringify(storedProduct) !== JSON.stringify(mergedProduct)) {
-                    needsUpdateInStorage = true;
-                }
                 finalProducts.push(mergedProduct);
             } else {
-                // This is a custom product created by the user via admin (not in code), keep it as is.
-                finalProducts.push(storedProduct);
-            }
-            processedIds.add(storedProduct.id);
-        }
-
-        // Add any new products from the code that weren't in storage yet
-        for (const [id, initialProduct] of initialProductsMap.entries()) {
-            if (!processedIds.has(id)) {
                 finalProducts.push(initialProduct);
                 needsUpdateInStorage = true;
             }
         }
+        
+        // 2. Přidáme uživatelské produkty, které jsou v localStorage, ale nejsou definovány v INITIAL_PRODUCTS.
+        for (const storedProduct of storedProducts) {
+            if (!initialProductsMap.has(storedProduct.id)) {
+                finalProducts.push(storedProduct);
+            }
+        }
+
+        // Pokud se pořadí nebo obsah liší od toho, co bylo v localStorage, označíme k aktualizaci.
+        if (JSON.stringify(storedProducts) !== JSON.stringify(finalProducts)) {
+            needsUpdateInStorage = true;
+        }
       } else {
-        // No products in storage, use initial list.
+        // Žádné produkty v paměti, použijeme výchozí seznam.
         finalProducts = INITIAL_PRODUCTS;
         needsUpdateInStorage = true;
       }
@@ -85,7 +83,6 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     } catch (error) {
       console.error("Failed to load or migrate products from localStorage", error);
-      // Fallback
       setProducts(INITIAL_PRODUCTS);
     } finally {
       setLoading(false);
