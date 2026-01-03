@@ -3,9 +3,7 @@ import React, { useState, useRef } from 'react';
 import { UploadedPhoto } from '../types';
 
 // --- KONFIGURACE CLOUDINARY ---
-// Cloud Name z vašeho dashboardu: dvzuwzrpm
 const CLOUDINARY_CLOUD_NAME = 'dvzuwzrpm'; 
-// Upload Preset, který jste vytvořila: magnetic_memories
 const CLOUDINARY_UPLOAD_PRESET = 'magnetic_memories'; 
 
 export interface UploadedFilesInfo {
@@ -22,9 +20,9 @@ interface FileUploadProps {
 
 /**
  * Vlastní komponenta pro nahrávání fotografií
- * - Provádí kompresi na straně klienta (šetří data a peníze)
- * - Nahrává přímo do Cloudinary (vysoké limity zdarma)
- * - Podporuje Drag & Drop a řazení (pro kalendáře)
+ * - Provádí kompresi na straně klienta
+ * - Nahrává přímo do Cloudinary
+ * - Umožňuje duplikovat jednu fotku do více kusů
  */
 export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange, uploadedFilesInfo, isReorderable = false }) => {
   const { photos } = uploadedFilesInfo;
@@ -36,7 +34,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
 
-  // Komprese pro zajištění maximální tiskové kvality (DPI)
   const compressImage = (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -46,7 +43,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          // 2500px je ideální pro tisk A4/A5 ve 300 DPI
           const MAX_WIDTH = 2500;
           const MAX_HEIGHT = 2500;
           let width = img.width;
@@ -72,7 +68,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
           canvas.toBlob((blob) => {
             if (blob) resolve(blob);
             else reject(new Error('Chyba při zpracování fotky.'));
-          }, 'image/jpeg', 0.90); // Špičková kvalita 90%
+          }, 'image/jpeg', 0.90);
         };
         img.onerror = reject;
       };
@@ -122,14 +118,30 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
         setUploadProgress(Math.round(((i + 1) / filesArray.length) * 100));
       }
 
-      onFilesChange({ photos: newUploadedPhotos, groupId: `local-${Date.now()}` });
+      onFilesChange({ photos: newUploadedPhotos, groupId: uploadedFilesInfo.groupId || `local-${Date.now()}` });
     } catch (error: any) {
       console.error("Upload error:", error);
-      alert(`Nahrávání se nezdařilo: ${error.message}. Zkontrolujte prosím nastavení Cloudinary.`);
+      alert(`Nahrávání se nezdařilo: ${error.message}.`);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
     }
+  };
+
+  const duplicatePhoto = (index: number) => {
+    if (photos.length >= maxFiles) {
+      alert(`Dosáhli jste maximálního počtu ${maxFiles} kusů.`);
+      return;
+    }
+    const newPhotos = [...photos];
+    // Vložíme kopii hned za původní fotku
+    newPhotos.splice(index + 1, 0, { ...photos[index] });
+    onFilesChange({ photos: newPhotos, groupId: uploadedFilesInfo.groupId });
+  };
+
+  const removeFile = (index: number) => {
+    const newPhotos = photos.filter((_, i) => i !== index);
+    onFilesChange({ photos: newPhotos, groupId: newPhotos.length === 0 ? null : uploadedFilesInfo.groupId });
   };
 
   const onDrag = (e: React.DragEvent) => {
@@ -149,11 +161,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFiles(e.dataTransfer.files);
     }
-  };
-
-  const removeFile = (index: number) => {
-    const newPhotos = photos.filter((_, i) => i !== index);
-    onFilesChange({ photos: newPhotos, groupId: null });
   };
 
   const handleDragStart = (index: number) => { if (isReorderable) setDraggedIndex(index); };
@@ -210,18 +217,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
 
         <div className="flex justify-between items-center text-sm">
             <span className={`font-medium ${photos.length === maxFiles ? 'text-green-600' : 'text-gray-700'}`}>
-                Nahraných fotek: {photos.length} / {maxFiles}
+                Položek: {photos.length} / {maxFiles}
             </span>
-            {isReorderable && photos.length > 1 && (
-                <span className="text-xs text-gray-400 italic">Přetáhněte fotky pro změnu pořadí v kalendáři</span>
-            )}
+            <div className="flex flex-col items-end">
+                {isReorderable && photos.length > 1 && (
+                    <span className="text-xs text-gray-400 italic">Přetáhněte fotky pro změnu pořadí v kalendáři</span>
+                )}
+                <span className="text-xs text-brand-purple font-medium">U fotek klikněte na + pro přidání dalšího kusu téže fotky.</span>
+            </div>
         </div>
 
         {photos.length > 0 && (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                 {photos.map((photo, index) => (
                     <div 
-                        key={photo.url}
+                        key={`${photo.url}-${index}`}
                         draggable={isReorderable}
                         onDragStart={() => handleDragStart(index)}
                         onDragEnter={() => handleDragEnter(index)}
@@ -237,15 +247,30 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
                             alt={photo.name} 
                             className="w-full h-full object-cover"
                         />
-                        <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); removeFile(index); }}
-                            className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                        
+                        {/* Ovládací prvky nad fotkou */}
+                        <div className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                                type="button"
+                                title="Přidat další kus této fotky"
+                                onClick={(e) => { e.stopPropagation(); duplicatePhoto(index); }}
+                                className="bg-brand-purple text-white p-1 rounded-full hover:bg-brand-purple/80 shadow-md"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
+                                </svg>
+                            </button>
+                            <button
+                                type="button"
+                                title="Odstranit tento kus"
+                                onClick={(e) => { e.stopPropagation(); removeFile(index); }}
+                                className="bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-md"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>
