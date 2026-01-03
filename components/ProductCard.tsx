@@ -32,7 +32,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, buttonStyle }
           </Link>
         </h3>
         <p className="mt-1 text-sm text-gray-500">{product.shortDescription}</p>
-        <p className="mt-4 text-xl font-bold text-gray-900">{formatPrice(product.price)} Kč</p>
+        <p className="mt-4 text-xl font-bold text-gray-900">od {formatPrice(product.price)} Kč</p>
       </div>
       <div className='p-6 pt-0'>
         <Link 
