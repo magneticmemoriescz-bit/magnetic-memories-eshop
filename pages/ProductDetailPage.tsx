@@ -8,6 +8,8 @@ import { FileUpload, UploadedFilesInfo } from '../components/FileUpload';
 import { formatPrice } from '../utils/format';
 import { Seo } from '../components/Seo';
 
+const DIRECT_MAILING_FEE = 100;
+
 const ProductDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const { products } = useProducts();
@@ -19,6 +21,7 @@ const ProductDetailPage: React.FC = () => {
     const [customText, setCustomText] = useState<{ [key: string]: string }>({});
     const [error, setError] = useState<string | null>(null);
     const [quantity, setQuantity] = useState(1);
+    const [directMailing, setDirectMailing] = useState(false);
     
     // State for Wedding Announcement size toggle
     const [announcementSize, setAnnouncementSize] = useState<'a5' | 'a6'>('a5');
@@ -31,6 +34,7 @@ const ProductDetailPage: React.FC = () => {
             setCustomText({});
             // Reset to A5 default
             setAnnouncementSize('a5');
+            setDirectMailing(false);
             
             // Logic to pick the correct initial variant based on product type
             if (currentProduct.id === 'wedding-announcement' && currentProduct.variants) {
@@ -64,7 +68,9 @@ const ProductDetailPage: React.FC = () => {
     const basePhotoCount = selectedVariant ? selectedVariant.photoCount : product.requiredPhotos;
     const totalRequiredPhotos = isPhotomagnets ? basePhotoCount * quantity : basePhotoCount;
 
-    const displayPrice = selectedVariant?.price ?? product.price;
+    const basePrice = selectedVariant?.price ?? product.price;
+    const mailingFeeTotal = isWeddingAnnouncement && directMailing ? (DIRECT_MAILING_FEE * quantity) : 0;
+    const displayPrice = basePrice; // We display base price in the header, total is in summary/cart
 
     
     // Prioritize variant-specific image if available, otherwise fallback to main image
@@ -91,11 +97,12 @@ const ProductDetailPage: React.FC = () => {
             id: `${product.id}-${selectedVariant?.id}-${Date.now()}`,
             product,
             quantity: quantity,
-            price: displayPrice,
+            price: basePrice,
             variant: selectedVariant,
             photos: uploadedPhotoInfo.photos,
             photoGroupId: uploadedPhotoInfo.groupId,
             customText,
+            directMailing: isWeddingAnnouncement ? directMailing : undefined,
         };
         dispatch({ type: 'ADD_ITEM', payload: cartItem });
         navigate('/kosik');
@@ -223,6 +230,28 @@ const ProductDetailPage: React.FC = () => {
                                 </div>
                             )}
 
+                            {isWeddingAnnouncement && (
+                                <div className="mt-8 p-4 bg-brand-purple/5 border border-brand-purple/20 rounded-lg">
+                                    <div className="flex items-start">
+                                        <div className="flex items-center h-5">
+                                            <input
+                                                id="direct-mailing"
+                                                name="direct-mailing"
+                                                type="checkbox"
+                                                checked={directMailing}
+                                                onChange={(e) => setDirectMailing(e.target.checked)}
+                                                className="focus:ring-brand-purple h-4 w-4 text-brand-purple border-gray-300 rounded"
+                                            />
+                                        </div>
+                                        <div className="ml-3 text-sm">
+                                            <label htmlFor="direct-mailing" className="font-medium text-gray-700">Přeji si rozeslat oznámení na jednotlivé adresy</label>
+                                            <p className="text-gray-500">Příplatek {DIRECT_MAILING_FEE} Kč / ks (+ {formatPrice(mailingFeeTotal)} Kč celkem)</p>
+                                            <p className="text-xs text-gray-400 mt-1 italic">V tomto případě nás prosím kontaktujte pro zaslání seznamu adres.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {product.hasTextFields && (
                                 <div className="mt-10 space-y-4">
                                      <h3 className="text-sm text-dark-gray font-medium">Detaily oznámení</h3>
@@ -267,6 +296,10 @@ const ProductDetailPage: React.FC = () => {
                             </div>
 
                             <div className="mt-10">
+                                <div className="mb-4 text-right">
+                                    <p className="text-sm text-gray-500 italic">Celková cena za tuto položku:</p>
+                                    <p className="text-2xl font-bold text-dark-gray">{formatPrice(basePrice + mailingFeeTotal)} Kč</p>
+                                </div>
                                 {error && <p className="text-red-600 text-sm text-center mb-4">{error}</p>}
                                 <button type="button" onClick={handleAddToCart} className="w-full bg-brand-pink border border-transparent rounded-md py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-pink">
                                     Přidat do košíku
