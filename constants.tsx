@@ -23,9 +23,11 @@ export const PRODUCTS: Product[] = [
     ],
     requiredPhotos: 6, // Default, will be updated by variant
     variants: [
+      // Discounted sets
       { id: 'set-9', name: 'Sada 9 ks', photoCount: 9, itemCount: 9, price: 170, imageUrl: 'https://i.imgur.com/uD4fN2y.jpeg' },
       { id: 'set-15', name: 'Sada 15 ks', photoCount: 15, itemCount: 15, price: 280, imageUrl: 'https://i.imgur.com/wE5nF8Q.jpeg' },
       { id: 'set-30', name: 'Sada 30 ks', photoCount: 30, itemCount: 30, price: 550, imageUrl: 'https://i.imgur.com/sS8tT7s.jpeg' },
+      // Individual sizes
       { id: '5x5', name: '5x5 cm', photoCount: 1, itemCount: 1, price: 20, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
       { id: '7x7', name: '7x7 cm', photoCount: 1, itemCount: 1, price: 25, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
       { id: '5x10', name: '5x10 cm', photoCount: 1, itemCount: 1, price: 25, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
