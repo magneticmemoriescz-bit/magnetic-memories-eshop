@@ -34,9 +34,9 @@ const HomePage: React.FC = () => {
 
                         {/* Right Column: Text & Icons - takes 8/12 columns (66%) */}
                         <div className="text-center md:text-left md:col-span-8">
-                            <h1 className="text-3xl sm:text-4xl font-extrabold text-dark-gray mb-4">Proměňte své fotky v jedinečné magnetické produkty</h1>
+                            <h1 className="text-3xl sm:text-4xl font-extrabold text-dark-gray mb-4">Proměňte své fotky v magnetické produkty</h1>
                             <p className="mt-2 text-lg text-gray-700 font-medium leading-relaxed">
-                                Máte telefon plný krásných fotek telefonu nebo PC? Vytvořte si fotomagnetky pro radost nebo jako originální dárek.
+                                Máte telefon plný krásných fotek? Vytvořte si fotomagnetky pro radost nebo jako originální dárek.
                             </p>
 
                             {/* Main CTA Button - High Visibility - Changed to Pink and reduced margins */}
@@ -125,5 +125,7 @@ const HomePage: React.FC = () => {
         </>
     );
 };
+
+export default HomePage;
 
 export default HomePage;
