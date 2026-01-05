@@ -3,9 +3,6 @@ import React from 'react';
 import { Product } from './types';
 
 // NOTE: Make.com webhook URL for invoice generation.
-// This is a crucial part of the automated invoicing system. When an order is completed,
-// the order data is sent to this URL, which triggers a scenario in Make.com
-// to generate an invoice via an external service like Fakturoid.
 export const MAKE_WEBHOOK_URL = 'https://hook.eu1.make.com/ka7qi8xh2kear7rhbyg2re3eg83pfybn';
 
 export const PRODUCTS: Product[] = [
@@ -15,15 +12,16 @@ export const PRODUCTS: Product[] = [
     price: 20,
     shortDescription: 'Vaše fotky jako stylové magnety na lednici.',
     description: 'Vaše oblíbené fotografie ve formě magnetů. Ideální dárek nebo ozdoba pro každou lednici.',
-    imageUrl: 'https://i.imgur.com/7U3iv2e.jpeg',
+    imageUrl: 'https://i.imgur.com/7U3iv2e.jpeg', // Vráceno na původní hlavní fotku
     gallery: [
+      'https://i.imgur.com/7U3iv2e.jpeg',
       'https://i.imgur.com/uD4fN2y.jpeg',
       'https://i.imgur.com/wE5nF8Q.jpeg',
       'https://i.imgur.com/sS8tT7s.jpeg',
+      'https://i.imgur.com/vH9F9Sj.jpg',
     ],
-    requiredPhotos: 1, // Default, will be updated by variant/quantity
+    requiredPhotos: 1,
     variants: [
-      // Individual sizes - Prices are per 1 piece
       { id: '5x5', name: '5x5 cm', photoCount: 1, itemCount: 1, price: 20, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
       { id: '7x7', name: '7x7 cm', photoCount: 1, itemCount: 1, price: 25, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
       { id: '5x10', name: '5x10 cm', photoCount: 1, itemCount: 1, price: 25, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
@@ -43,6 +41,7 @@ export const PRODUCTS: Product[] = [
     imageUrl: 'https://i.imgur.com/Yy9Rf5y.jpg',
     gallery: [
         'https://i.imgur.com/Yy9Rf5y.jpg',
+        'https://i.imgur.com/eA3L9fo.jpg',
     ],
     imageUrl_portrait: 'https://i.imgur.com/Yy9Rf5y.jpg',
     gallery_portrait: [
@@ -65,22 +64,21 @@ export const PRODUCTS: Product[] = [
     price: 400,
     shortDescription: 'Originální magnetická oznámení pro váš velký den.',
     description: 'Originální a nezapomenutelné svatební oznámení, které hosté neztratí z očí. Vzpomínka na váš velký den, co drží!',
-    imageUrl: 'https://i.imgur.com/ZteI9PG.jpeg',
+    imageUrl: 'https://i.imgur.com/brxMPOI.jpg', // Nová hlavní fotka oznámení
     gallery: [
-      'https://i.imgur.com/ZteI9PG.jpeg',
+      'https://i.imgur.com/brxMPOI.jpg', // 1. pozice
+      'https://i.imgur.com/ZteI9PG.jpeg', // 2. pozice (původní hlavní)
       'https://i.imgur.com/oP9wB1V.jpeg',
       'https://i.imgur.com/9iF8zUu.jpeg',
     ],
     requiredPhotos: 1,
     hasTextFields: false,
     variants: [
-        // A5 Variants
         { id: 'a5-10-pcs', name: '10 ks', photoCount: 1, itemCount: 10, price: 800 },
         { id: 'a5-20-pcs', name: '20 ks', photoCount: 1, itemCount: 20, price: 1550 },
         { id: 'a5-50-pcs', name: '50 ks', photoCount: 1, itemCount: 50, price: 3850 },
         { id: 'a5-100-pcs', name: '100 ks', photoCount: 1, itemCount: 100, price: 7650 },
         
-        // A6 Variants
         { id: 'a6-10-pcs', name: '10 ks', photoCount: 1, itemCount: 10, price: 400 },
         { id: 'a6-20-pcs', name: '20 ks', photoCount: 1, itemCount: 20, price: 775 },
         { id: 'a6-50-pcs', name: '50 ks', photoCount: 1, itemCount: 50, price: 1925 },
