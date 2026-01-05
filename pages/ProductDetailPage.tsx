@@ -23,6 +23,9 @@ const ProductDetailPage: React.FC = () => {
     const [quantity, setQuantity] = useState(1);
     const [directMailing, setDirectMailing] = useState(false);
     
+    // Gallery State
+    const [activeImageIndex, setActiveImageIndex] = useState(0);
+    
     // State for Wedding Announcement size toggle
     const [announcementSize, setAnnouncementSize] = useState<'a5' | 'a6'>('a5');
 
@@ -32,21 +35,17 @@ const ProductDetailPage: React.FC = () => {
         if (currentProduct) {
             setUploadedPhotoInfo({ photos: [], groupId: null });
             setCustomText({});
-            // Reset to A5 default
             setAnnouncementSize('a5');
             setDirectMailing(false);
+            setActiveImageIndex(0); // Reset gallery index
             
-            // Logic to pick the correct initial variant based on product type
             if (currentProduct.id === 'wedding-announcement' && currentProduct.variants) {
-                // Default to A5 for wedding announcements
                 const initialVariant = currentProduct.variants.find(v => v.id.startsWith('a5'));
                 setSelectedVariant(initialVariant || currentProduct.variants[0]);
             } else if (currentProduct.id === 'magnetic-calendar' && currentProduct.variants) {
-                // Default to A5 for calendar
                 const a5Variant = currentProduct.variants.find(v => v.id === 'a5');
                 setSelectedVariant(a5Variant || currentProduct.variants[0]);
             } else if (currentProduct.id === 'photomagnets' && currentProduct.variants) {
-                // For photomagnets, default to the first individual size (e.g. 5x5) instead of a set
                 const firstSize = currentProduct.variants.find(v => !v.id.startsWith('set-'));
                 setSelectedVariant(firstSize || currentProduct.variants[0]);
             } else {
@@ -87,8 +86,12 @@ const ProductDetailPage: React.FC = () => {
     const basePhotoCount = selectedVariant ? selectedVariant.photoCount : product.requiredPhotos;
     const totalRequiredPhotos = isPhotomagnets ? basePhotoCount * quantity : basePhotoCount;
 
-    // Always use product main image for display
-    const displayImage = product.imageUrl;
+    // Gallery logic
+    const galleryImages = product.gallery && product.gallery.length > 0 ? product.gallery : [product.imageUrl];
+    const currentDisplayImage = galleryImages[activeImageIndex];
+
+    const nextImage = () => setActiveImageIndex((prev) => (prev + 1) % galleryImages.length);
+    const prevImage = () => setActiveImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
 
     const handleFilesChange = (filesInfo: UploadedFilesInfo) => {
         setUploadedPhotoInfo(filesInfo);
@@ -108,7 +111,6 @@ const ProductDetailPage: React.FC = () => {
             id: `${product.id}-${selectedVariant?.id}-${Date.now()}`,
             product,
             quantity: quantity,
-            // Calculate effective unit price for cart (including discount)
             price: basePriceTotal / quantity,
             variant: selectedVariant,
             photos: uploadedPhotoInfo.photos,
@@ -164,15 +166,58 @@ const ProductDetailPage: React.FC = () => {
             <Seo 
                 title={pageTitle}
                 description={product.shortDescription}
-                image={displayImage}
+                image={galleryImages[0]}
                 type="product"
                 price={selectedVariant?.price ?? product.price}
                 availability="InStock"
             />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 lg:items-start">
-                    <div className="lg:col-span-7">
-                        <img src={displayImage} alt={product.name} className={imageClass} />
+                    {/* Gallery Section */}
+                    <div className="lg:col-span-7 relative group">
+                        <div className="aspect-w-4 aspect-h-3 bg-gray-100 overflow-hidden sm:rounded-lg h-[400px] sm:h-[600px] flex items-center justify-center">
+                            <img 
+                                src={currentDisplayImage} 
+                                alt={product.name} 
+                                className={imageClass} 
+                            />
+                        </div>
+
+                        {/* Navigation Arrows */}
+                        {galleryImages.length > 1 && (
+                            <>
+                                <button 
+                                    onClick={prevImage}
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-dark-gray p-2 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100"
+                                    aria-label="Předchozí obrázek"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
+                                <button 
+                                    onClick={nextImage}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-dark-gray p-2 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100"
+                                    aria-label="Následující obrázek"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                                
+                                {/* Indicators (Dots) */}
+                                <div className="mt-4 flex justify-center space-x-2">
+                                    {galleryImages.map((_, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setActiveImageIndex(idx)}
+                                            className={`h-2 w-2 rounded-full transition-all ${idx === activeImageIndex ? 'bg-brand-purple w-4' : 'bg-gray-300'}`}
+                                            aria-label={`Přejít na obrázek ${idx + 1}`}
+                                        />
+                                    ))}
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     <div className="mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0 lg:col-span-5">
@@ -261,7 +306,6 @@ const ProductDetailPage: React.FC = () => {
                             {/* Quantity and Sets Section */}
                             <div className="mt-10 flex flex-col space-y-4">
                                 <div className="flex flex-col sm:flex-row sm:items-end gap-6">
-                                    {/* Počet kusů Dropdown */}
                                     <div className="flex-shrink-0">
                                         <h3 className="text-sm text-dark-gray font-medium mb-3">Počet kusů</h3>
                                         <select
@@ -275,7 +319,6 @@ const ProductDetailPage: React.FC = () => {
                                         </select>
                                     </div>
 
-                                    {/* Zvýhodněné sady (Only for photomagnets) */}
                                     {isPhotomagnets && (
                                         <div className="flex-grow">
                                             <h3 className="text-sm text-dark-gray font-medium mb-3">Nebo zvolte zvýhodněnou sadu</h3>
