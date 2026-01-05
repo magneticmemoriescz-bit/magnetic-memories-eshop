@@ -91,15 +91,6 @@ const ContactPage: React.FC = () => {
                         </form>
                     )}
                 </div>
-
-                <div className="mt-16 border-t border-gray-200 pt-8 text-center">
-                    <h3 className="text-lg font-medium text-dark-gray">Fakturační údaje</h3>
-                    <p className="mt-2 text-gray-500">
-                        Adriana Petrová<br />
-                        Dlouhý Most 374, 463 12 Liberec<br />
-                        IČO: 01764365
-                    </p>
-                </div>
             </div>
         </div>
     );
