@@ -21,32 +21,27 @@ const HomePage: React.FC = () => {
         <>
             <Seo />
             {/* Hero Section */}
-            {/* Reduced padding (py-8 sm:py-12) and increased pink opacity (bg-brand-pink/25) */}
             <section className="py-8 sm:py-12 bg-brand-pink/25">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Reduced gap (gap-8) */}
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-                        {/* Left Column: Big Logo - takes 4/12 columns (33%) */}
+                        {/* Left Column: Logo */}
                         <div className="flex justify-center md:col-span-4">
-                            {/* Mobile: significantly smaller (w-40), Desktop: max-w-xs */}
                             <Logo className="w-40 md:w-full md:max-w-xs h-auto drop-shadow-lg" />
                         </div>
 
-                        {/* Right Column: Text & Icons - takes 8/12 columns (66%) */}
+                        {/* Right Column: Text & CTA */}
                         <div className="text-center md:text-left md:col-span-8">
                             <h1 className="text-3xl sm:text-4xl font-extrabold text-dark-gray mb-4">Proměňte své fotky v magnetické produkty</h1>
                             <p className="mt-2 text-lg text-gray-700 font-medium leading-relaxed">
                                 Máte telefon plný krásných fotek? Vytvořte si fotomagnetky pro radost nebo jako originální dárek.
                             </p>
 
-                            {/* Main CTA Button - High Visibility - Changed to Pink and reduced margins */}
                             <div className="mt-6 mb-8">
                                 <Link to="/produkty" className="inline-block bg-brand-pink text-white font-bold py-4 px-10 rounded-full shadow-xl hover:opacity-90 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brand-pink/50 text-lg">
                                     VYTVOŘIT MAGNETKY
                                 </Link>
                             </div>
 
-                            {/* Process Icons Mini-row with Labels - Only first 3 steps */}
                             <div className="flex flex-wrap justify-center md:justify-start gap-6">
                                 {HOW_IT_WORKS_STEPS.slice(0, 3).map((step, index) => (
                                     <div key={index} className="flex flex-col items-center w-24">
@@ -70,11 +65,10 @@ const HomePage: React.FC = () => {
                 </div>
             </section>
 
-            {/* Product Overview Section */}
+            {/* Products Section */}
             <section className="pb-16 sm:pb-24 pt-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <h2 className="text-3xl font-extrabold text-center text-dark-gray">Naše Produkty</h2>
-                    {/* FIX: Changed from grid to a centered flex layout */}
                     <div className="mt-12 flex flex-wrap justify-center gap-8">
                         {products.map((product, index) => (
                             <div key={product.id} className="w-full max-w-sm flex">
@@ -105,7 +99,7 @@ const HomePage: React.FC = () => {
                 </div>
             </section>
 
-             {/* How It Works Section */}
+            {/* How It Works Section */}
             <section className="py-16 sm:py-24 bg-white border-t border-gray-100">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <h2 className="text-3xl font-extrabold text-center text-dark-gray">Jak to funguje?</h2>
@@ -125,7 +119,5 @@ const HomePage: React.FC = () => {
         </>
     );
 };
-
-export default HomePage;
 
 export default HomePage;
