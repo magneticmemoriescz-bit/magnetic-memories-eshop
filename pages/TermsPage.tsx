@@ -5,7 +5,7 @@ import { PageWrapper, SectionTitle } from '../components/layout/PageWrapper';
 const TermsPage: React.FC = () => (
     <PageWrapper title="Obchodní podmínky">
         <SectionTitle>1. Úvodní ustanovení</SectionTitle>
-        <p>Tyto obchodní podmínky platí pro nákup v internetovém obchodě Magnetic Memories provozovaném fyzickou osobou: Adriana Petrová, se sídlem Dlouhý Most 374, 463 12 Liberec, IČO: 01764365 (dále jen "prodávající"). Podmínky blíže vymezují a upřesňují práva a povinnosti prodávajícího a kupujícího (zákazník).</p>
+        <p>Tyto obchodní podmínky platí pro nákup v internetovém obchodě Magnetic Memories provozovaném fyzickou osobou pod IČO: 01764365 (dále jen "prodávající"). Podmínky blíže vymezují a upřesňují práva a povinnosti prodávajícího a kupujícího (zákazník).</p>
         <SectionTitle>2. Objednávka a uzavření kupní smlouvy</SectionTitle>
         <p>Veškeré objednávky podané prostřednictvím internetového obchodu jsou závazné. Podáním objednávky kupující stvrzuje, že se seznámil s těmito obchodními podmínkami a že s nimi souhlasí. Smlouva je uzavřena okamžikem potvrzení objednávky ze strany prodávajícího.</p>
         <SectionTitle>3. Cena a platební podmínky</SectionTitle>
