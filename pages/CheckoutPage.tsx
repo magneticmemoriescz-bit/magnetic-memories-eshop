@@ -437,7 +437,7 @@ const CheckoutPage: React.FC = () => {
                                     rows={3} 
                                     value={formData.additionalInfo} 
                                     onChange={handleFormChange} 
-                                    className="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-purple focus:border-brand-purple sm:text-sm placeholder-gray-500 border-brand-purple/20 bg-brand-purple/10"
+                                    className="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-purple focus:border-brand-purple sm:text-sm placeholder-gray-500 border-brand-purple/20 bg-white"
                                     placeholder="Zde nám můžete nechat vzkaz k objednávce..."
                                 ></textarea>
                             </div>
