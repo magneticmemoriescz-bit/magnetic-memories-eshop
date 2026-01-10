@@ -141,23 +141,21 @@ const CheckoutPage: React.FC = () => {
     };
 
     const openBalikovnaWidget = () => {
-        // Balikovna widget usually opens via postMessage from their provided library
-        if ((window as any).BalikovnaWidget) {
-            (window as any).BalikovnaWidget.open((point: any) => {
+        if (window.BalikovnaWidget) {
+            window.BalikovnaWidget.open((point: any) => {
                 if (point) {
                     setBalikovnaPoint(point);
                     setFormErrors(prev => ({...prev, balikovnaPoint: ''}))
                 }
             });
         } else {
-            // Fallback if script fails to load properly
             alert("Widget Balíkovny se nepodařilo načíst. Zkuste to prosím znovu.");
         }
     };
 
     const openPplWidget = () => {
-        if ((window as any).pplWidget) {
-            (window as any).pplWidget.open((point: any) => {
+        if (window.pplParcelShopWidget) {
+            window.pplParcelShopWidget.open((point: any) => {
                 if (point) {
                     setPplPoint(point);
                     setFormErrors(prev => ({...prev, pplPoint: ''}))
@@ -168,19 +166,17 @@ const CheckoutPage: React.FC = () => {
         }
     };
     
+    // Číslování objednávek pomocí timestampu RRMMDDHHMMSS pro zajištění unikátnosti napříč zařízeními
     const generateOrderNumber = (): string => {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = (today.getMonth() + 1).toString().padStart(2, '0');
-        const datePrefix = `${year}${month}`;
-        const storageKey = `orderSequence_${datePrefix}`;
-        let sequence = 1;
-        try {
-            const lastSequence = localStorage.getItem(storageKey);
-            if (lastSequence) sequence = parseInt(lastSequence, 10) + 1;
-            localStorage.setItem(storageKey, sequence.toString());
-        } catch (e) {}
-        return `${datePrefix}${sequence.toString().padStart(3, '0')}`;
+        const now = new Date();
+        const year = now.getFullYear().toString().slice(-2);
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
+        
+        return `${year}${month}${day}${hours}${minutes}${seconds}`;
     };
 
     const sendEmailNotifications = async (order: OrderDetails) => {
@@ -243,13 +239,16 @@ const CheckoutPage: React.FC = () => {
             ? '✅ Zákazník SOUHLASÍ se zveřejněním produktů pro reklamní účely'
             : '❌ Zákazník NESOUHLASÍ se zveřejněním produktů pro reklamní účely';
 
+        const fullName = `${order.contact.firstName} ${order.contact.lastName}`;
+        const fullAddress = `${order.contact.street}, ${order.contact.city}, ${order.contact.zip}`;
+
         const templateParams = {
             subject: `Objednávka č. ${order.orderNumber}`,
             order_number: order.orderNumber,
             date: currentDate,
-            to_name: `${order.contact.firstName} ${order.contact.lastName}`,
-            customer_name: `${order.contact.firstName} ${order.contact.lastName}`,
-            customer_address: `${order.contact.street}, ${order.contact.city}, ${order.contact.zip}`,
+            to_name: fullName,
+            customer_name: fullName,
+            customer_address: fullAddress,
             to_email: order.contact.email, 
             email: order.contact.email, 
             message: order.contact.additionalInfo || 'Bez poznámky',
@@ -261,13 +260,15 @@ const CheckoutPage: React.FC = () => {
             zip: order.contact.zip,
             phone: order.contact.phone,
             reply_to: 'magnetic.memories.cz@gmail.com',
-            marketing_consent: consentText
+            marketing_consent: consentText,
+            // Pomocný parametr pro snadné zobrazení všech údajů nahoře v šabloně
+            customer_info: `${fullName}\n${order.contact.email}\n${order.contact.phone}\n${fullAddress}`
         };
         
         const adminTemplateParams = {
             ...templateParams,
             subject: `NOVÁ OBJEDNÁVKA: ${order.orderNumber} - ${order.contact.lastName} (${formatPrice(order.total)} Kč)`,
-            to_name: 'Admin',
+            to_name: fullName, // Změněno z 'Admin' na jméno zákazníka pro přehlednost v přehledu mailů
             to_email: 'magnetic.memories.cz@gmail.com',
             email: order.contact.email
         };
