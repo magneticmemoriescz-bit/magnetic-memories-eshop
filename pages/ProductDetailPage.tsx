@@ -65,13 +65,6 @@ const ProductDetailPage: React.FC = () => {
         return lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.webm') || lowerUrl.endsWith('.mov');
     };
 
-    // Ensure video plays when index changes
-    useEffect(() => {
-        if (videoRef.current) {
-            videoRef.current.play().catch(err => console.log("Video play failed:", err));
-        }
-    }, [activeImageIndex]);
-
     if (!product) {
         return <div className="text-center py-20">Produkt nenalezen.</div>;
     }
@@ -168,7 +161,7 @@ const ProductDetailPage: React.FC = () => {
         visibleVariants = product.variants.filter(v => v.id.startsWith(announcementSize));
     }
 
-    const imageClass = "w-full h-full object-center object-cover sm:rounded-lg";
+    const imageClass = "w-full h-full object-center object-contain sm:rounded-lg";
 
     const pageTitle = selectedVariant && selectedVariant.name !== product.name 
         ? `${product.name} - ${selectedVariant.name} | Magnetic Memories`
@@ -184,11 +177,11 @@ const ProductDetailPage: React.FC = () => {
                 price={selectedVariant?.price ?? product.price}
                 availability="InStock"
             />
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div className="max-w-7xl auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 lg:items-start">
                     {/* Gallery Section */}
                     <div className="lg:col-span-7 relative group">
-                        <div className="bg-gray-100 overflow-hidden sm:rounded-lg h-[400px] sm:h-[600px] flex items-center justify-center relative">
+                        <div className="bg-gray-50 overflow-hidden sm:rounded-lg h-[600px] sm:h-[850px] flex items-center justify-center relative border border-gray-100 shadow-inner">
                             {isVideo(currentDisplayImage) ? (
                                 <video 
                                     ref={videoRef}
@@ -199,7 +192,7 @@ const ProductDetailPage: React.FC = () => {
                                     muted 
                                     loop 
                                     playsInline
-                                    webkit-playsinline="true"
+                                    onCanPlay={(e) => e.currentTarget.play()}
                                     preload="auto"
                                 />
                             ) : (
