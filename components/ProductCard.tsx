@@ -19,13 +19,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, buttonStyle }
   const isVideo = (url: string) => {
     if (!url) return false;
     const path = url.split(/[?#]/)[0].toLowerCase();
-    return path.endsWith('.mp4') || path.endsWith('.webm') || path.endsWith('.mov');
+    return path.endsWith('.mp4') || path.endsWith('.webm') || path.endsWith('.mov') || path.endsWith('.m4v') || path.endsWith('.ogv');
   };
 
-  // Explicitní spuštění videa při načtení
   useEffect(() => {
-    if (videoRef.current) {
-        videoRef.current.play().catch(err => console.debug("Card video autoplay prevented", err));
+    if (videoRef.current && isVideo(product.imageUrl)) {
+        // Programmatic muted setting is more reliable for autoplay in many browsers
+        videoRef.current.muted = true;
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(err => {
+                console.debug("Autoplay prevented on Card:", err);
+            });
+        }
     }
   }, [product.imageUrl]);
 
@@ -42,7 +48,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, buttonStyle }
             muted 
             loop 
             playsInline
-            onCanPlay={(e) => e.currentTarget.play()}
             preload="auto"
           />
         ) : (
