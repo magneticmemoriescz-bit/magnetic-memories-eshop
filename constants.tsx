@@ -15,14 +15,13 @@ export const PRODUCTS: Product[] = [
     price: 20,
     shortDescription: 'Vaše fotky jako stylové magnety na lednici.',
     description: 'Vaše oblíbené fotografie ve formě magnetů. Ideální dárek nebo ozdoba pro každou lednici.',
-    imageUrl: 'https://i.imgur.com/AZ85jE0.jpg', // Nová hlavní fotka
+    imageUrl: 'https://i.imgur.com/nPJfjfu.jpg', // Hlavní foto náhledu
     gallery: [
-      'https://i.imgur.com/AZ85jE0.jpg', // 1. pozice
-      'https://i.imgur.com/UjfEUN1.jpg', // 2. pozice
-      'https://i.imgur.com/7U3iv2e.jpeg',
-      'https://i.imgur.com/uD4fN2y.jpeg',
-      'https://i.imgur.com/wE5nF8Q.jpeg',
-      'https://i.imgur.com/sS8tT7s.jpeg',
+      'https://i.imgur.com/nPJfjfu.jpg', // 1. Fotka
+      'https://i.imgur.com/0pR9wnJ.jpg', // Původně 3. slot, nyní posunut na 2.
+      'https://i.imgur.com/frmYC1d.jpg',
+      'https://i.imgur.com/SLHUTl7.jpg',
+      'https://i.imgur.com/rbUQMY9.jpg',
     ],
     requiredPhotos: 1, // Default, will be updated by variant/quantity
     variants: [
@@ -30,7 +29,7 @@ export const PRODUCTS: Product[] = [
       { id: '5x5', name: '5x5 cm', photoCount: 1, itemCount: 1, price: 20, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
       { id: '7x7', name: '7x7 cm', photoCount: 1, itemCount: 1, price: 25, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
       { id: '5x10', name: '5x10 cm', photoCount: 1, itemCount: 1, price: 25, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
-      { id: '10x10', name: '10x10 cm', photoCount: 1, itemCount: 1, price: 30, imageUrl: 'https://i.imgur.com/AZ85jE0.jpg' },
+      { id: '10x10', name: '10x10 cm', photoCount: 1, itemCount: 1, price: 30, imageUrl: 'https://i.imgur.com/nPJfjfu.jpg' },
       { id: '9x13', name: '9x13 cm', photoCount: 1, itemCount: 1, price: 35, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
       { id: 'a5-sheet', name: 'A5', photoCount: 1, itemCount: 1, price: 75, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
       { id: 'a4-sheet', name: 'A4', photoCount: 1, itemCount: 1, price: 100, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
@@ -43,18 +42,18 @@ export const PRODUCTS: Product[] = [
     price: 350,
     shortDescription: 'Vytvořte si roční kalendář s vlastními fotografiemi.',
     description: 'Proměňte své nejoblíbenější momenty v praktický a krásný kalendář. Každý měsíc nová vzpomínka přímo na vaší lednici!',
-    imageUrl: 'https://i.imgur.com/Yy9Rf5y.jpg',
+    imageUrl: 'https://i.imgur.com/15AsAmb.jpg',
     gallery: [
-        'https://i.imgur.com/Yy9Rf5y.jpg',
-        'https://i.imgur.com/eA3L9fo.jpg',
+        'https://i.imgur.com/15AsAmb.jpg',
+        'https://i.imgur.com/9hQdyx2.jpg',
     ],
-    imageUrl_portrait: 'https://i.imgur.com/Yy9Rf5y.jpg',
+    imageUrl_portrait: 'https://i.imgur.com/15AsAmb.jpg',
     gallery_portrait: [
-        'https://i.imgur.com/Yy9Rf5y.jpg',
+        'https://i.imgur.com/15AsAmb.jpg',
     ],
-    imageUrl_landscape: 'https://i.imgur.com/eA3L9fo.jpg',
+    imageUrl_landscape: 'https://i.imgur.com/9hQdyx2.jpg',
     gallery_landscape: [
-        'https://i.imgur.com/eA3L9fo.jpg',
+        'https://i.imgur.com/9hQdyx2.jpg',
     ],
     requiredPhotos: 12,
     variants: [
@@ -69,12 +68,10 @@ export const PRODUCTS: Product[] = [
     price: 400,
     shortDescription: 'Originální magnetická oznámení pro váš velký den.',
     description: 'Originální a nezapomenutelné svatební oznámení, které hosté neztratí z očí. Vzpomínka na váš velký den, co drží!',
-    imageUrl: 'https://i.imgur.com/brxMPOI.jpg', // Nová hlavní fotka oznámení
+    imageUrl: 'https://i.imgur.com/avPJVil.jpg',
     gallery: [
-      'https://i.imgur.com/brxMPOI.jpg', // 1. pozice
-      'https://i.imgur.com/ZteI9PG.jpeg', // 2. pozice (původní)
-      'https://i.imgur.com/oP9wB1V.jpeg',
-      'https://i.imgur.com/9iF8zUu.jpeg',
+      'https://i.imgur.com/avPJVil.jpg', // Přesně 2 sloty dle požadavku
+      'https://i.imgur.com/ZteI9PG.jpg',
     ],
     requiredPhotos: 1,
     hasTextFields: false,
