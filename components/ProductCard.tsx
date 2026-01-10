@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../types';
 import { formatPrice } from '../utils/format';
@@ -18,9 +18,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, buttonStyle }
 
   const isVideo = (url: string) => {
     if (!url) return false;
-    const lowerUrl = url.toLowerCase();
-    return lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.webm') || lowerUrl.endsWith('.mov');
+    const path = url.split(/[?#]/)[0].toLowerCase();
+    return path.endsWith('.mp4') || path.endsWith('.webm') || path.endsWith('.mov');
   };
+
+  // Explicitní spuštění videa při načtení
+  useEffect(() => {
+    if (videoRef.current) {
+        videoRef.current.play().catch(err => console.debug("Card video autoplay prevented", err));
+    }
+  }, [product.imageUrl]);
 
   return (
     <div className="group relative bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 flex flex-col w-full">
@@ -28,6 +35,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, buttonStyle }
         {isVideo(product.imageUrl) ? (
           <video 
             ref={videoRef}
+            key={product.imageUrl}
             src={product.imageUrl} 
             className={imageClass} 
             autoPlay 
