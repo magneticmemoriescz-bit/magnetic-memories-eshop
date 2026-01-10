@@ -57,7 +57,7 @@ const CheckoutPage: React.FC = () => {
         additionalInfo: '',
     });
     const [shippingMethod, setShippingMethod] = useState<string | null>(null);
-    const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
+    const [paymentMethod, setPaymentMethod] = useState<string | null>('prevodem'); // Default to bank transfer as it's the only one
     const [packetaPoint, setPacketaPoint] = useState<any | null>(null);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
 
@@ -75,7 +75,9 @@ const CheckoutPage: React.FC = () => {
 
     const subtotal = items.reduce((acc, item) => {
         const itemBasePrice = item.price * item.quantity;
-        const mailingFee = item.directMailing ? (DIRECT_MAILING_FEE * item.quantity) : 0;
+        const piecesInPackage = item.variant?.itemCount || 1;
+        const totalPieces = piecesInPackage * item.quantity;
+        const mailingFee = item.directMailing ? (DIRECT_MAILING_FEE * totalPieces) : 0;
         return acc + itemBasePrice + mailingFee;
     }, 0);
 
@@ -102,23 +104,18 @@ const CheckoutPage: React.FC = () => {
     const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
 
     const shippingCosts: { [key: string]: number } = {
-        'zasilkovna': isFreeShipping ? 0 : 89,
-        'posta': isFreeShipping ? 0 : 119,
-        'doporucene': isFreeShipping ? 0 : 77,
+        'balikovna_point': isFreeShipping ? 0 : 61,
+        'balikovna_address': isFreeShipping ? 0 : 88, // Aktualizováno z 83 na 88 Kč
+        'zasilkovna_point': isFreeShipping ? 0 : 79,
+        'zasilkovna_address': isFreeShipping ? 0 : 99,
+        'ppl_point': isFreeShipping ? 0 : 79,
         'osobne': 0
     };
+    
+    // Only Bank Transfer is now available
     const paymentCosts: { [key: string]: number } = {
-        'prevodem': 0,
-        'dobirka': 20
+        'prevodem': 0
     };
-
-    const isDoporuceneAvailable = subtotal < 1000;
-
-    useEffect(() => {
-        if (shippingMethod === 'doporucene' && !isDoporuceneAvailable) {
-            setShippingMethod(null);
-        }
-    }, [subtotal, isDoporuceneAvailable]);
 
     const shippingCost = shippingMethod ? shippingCosts[shippingMethod] : 0;
     const paymentCost = paymentMethod ? paymentCosts[paymentMethod] : 0;
@@ -168,8 +165,6 @@ const CheckoutPage: React.FC = () => {
         let paymentDetailsHtml = '';
         if (order.payment === 'prevodem') {
             paymentDetailsHtml = `<div style="${styleBox}"><h3 style="margin-top: 0; color: #8D7EEF; font-size: 16px;">Platební instrukce</h3><table style="width: 100%; border-collapse: collapse;"><tr><td style="padding: 4px 0; color: #6b7280;">Číslo účtu:</td><td style="padding: 4px 0; font-weight: bold; color: #111827;">3524601011/3030</td></tr><tr><td style="padding: 4px 0; color: #6b7280;">Částka:</td><td style="padding: 4px 0; font-weight: bold; color: #EA5C9D; font-size: 16px;">${formatPrice(order.total)} Kč</td></tr><tr><td style="padding: 4px 0; color: #6b7280;">Variabilní symbol:</td><td style="padding: 4px 0; font-weight: bold; color: #111827;">${vs}</td></tr></table><p style="margin: 12px 0 0 0; font-size: 12px; color: #9ca3af; font-style: italic;">Fakturu Vám zašleme po přijetí platby.</p></div>`;
-        } else if (order.payment === 'dobirka') {
-            paymentDetailsHtml = `<div style="${styleBox}"><p style="margin: 0; font-weight: bold; color: #111827;">Zvolili jste platbu na dobírku.</p><p style="margin: 4px 0 0 0; color: #4b5563;">Částku <strong>${formatPrice(order.total)} Kč</strong> uhradíte při převzetí zásilky.</p></div>`;
         }
 
         let totalItemsQuantity = 0;
@@ -177,7 +172,9 @@ const CheckoutPage: React.FC = () => {
 
         let itemsHtml = `<table style="${styleTable}"><thead><tr><th style="${styleTh}">Produkt</th><th style="${styleTh} text-align: center;">Ks</th><th style="${styleTh} text-align: right;">Cena</th></tr></thead><tbody>`;
         order.items.forEach(item => {
-            const itemMailingFeeTotal = item.directMailing ? (DIRECT_MAILING_FEE * item.quantity) : 0;
+            const piecesInPackage = item.variant?.itemCount || 1;
+            const totalPieces = piecesInPackage * item.quantity;
+            const itemMailingFeeTotal = item.directMailing ? (DIRECT_MAILING_FEE * totalPieces) : 0;
             const itemPriceTotal = (item.price * item.quantity) + itemMailingFeeTotal;
             
             totalItemsQuantity += item.quantity;
@@ -187,15 +184,9 @@ const CheckoutPage: React.FC = () => {
             let mailingInfo = item.directMailing ? `<br><span style="font-size: 12px; color: #EA5C9D; font-weight: bold;">+ Rozesílka na adresy (${formatPrice(itemMailingFeeTotal)} Kč)</span>` : '';
             
             let photosHtml = '<div style="margin-top: 12px;">';
-            
             item.photos.forEach((photo, idx) => {
                 const url = photo.url;
-                photosHtml += `
-                    <div style="margin-bottom: 8px;">
-                        <a href="${url}" target="_blank" style="display: inline-block; background-color: #8D7EEF; color: #ffffff; text-decoration: none; padding: 10px 16px; border-radius: 6px; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #7c6fd0;">
-                            STÁHNOUT FOTKU ${idx + 1}
-                        </a>
-                    </div>`;
+                photosHtml += `<div style="margin-bottom: 8px;"><a href="${url}" target="_blank" style="display: inline-block; background-color: #8D7EEF; color: #ffffff; text-decoration: none; padding: 10px 16px; border-radius: 6px; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #7c6fd0;">STÁHNOUT FOTKU ${idx + 1}</a></div>`;
             });
             photosHtml += '</div>';
             
@@ -215,16 +206,13 @@ const CheckoutPage: React.FC = () => {
             ? '✅ Zákazník SOUHLASÍ se zveřejněním produktů pro reklamní účely'
             : '❌ Zákazník NESOUHLASÍ se zveřejněním produktů pro reklamní účely';
 
-        const customerName = `${order.contact.firstName} ${order.contact.lastName}`;
-        const customerAddress = `${order.contact.street}, ${order.contact.city}, ${order.contact.zip}`;
-
         const templateParams = {
             subject: `Objednávka č. ${order.orderNumber}`,
             order_number: order.orderNumber,
             date: currentDate,
-            to_name: customerName,
-            customer_name: customerName,
-            customer_address: customerAddress,
+            to_name: `${order.contact.firstName} ${order.contact.lastName}`,
+            customer_name: `${order.contact.firstName} ${order.contact.lastName}`,
+            customer_address: `${order.contact.street}, ${order.contact.city}, ${order.contact.zip}`,
             to_email: order.contact.email, 
             email: order.contact.email, 
             message: order.contact.additionalInfo || 'Bez poznámky',
@@ -239,10 +227,9 @@ const CheckoutPage: React.FC = () => {
             marketing_consent: consentText
         };
         
-        const paymentLabel = order.payment === 'dobirka' ? 'DOBÍRKA' : 'PŘEVOD';
         const adminTemplateParams = {
             ...templateParams,
-            subject: `NOVÁ OBJEDNÁVKA: ${order.orderNumber} - ${order.contact.lastName} (${formatPrice(order.total)} Kč, ${paymentLabel})`,
+            subject: `NOVÁ OBJEDNÁVKA: ${order.orderNumber} - ${order.contact.lastName} (${formatPrice(order.total)} Kč)`,
             to_name: 'Admin',
             to_email: 'magnetic.memories.cz@gmail.com',
             email: order.contact.email
@@ -262,13 +249,6 @@ const CheckoutPage: React.FC = () => {
             const lname = (order.contact['lastName'] || '').trim();
             const fullName = `${fname} ${lname}`.trim() || 'Zákazník';
 
-            const shippingLabels: { [key: string]: string } = {
-                'zasilkovna': 'Zásilkovna - Výdejní místo',
-                'posta': 'Česká pošta - Balík Do ruky',
-                'doporucene': 'Česká pošta - Doporučené psaní',
-                'osobne': 'Osobní odběr (Turnov)'
-            };
-
             const payload = {
                 name: fullName,
                 email: order.contact['email'] || '',
@@ -278,7 +258,6 @@ const CheckoutPage: React.FC = () => {
                 zip: order.contact['zip'] || '',
                 firstName: fname,
                 lastName: lname,
-                
                 orderNumber: order.orderNumber,
                 orderDate: new Date().toISOString(),
                 shippingMethod: order.shipping,
@@ -292,59 +271,22 @@ const CheckoutPage: React.FC = () => {
                 couponCode: order.couponCode || '',
                 marketingConsent: order.marketingConsent,
                 additionalInfo: order.contact['additionalInfo'] || '',
-
                 items: order.items.map(item => {
-                    const itemMailingFeeTotal = item.directMailing ? (DIRECT_MAILING_FEE * item.quantity) : 0;
+                    const piecesInPackage = item.variant?.itemCount || 1;
+                    const totalPieces = piecesInPackage * item.quantity;
+                    const itemMailingFeeTotal = item.directMailing ? (DIRECT_MAILING_FEE * totalPieces) : 0;
                     const itemPriceTotal = (item.price * item.quantity) + itemMailingFeeTotal;
                     
                     return {
                         product_code: (item.product.id || 'PRODUCT') + (item.variant ? `-${item.variant.id}` : '') + (item.directMailing ? '-MAILING' : ''),
                         name: (item.product.name || 'Produkt') + (item.variant ? ` - ${item.variant.name}` : '') + (item.directMailing ? ' (+ Rozesílka)' : ''),
                         quantity: Number(item.quantity),
-                        unit_price: Number(itemPriceTotal / item.quantity), // unit price including divided mailing fee
+                        unit_price: Number(itemPriceTotal / item.quantity), 
                         vat_rate: 0,
                         photos: item.photos.map(p => p.url)
                     };
                 })
             };
-
-            // Přidání dopravy jako položky
-            if (order.shippingCost > 0) {
-                payload.items.push({
-                    product_code: 'SHIPPING',
-                    name: `Doprava: ${shippingLabels[order.shipping] || order.shipping}`,
-                    quantity: 1,
-                    unit_price: Number(order.shippingCost),
-                    vat_rate: 0,
-                    photos: []
-                } as any);
-            }
-
-            // Přidání poplatku za dobírku jako položky
-            if (order.paymentCost > 0) {
-                payload.items.push({
-                    product_code: 'PAYMENT_FEE',
-                    name: `Poplatek za platbu: Dobírka`,
-                    quantity: 1,
-                    unit_price: Number(order.paymentCost),
-                    vat_rate: 0,
-                    photos: []
-                } as any);
-            }
-
-            // Přidání slevy jako položky
-            if (order.discountAmount > 0) {
-                payload.items.push({
-                    product_code: 'DISCOUNT',
-                    name: `Sleva (${order.couponCode || 'Slevový kód'})`,
-                    quantity: 1,
-                    unit_price: Number(-order.discountAmount),
-                    vat_rate: 0,
-                    photos: []
-                } as any);
-            }
-            
-            console.log('Odesílám payload do Make.com:', JSON.stringify(payload, null, 2));
 
             const response = await fetch(MAKE_WEBHOOK_URL, {
                 method: 'POST',
@@ -373,7 +315,7 @@ const CheckoutPage: React.FC = () => {
         if (!formData.zip) errors.zip = 'PSČ je povinné';
         if (!shippingMethod) errors.shipping = 'Vyberte způsob dopravy';
         if (!paymentMethod) errors.payment = 'Vyberte způsob platby';
-        if (shippingMethod === 'zasilkovna' && !packetaPoint) errors.packetaPoint = 'Vyberte výdejní místo';
+        if (shippingMethod === 'zasilkovna_point' && !packetaPoint) errors.packetaPoint = 'Vyberte výdejní místo';
         if (!termsAccepted) errors.terms = 'Musíte souhlasit s obchodními podmínkami';
         
         if (Object.keys(errors).length > 0) {
@@ -451,18 +393,33 @@ const CheckoutPage: React.FC = () => {
                     <section>
                         <h2 className="text-xl font-medium text-dark-gray mb-6 border-b pb-2">2. Doprava</h2>
                         <div className="space-y-4">
-                            <RadioCard name="shipping" value="zasilkovna" title="Zásilkovna - Výdejní místo" price={shippingCosts['zasilkovna'] === 0 ? "Zdarma" : `${shippingCosts['zasilkovna']} Kč`} checked={shippingMethod === 'zasilkovna'} onChange={(e: any) => setShippingMethod(e.target.value)} />
-                            {shippingMethod === 'zasilkovna' && (
-                                <div className="ml-8 mt-2">
-                                    <button type="button" onClick={openPacketaWidget} className="text-brand-purple hover:underline font-medium">{packetaPoint ? `Vybráno: ${packetaPoint.name}` : 'Vybrat výdejní místo'}</button>
-                                    {formErrors.packetaPoint && <p className="text-red-500 text-sm mt-1">{formErrors.packetaPoint}</p>}
-                                </div>
-                            )}
-                            {isDoporuceneAvailable && (
-                                <RadioCard name="shipping" value="doporucene" title="Česká pošta - Doporučené psaní (do schránky)" price={shippingCosts['doporucene'] === 0 ? "Zdarma" : `${shippingCosts['doporucene']} Kč`} checked={shippingMethod === 'doporucene'} onChange={(e: any) => setShippingMethod(e.target.value)} />
-                            )}
-                            <RadioCard name="shipping" value="posta" title="Česká pošta - Balík Do ruky" price={shippingCosts['posta'] === 0 ? "Zdarma" : `${shippingCosts['posta']} Kč`} checked={shippingMethod === 'posta'} onChange={(e: any) => setShippingMethod(e.target.value)} />
-                            <RadioCard name="shipping" value="osobne" title="Osobní odběr (Turnov)" price="Zdarma" checked={shippingMethod === 'osobne'} onChange={(e: any) => setShippingMethod(e.target.value)} />
+                            <div className="space-y-2">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Balíkovna</p>
+                                <RadioCard name="shipping" value="balikovna_point" title="Na výdejní místo" price={shippingCosts['balikovna_point'] === 0 ? "Zdarma" : `${shippingCosts['balikovna_point']} Kč`} checked={shippingMethod === 'balikovna_point'} onChange={(e: any) => setShippingMethod(e.target.value)} />
+                                <RadioCard name="shipping" value="balikovna_address" title="Doručení na adresu" price={shippingCosts['balikovna_address'] === 0 ? "Zdarma" : `${shippingCosts['balikovna_address']} Kč`} checked={shippingMethod === 'balikovna_address'} onChange={(e: any) => setShippingMethod(e.target.value)} />
+                            </div>
+
+                            <div className="space-y-2 pt-2">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Zásilkovna</p>
+                                <RadioCard name="shipping" value="zasilkovna_point" title="Na výdejní místo (Z-Point / Z-Box)" price={shippingCosts['zasilkovna_point'] === 0 ? "Zdarma" : `${shippingCosts['zasilkovna_point']} Kč`} checked={shippingMethod === 'zasilkovna_point'} onChange={(e: any) => setShippingMethod(e.target.value)} />
+                                {shippingMethod === 'zasilkovna_point' && (
+                                    <div className="ml-8 mt-2">
+                                        <button type="button" onClick={openPacketaWidget} className="text-brand-purple hover:underline font-medium">{packetaPoint ? `Vybráno: ${packetaPoint.name}` : 'Vybrat výdejní místo'}</button>
+                                        {formErrors.packetaPoint && <p className="text-red-500 text-sm mt-1">{formErrors.packetaPoint}</p>}
+                                    </div>
+                                )}
+                                <RadioCard name="shipping" value="zasilkovna_address" title="Doručení na adresu" price={shippingCosts['zasilkovna_address'] === 0 ? "Zdarma" : `${shippingCosts['zasilkovna_address']} Kč`} checked={shippingMethod === 'zasilkovna_address'} onChange={(e: any) => setShippingMethod(e.target.value)} />
+                            </div>
+
+                            <div className="space-y-2 pt-2">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">PPL</p>
+                                <RadioCard name="shipping" value="ppl_point" title="Na výdejní místo (Parcelshop / Parcelbox)" price={shippingCosts['ppl_point'] === 0 ? "Zdarma" : `${shippingCosts['ppl_point']} Kč`} checked={shippingMethod === 'ppl_point'} onChange={(e: any) => setShippingMethod(e.target.value)} />
+                            </div>
+
+                            <div className="space-y-2 pt-2">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Ostatní</p>
+                                <RadioCard name="shipping" value="osobne" title="Osobní odběr (Turnov)" price="Zdarma" checked={shippingMethod === 'osobne'} onChange={(e: any) => setShippingMethod(e.target.value)} />
+                            </div>
                         </div>
                         {isFreeShipping ? <p className="mt-4 text-sm text-green-600 font-medium">✨ Máte dopravu zdarma!</p> : <p className="mt-2 text-sm text-gray-500">Nakupte ještě za {formatPrice(FREE_SHIPPING_THRESHOLD - subtotal)} Kč a máte dopravu zdarma.</p>}
                     </section>
@@ -470,7 +427,6 @@ const CheckoutPage: React.FC = () => {
                         <h2 className="text-xl font-medium text-dark-gray mb-6 border-b pb-2">3. Platba</h2>
                         <div className="space-y-4">
                             <RadioCard name="payment" value="prevodem" title="Bankovním převodem (předem)" price="Zdarma" checked={paymentMethod === 'prevodem'} onChange={(e: any) => setPaymentMethod(e.target.value)} />
-                            <RadioCard name="payment" value="dobirka" title="Dobírkou (při převzetí)" price={`${paymentCosts['dobirka']} Kč`} checked={paymentMethod === 'dobirka'} onChange={(e: any) => setPaymentMethod(e.target.value)} />
                         </div>
                         {formErrors.payment && <p className="text-red-500 text-sm mt-2">{formErrors.payment}</p>}
                     </section>
@@ -480,7 +436,9 @@ const CheckoutPage: React.FC = () => {
                         <h2 className="text-lg font-medium text-dark-gray mb-4">Souhrn objednávky</h2>
                         <ul className="divide-y divide-gray-200">
                             {items.map((item) => {
-                                const mailingFee = item.directMailing ? (DIRECT_MAILING_FEE * item.quantity) : 0;
+                                const piecesInPackage = item.variant?.itemCount || 1;
+                                const totalPieces = piecesInPackage * item.quantity;
+                                const mailingFee = item.directMailing ? (DIRECT_MAILING_FEE * totalPieces) : 0;
                                 const itemTotal = (item.price * item.quantity) + mailingFee;
                                 
                                 return (
