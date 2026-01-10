@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../types';
 import { formatPrice } from '../utils/format';
@@ -17,17 +17,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, buttonStyle }
   const imageClass = "w-full h-full object-center object-cover group-hover:opacity-75 transition-opacity";
 
   const isVideo = (url: string) => {
+    if (!url) return false;
     const lowerUrl = url.toLowerCase();
     return lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.webm') || lowerUrl.endsWith('.mov');
   };
-
-  useEffect(() => {
-    if (videoRef.current && isVideo(product.imageUrl)) {
-      videoRef.current.play().catch(error => {
-        console.log("Autoplay blocked or failed:", error);
-      });
-    }
-  }, [product.imageUrl]);
 
   return (
     <div className="group relative bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 flex flex-col w-full">
@@ -41,7 +34,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, buttonStyle }
             muted 
             loop 
             playsInline
-            webkit-playsinline="true"
+            onCanPlay={(e) => e.currentTarget.play()}
             preload="auto"
           />
         ) : (
