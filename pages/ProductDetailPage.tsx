@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProducts } from '../context/ProductContext';
 import { useCart } from '../context/CartContext';
@@ -16,6 +16,8 @@ const ProductDetailPage: React.FC = () => {
     const product = products.find(p => p.id === id);
     const { dispatch } = useCart();
     const navigate = useNavigate();
+    const videoRef = useRef<HTMLVideoElement>(null);
+    
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(product?.variants?.[0]);
     const [uploadedPhotoInfo, setUploadedPhotoInfo] = useState<UploadedFilesInfo>({ photos: [], groupId: null });
     const [customText, setCustomText] = useState<{ [key: string]: string }>({});
@@ -56,6 +58,19 @@ const ProductDetailPage: React.FC = () => {
             setError(null);
         }
     }, [id, products]);
+
+    const isVideo = (url: string) => {
+        if (!url) return false;
+        const lowerUrl = url.toLowerCase();
+        return lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.webm') || lowerUrl.endsWith('.mov');
+    };
+
+    // Ensure video plays when index changes
+    useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.play().catch(err => console.log("Video play failed:", err));
+        }
+    }, [activeImageIndex]);
 
     if (!product) {
         return <div className="text-center py-20">Produkt nenalezen.</div>;
@@ -153,9 +168,7 @@ const ProductDetailPage: React.FC = () => {
         visibleVariants = product.variants.filter(v => v.id.startsWith(announcementSize));
     }
 
-    const imageClass = isCalendar
-        ? "w-full h-full object-center object-contain sm:rounded-lg"
-        : "w-full h-full object-center object-cover sm:rounded-lg";
+    const imageClass = "w-full h-full object-center object-cover sm:rounded-lg";
 
     const pageTitle = selectedVariant && selectedVariant.name !== product.name 
         ? `${product.name} - ${selectedVariant.name} | Magnetic Memories`
@@ -175,12 +188,27 @@ const ProductDetailPage: React.FC = () => {
                 <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 lg:items-start">
                     {/* Gallery Section */}
                     <div className="lg:col-span-7 relative group">
-                        <div className="aspect-w-4 aspect-h-3 bg-gray-100 overflow-hidden sm:rounded-lg h-[400px] sm:h-[600px] flex items-center justify-center">
-                            <img 
-                                src={currentDisplayImage} 
-                                alt={product.name} 
-                                className={imageClass} 
-                            />
+                        <div className="bg-gray-100 overflow-hidden sm:rounded-lg h-[400px] sm:h-[600px] flex items-center justify-center relative">
+                            {isVideo(currentDisplayImage) ? (
+                                <video 
+                                    ref={videoRef}
+                                    key={currentDisplayImage}
+                                    src={currentDisplayImage} 
+                                    className={imageClass} 
+                                    autoPlay 
+                                    muted 
+                                    loop 
+                                    playsInline
+                                    webkit-playsinline="true"
+                                    preload="auto"
+                                />
+                            ) : (
+                                <img 
+                                    src={currentDisplayImage} 
+                                    alt={product.name} 
+                                    className={imageClass} 
+                                />
+                            )}
                         </div>
 
                         {/* Navigation Arrows */}
@@ -188,7 +216,7 @@ const ProductDetailPage: React.FC = () => {
                             <>
                                 <button 
                                     onClick={prevImage}
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-dark-gray p-2 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100"
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-dark-gray p-2 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100 z-10"
                                     aria-label="Předchozí obrázek"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -197,7 +225,7 @@ const ProductDetailPage: React.FC = () => {
                                 </button>
                                 <button 
                                     onClick={nextImage}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-dark-gray p-2 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/70 hover:bg-white text-dark-gray p-2 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100 z-10"
                                     aria-label="Následující obrázek"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
