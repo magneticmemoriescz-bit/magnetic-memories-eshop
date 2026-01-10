@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../types';
 import { formatPrice } from '../utils/format';
@@ -13,16 +13,40 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, buttonStyle }) => {
-  const isCalendar = product.id === 'magnetic-calendar';
-  const imageClass = isCalendar
-    ? "w-full h-full object-center object-contain"
-    : "w-full h-full object-center object-cover group-hover:opacity-75 transition-opacity";
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const imageClass = "w-full h-full object-center object-cover group-hover:opacity-75 transition-opacity";
+
+  const isVideo = (url: string) => {
+    const lowerUrl = url.toLowerCase();
+    return lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.webm') || lowerUrl.endsWith('.mov');
+  };
+
+  useEffect(() => {
+    if (videoRef.current && isVideo(product.imageUrl)) {
+      videoRef.current.play().catch(error => {
+        console.log("Autoplay blocked or failed:", error);
+      });
+    }
+  }, [product.imageUrl]);
 
   return (
-    // FIX: Added w-full to make the card fill its flex container.
     <div className="group relative bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 flex flex-col w-full">
-      <div className="w-full h-72 bg-gray-200 overflow-hidden">
-        <img src={product.imageUrl} alt={product.name} className={imageClass} />
+      <div className="w-full h-72 bg-gray-200 overflow-hidden relative">
+        {isVideo(product.imageUrl) ? (
+          <video 
+            ref={videoRef}
+            src={product.imageUrl} 
+            className={imageClass} 
+            autoPlay 
+            muted 
+            loop 
+            playsInline
+            webkit-playsinline="true"
+            preload="auto"
+          />
+        ) : (
+          <img src={product.imageUrl} alt={product.name} className={imageClass} />
+        )}
       </div>
       <div className="p-6 flex-grow">
         <h3 className="text-lg font-semibold text-gray-800">
