@@ -130,43 +130,68 @@ const CheckoutPage: React.FC = () => {
 
     const openPacketaWidget = () => {
         const PACKETA_API_KEY = '15e63288a4805214';
-        if (window.Packeta) {
+        if (window.Packeta && window.Packeta.Widget) {
             window.Packeta.Widget.pick(PACKETA_API_KEY, (point: any) => {
                 if (point) {
                     setPacketaPoint(point);
                     setFormErrors(prev => ({...prev, packetaPoint: ''}))
                 }
             }, { country: 'cz', language: 'cs' });
+        } else {
+            alert("Widget Zásilkovny se nepodařilo načíst. Zkuste prosím obnovit stránku.");
         }
     };
 
     const openBalikovnaWidget = () => {
         if (window.BalikovnaWidget) {
-            window.BalikovnaWidget.open((point: any) => {
-                if (point) {
-                    setBalikovnaPoint(point);
-                    setFormErrors(prev => ({...prev, balikovnaPoint: ''}))
-                }
-            });
+            try {
+                // Balíkovna v1 obvykle přijímá callback přímo
+                window.BalikovnaWidget.open((point: any) => {
+                    if (point) {
+                        setBalikovnaPoint(point);
+                        setFormErrors(prev => ({...prev, balikovnaPoint: ''}))
+                    }
+                });
+            } catch (err) {
+                console.error("Balikovna Widget error:", err);
+                alert("Nepodařilo se otevřít výběr Balíkovny.");
+            }
         } else {
-            alert("Widget Balíkovny se nepodařilo načíst. Zkuste to prosím znovu.");
+            alert("Widget Balíkovny nebyl načten. Prosím, obnovte stránku (F5).");
         }
     };
 
     const openPplWidget = () => {
         if (window.pplParcelShopWidget) {
-            window.pplParcelShopWidget.open((point: any) => {
-                if (point) {
-                    setPplPoint(point);
-                    setFormErrors(prev => ({...prev, pplPoint: ''}))
+            try {
+                // PPL widget vyžaduje objekt s onSelected callbackem
+                window.pplParcelShopWidget.open({
+                    onSelected: (point: any) => {
+                        if (point) {
+                            setPplPoint(point);
+                            setFormErrors(prev => ({...prev, pplPoint: ''}))
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error("PPL Widget error:", err);
+                // Fallback pro starší verze pokud by nastala chyba
+                try {
+                    window.pplParcelShopWidget.open((point: any) => {
+                        if (point) {
+                            setPplPoint(point);
+                            setFormErrors(prev => ({...prev, pplPoint: ''}))
+                        }
+                    });
+                } catch (err2) {
+                    alert("Nepodařilo se otevřít výběr PPL.");
                 }
-            });
+            }
         } else {
-            alert("PPL widget se nepodařilo načíst. Zkuste to prosím znovu.");
+            alert("Widget PPL nebyl načten. Prosím, obnovte stránku (F5).");
         }
     };
     
-    // Číslování objednávek pomocí timestampu RRMMDDHHMMSS pro zajištění unikátnosti
     const generateOrderNumber = (): string => {
         const now = new Date();
         const year = now.getFullYear().toString().slice(-2);
@@ -261,7 +286,6 @@ const CheckoutPage: React.FC = () => {
             phone: order.contact.phone,
             reply_to: 'magnetic.memories.cz@gmail.com',
             marketing_consent: consentText,
-            // Pomocný parametr pro snadné zobrazení všech údajů nahoře v šabloně pro admina
             customer_info: `${fullName}\n${order.contact.email}\n${order.contact.phone}\n${fullAddress}`,
             customer_header: `<div style="padding: 15px; background: #f3f4f6; border-left: 4px solid #EA5C9D; margin-bottom: 20px;"><strong>Zákazník:</strong> ${fullName}<br><strong>Email:</strong> ${order.contact.email}<br><strong>Telefon:</strong> ${order.contact.phone}<br><strong>Adresa:</strong> ${fullAddress}</div>`
         };
@@ -289,7 +313,6 @@ const CheckoutPage: React.FC = () => {
             const fullName = `${fname} ${lname}`.trim() || 'Zákazník';
 
             const payload = {
-                // Explicitní jméno pro Fakturoid/Make
                 name: fullName,
                 customer_name: fullName,
                 email: order.contact['email'] || '',
@@ -322,7 +345,6 @@ const CheckoutPage: React.FC = () => {
                     
                     return {
                         product_code: (item.product.id || 'PRODUCT') + (item.variant ? `-${item.variant.id}` : '') + (item.directMailing ? '-MAILING' : ''),
-                        // Název položky - povinný pro Fakturoid
                         name: (item.product.name || 'Produkt') + (item.variant ? ` - ${item.variant.name}` : '') + (item.directMailing ? ' (+ Rozesílka)' : ''),
                         quantity: Number(item.quantity),
                         unit_price: Number(itemPriceTotal / item.quantity), 
