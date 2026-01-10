@@ -61,9 +61,17 @@ const ProductDetailPage: React.FC = () => {
 
     const isVideo = (url: string) => {
         if (!url) return false;
-        const lowerUrl = url.toLowerCase();
-        return lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.webm') || lowerUrl.endsWith('.mov');
+        // Odstranění query parametrů pro správnou detekci přípony
+        const path = url.split(/[?#]/)[0].toLowerCase();
+        return path.endsWith('.mp4') || path.endsWith('.webm') || path.endsWith('.mov');
     };
+
+    // Explicitní spuštění videa při změně aktivního obrázku
+    useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.play().catch(err => console.debug("Video autoplay prevented", err));
+        }
+    }, [activeImageIndex]);
 
     if (!product) {
         return <div className="text-center py-20">Produkt nenalezen.</div>;
@@ -177,7 +185,8 @@ const ProductDetailPage: React.FC = () => {
                 price={selectedVariant?.price ?? product.price}
                 availability="InStock"
             />
-            <div className="max-w-7xl auto px-4 sm:px-6 lg:px-8 py-16">
+            {/* Oprava: mx-auto zajistí vycentrování celého obsahu */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 lg:items-start">
                     {/* Gallery Section */}
                     <div className="lg:col-span-7 relative group">
@@ -305,7 +314,7 @@ const ProductDetailPage: React.FC = () => {
                                             />
                                         </div>
                                         <div className="ml-3 text-sm">
-                                            <label htmlFor="direct-mailing" className="font-medium text-gray-700">Přeji si rozeslat oznámení na jednotlivé adresy</label>
+                                            <label htmlFor="direct-mailing" className="font-medium text-gray-700">Přeji si rozeslat oznáné jednotlivé adresy</label>
                                             <p className="text-gray-500">Příplatek 100 Kč / ks (tj. {formatPrice(itemsInVariant * 100)} Kč za balení)</p>
                                             <p className="text-xs text-gray-400 mt-1 italic">V tomto případě nás prosím kontaktujte pro zaslání seznamu adres.</p>
                                         </div>
