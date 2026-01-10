@@ -61,15 +61,20 @@ const ProductDetailPage: React.FC = () => {
 
     const isVideo = (url: string) => {
         if (!url) return false;
-        // Odstranění query parametrů pro správnou detekci přípony
         const path = url.split(/[?#]/)[0].toLowerCase();
-        return path.endsWith('.mp4') || path.endsWith('.webm') || path.endsWith('.mov');
+        return path.endsWith('.mp4') || path.endsWith('.webm') || path.endsWith('.mov') || path.endsWith('.m4v') || path.endsWith('.ogv');
     };
 
-    // Explicitní spuštění videa při změně aktivního obrázku
+    // Robust video autoplay handler
     useEffect(() => {
         if (videoRef.current) {
-            videoRef.current.play().catch(err => console.debug("Video autoplay prevented", err));
+            videoRef.current.muted = true;
+            const playPromise = videoRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(err => {
+                    console.debug("Autoplay prevented on Detail:", err);
+                });
+            }
         }
     }, [activeImageIndex]);
 
@@ -185,7 +190,6 @@ const ProductDetailPage: React.FC = () => {
                 price={selectedVariant?.price ?? product.price}
                 availability="InStock"
             />
-            {/* Oprava: mx-auto zajistí vycentrování celého obsahu */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="lg:grid lg:grid-cols-12 lg:gap-x-12 lg:items-start">
                     {/* Gallery Section */}
@@ -201,7 +205,6 @@ const ProductDetailPage: React.FC = () => {
                                     muted 
                                     loop 
                                     playsInline
-                                    onCanPlay={(e) => e.currentTarget.play()}
                                     preload="auto"
                                 />
                             ) : (
