@@ -12,17 +12,40 @@ const ShippingPage: React.FC = () => (
         </div>
 
         <SectionTitle>Možnosti dopravy</SectionTitle>
-        <ul className="list-disc pl-6 space-y-2">
-            <li><strong>Zásilkovna - Výdejní místo:</strong> 89 Kč (Doručení obvykle do 2 pracovních dnů od expedice)</li>
-            <li><strong>Česká pošta - Doporučené psaní:</strong> 77 Kč (Ekonomická varianta pro menší zásilky do 1000 Kč, doručení do schránky)</li>
-            <li><strong>Česká pošta - Balík Do ruky:</strong> 119 Kč (Doručení na Vaši adresu, obvykle do 2 pracovních dnů od expedice)</li>
-            <li><strong>Osobní odběr - Turnov:</strong> Zdarma (Po předchozí domluvě)</li>
-        </ul>
+        <div className="space-y-6">
+            <div>
+                <h3 className="font-bold text-dark-gray mb-2">Balíkovna</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                    <li>Na výdejní místo: <strong>61 Kč</strong></li>
+                    <li>Doručení na adresu: <strong>88 Kč</strong></li>
+                </ul>
+            </div>
+            <div>
+                <h3 className="font-bold text-dark-gray mb-2">Zásilkovna</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                    <li>Na výdejní místo (Z-Point / Z-Box): <strong>79 Kč</strong></li>
+                    <li>Doručení na adresu: <strong>99 Kč</strong></li>
+                </ul>
+            </div>
+            <div>
+                <h3 className="font-bold text-dark-gray mb-2">PPL</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                    <li>Na výdejní místo (Parcelshop / Parcelbox): <strong>79 Kč</strong></li>
+                </ul>
+            </div>
+            <div>
+                <h3 className="font-bold text-dark-gray mb-2">Ostatní</h3>
+                <ul className="list-disc pl-6 space-y-1">
+                    <li><strong>Osobní odběr - Turnov:</strong> Zdarma (Po předchozí domluvě)</li>
+                </ul>
+            </div>
+        </div>
+
         <SectionTitle>Možnosti platby</SectionTitle>
         <ul className="list-disc pl-6 space-y-2">
-            <li><strong>Bankovním převodem:</strong> Po dokončení objednávky obdržíte platební údaje. (Zdarma)</li>
-            <li><strong>Na dobírku:</strong> Platba při převzetí zboží. (Poplatek 20 Kč)</li>
+            <li><strong>Bankovním převodem (předem):</strong> Po dokončení objednávky obdržíte platební údaje do emailu. (Zdarma)</li>
         </ul>
+        <p className="mt-4 text-sm text-gray-500 italic">Poznámka: Momentálně nepřijímáme platby na dobírku.</p>
     </PageWrapper>
 );
 
