@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { CartItem } from '../types';
@@ -21,6 +21,8 @@ interface OrderDetails {
     shipping: string;
     payment: string;
     packetaPoint: any | null;
+    balikovnaPoint: any | null;
+    pplPoint: any | null;
     items: CartItem[];
     total: number;
     subtotal: number;
@@ -57,8 +59,10 @@ const CheckoutPage: React.FC = () => {
         additionalInfo: '',
     });
     const [shippingMethod, setShippingMethod] = useState<string | null>(null);
-    const [paymentMethod, setPaymentMethod] = useState<string | null>('prevodem'); // Default to bank transfer as it's the only one
+    const [paymentMethod, setPaymentMethod] = useState<string | null>('prevodem'); 
     const [packetaPoint, setPacketaPoint] = useState<any | null>(null);
+    const [balikovnaPoint, setBalikovnaPoint] = useState<any | null>(null);
+    const [pplPoint, setPplPoint] = useState<any | null>(null);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
 
     const [couponCode, setCouponCode] = useState('');
@@ -105,14 +109,13 @@ const CheckoutPage: React.FC = () => {
 
     const shippingCosts: { [key: string]: number } = {
         'balikovna_point': isFreeShipping ? 0 : 61,
-        'balikovna_address': isFreeShipping ? 0 : 88, // Aktualizováno z 83 na 88 Kč
+        'balikovna_address': isFreeShipping ? 0 : 88,
         'zasilkovna_point': isFreeShipping ? 0 : 79,
         'zasilkovna_address': isFreeShipping ? 0 : 99,
         'ppl_point': isFreeShipping ? 0 : 79,
         'osobne': 0
     };
     
-    // Only Bank Transfer is now available
     const paymentCosts: { [key: string]: number } = {
         'prevodem': 0
     };
@@ -134,6 +137,34 @@ const CheckoutPage: React.FC = () => {
                     setFormErrors(prev => ({...prev, packetaPoint: ''}))
                 }
             }, { country: 'cz', language: 'cs' });
+        }
+    };
+
+    const openBalikovnaWidget = () => {
+        // Balikovna widget usually opens via postMessage from their provided library
+        if ((window as any).BalikovnaWidget) {
+            (window as any).BalikovnaWidget.open((point: any) => {
+                if (point) {
+                    setBalikovnaPoint(point);
+                    setFormErrors(prev => ({...prev, balikovnaPoint: ''}))
+                }
+            });
+        } else {
+            // Fallback if script fails to load properly
+            alert("Widget Balíkovny se nepodařilo načíst. Zkuste to prosím znovu.");
+        }
+    };
+
+    const openPplWidget = () => {
+        if ((window as any).pplWidget) {
+            (window as any).pplWidget.open((point: any) => {
+                if (point) {
+                    setPplPoint(point);
+                    setFormErrors(prev => ({...prev, pplPoint: ''}))
+                }
+            });
+        } else {
+            alert("PPL widget se nepodařilo načíst. Zkuste to prosím znovu.");
         }
     };
     
@@ -198,7 +229,13 @@ const CheckoutPage: React.FC = () => {
         if (order.discountAmount > 0) {
             itemsHtml += `<tr><td style="${styleTd} color: #059669;">Sleva (${order.couponCode})</td><td style="${styleTd} text-align: center;">-</td><td style="${styleTdPrice} color: #059669;">-${formatPrice(order.discountAmount)} Kč</td></tr>`;
         }
-        itemsHtml += `<tr><td style="${styleTd}">Doprava: ${order.shipping}</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice}">${formatPrice(order.shippingCost)} Kč</td></tr>`;
+        
+        let shippingPointInfo = '';
+        if (order.shipping === 'zasilkovna_point' && order.packetaPoint) shippingPointInfo = ` (${order.packetaPoint.name})`;
+        else if (order.shipping === 'balikovna_point' && order.balikovnaPoint) shippingPointInfo = ` (${order.balikovnaPoint.name})`;
+        else if (order.shipping === 'ppl_point' && order.pplPoint) shippingPointInfo = ` (${order.pplPoint.name})`;
+
+        itemsHtml += `<tr><td style="${styleTd}">Doprava: ${order.shipping}${shippingPointInfo}</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice}">${formatPrice(order.shippingCost)} Kč</td></tr>`;
         itemsHtml += `<tr><td style="${styleTd}">Platba: ${order.payment}</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice}">${formatPrice(order.paymentCost)} Kč</td></tr>`;
         itemsHtml += `<tr style="background-color: #fdf2f8;"><td colspan="2" style="padding: 16px 12px; text-align: right; font-weight: bold; color: #831843; border-top: 2px solid #EA5C9D;">CELKEM K ÚHRADĚ</td><td style="padding: 16px 12px; text-align: right; font-weight: bold; font-size: 18px; color: #831843; border-top: 2px solid #EA5C9D; white-space: nowrap;">${formatPrice(order.total)} Kč</td></tr></tbody></table>`;
 
@@ -263,6 +300,8 @@ const CheckoutPage: React.FC = () => {
                 shippingMethod: order.shipping,
                 shippingCost: Number(order.shippingCost),
                 packetaPoint: order.packetaPoint?.name || '',
+                balikovnaPoint: order.balikovnaPoint?.name || '',
+                pplPoint: order.pplPoint?.name || '',
                 paymentMethod: order.payment,
                 paymentCost: Number(order.paymentCost),
                 total: Number(order.total),
@@ -315,7 +354,11 @@ const CheckoutPage: React.FC = () => {
         if (!formData.zip) errors.zip = 'PSČ je povinné';
         if (!shippingMethod) errors.shipping = 'Vyberte způsob dopravy';
         if (!paymentMethod) errors.payment = 'Vyberte způsob platby';
+        
         if (shippingMethod === 'zasilkovna_point' && !packetaPoint) errors.packetaPoint = 'Vyberte výdejní místo';
+        if (shippingMethod === 'balikovna_point' && !balikovnaPoint) errors.balikovnaPoint = 'Vyberte výdejní místo';
+        if (shippingMethod === 'ppl_point' && !pplPoint) errors.pplPoint = 'Vyberte výdejní místo';
+
         if (!termsAccepted) errors.terms = 'Musíte souhlasit s obchodními podmínkami';
         
         if (Object.keys(errors).length > 0) {
@@ -334,6 +377,8 @@ const CheckoutPage: React.FC = () => {
                 shipping: shippingMethod!,
                 payment: paymentMethod!,
                 packetaPoint,
+                balikovnaPoint,
+                pplPoint,
                 items,
                 total,
                 subtotal,
@@ -386,7 +431,15 @@ const CheckoutPage: React.FC = () => {
                             <FormInput name="zip" label="PSČ" value={formData.zip} onChange={handleFormChange} error={formErrors.zip} required />
                             <div className="sm:col-span-2">
                                 <label htmlFor="additionalInfo" className="block text-sm font-medium text-gray-700">Poznámka pro nás (volitelné)</label>
-                                <textarea name="additionalInfo" id="additionalInfo" rows={3} value={formData.additionalInfo} onChange={handleFormChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-purple focus:border-brand-purple sm:text-sm"></textarea>
+                                <textarea 
+                                    name="additionalInfo" 
+                                    id="additionalInfo" 
+                                    rows={3} 
+                                    value={formData.additionalInfo} 
+                                    onChange={handleFormChange} 
+                                    className="mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-purple focus:border-brand-purple sm:text-sm placeholder-gray-500 border-brand-purple/20 bg-brand-purple/10"
+                                    placeholder="Zde nám můžete nechat vzkaz k objednávce..."
+                                ></textarea>
                             </div>
                         </div>
                     </section>
@@ -396,6 +449,12 @@ const CheckoutPage: React.FC = () => {
                             <div className="space-y-2">
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Balíkovna</p>
                                 <RadioCard name="shipping" value="balikovna_point" title="Na výdejní místo" price={shippingCosts['balikovna_point'] === 0 ? "Zdarma" : `${shippingCosts['balikovna_point']} Kč`} checked={shippingMethod === 'balikovna_point'} onChange={(e: any) => setShippingMethod(e.target.value)} />
+                                {shippingMethod === 'balikovna_point' && (
+                                    <div className="ml-8 mt-2">
+                                        <button type="button" onClick={openBalikovnaWidget} className="text-brand-purple hover:underline font-medium">{balikovnaPoint ? `Vybráno: ${balikovnaPoint.name}` : 'Vybrat výdejní místo Balíkovny'}</button>
+                                        {formErrors.balikovnaPoint && <p className="text-red-500 text-sm mt-1">{formErrors.balikovnaPoint}</p>}
+                                    </div>
+                                )}
                                 <RadioCard name="shipping" value="balikovna_address" title="Doručení na adresu" price={shippingCosts['balikovna_address'] === 0 ? "Zdarma" : `${shippingCosts['balikovna_address']} Kč`} checked={shippingMethod === 'balikovna_address'} onChange={(e: any) => setShippingMethod(e.target.value)} />
                             </div>
 
@@ -404,7 +463,7 @@ const CheckoutPage: React.FC = () => {
                                 <RadioCard name="shipping" value="zasilkovna_point" title="Na výdejní místo (Z-Point / Z-Box)" price={shippingCosts['zasilkovna_point'] === 0 ? "Zdarma" : `${shippingCosts['zasilkovna_point']} Kč`} checked={shippingMethod === 'zasilkovna_point'} onChange={(e: any) => setShippingMethod(e.target.value)} />
                                 {shippingMethod === 'zasilkovna_point' && (
                                     <div className="ml-8 mt-2">
-                                        <button type="button" onClick={openPacketaWidget} className="text-brand-purple hover:underline font-medium">{packetaPoint ? `Vybráno: ${packetaPoint.name}` : 'Vybrat výdejní místo'}</button>
+                                        <button type="button" onClick={openPacketaWidget} className="text-brand-purple hover:underline font-medium">{packetaPoint ? `Vybráno: ${packetaPoint.name}` : 'Vybrat výdejní místo Zásilkovny'}</button>
                                         {formErrors.packetaPoint && <p className="text-red-500 text-sm mt-1">{formErrors.packetaPoint}</p>}
                                     </div>
                                 )}
@@ -414,6 +473,12 @@ const CheckoutPage: React.FC = () => {
                             <div className="space-y-2 pt-2">
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">PPL</p>
                                 <RadioCard name="shipping" value="ppl_point" title="Na výdejní místo (Parcelshop / Parcelbox)" price={shippingCosts['ppl_point'] === 0 ? "Zdarma" : `${shippingCosts['ppl_point']} Kč`} checked={shippingMethod === 'ppl_point'} onChange={(e: any) => setShippingMethod(e.target.value)} />
+                                {shippingMethod === 'ppl_point' && (
+                                    <div className="ml-8 mt-2">
+                                        <button type="button" onClick={openPplWidget} className="text-brand-purple hover:underline font-medium">{pplPoint ? `Vybráno: ${pplPoint.name}` : 'Vybrat výdejní místo PPL'}</button>
+                                        {formErrors.pplPoint && <p className="text-red-500 text-sm mt-1">{formErrors.pplPoint}</p>}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="space-y-2 pt-2">
