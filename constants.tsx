@@ -18,9 +18,9 @@ export const PRODUCTS: Product[] = [
     imageUrl: 'https://i.imgur.com/nPJfjfu.jpg', // Hlavní foto náhledu
     gallery: [
       'https://i.imgur.com/nPJfjfu.jpg', // 1. Fotka
-      'https://i.imgur.com/0pR9wnJ.jpg', // Původně 3. slot, nyní posunut na 2.
-      'https://i.imgur.com/frmYC1d.jpg',
-      'https://i.imgur.com/SLHUTl7.jpg',
+      'https://i.imgur.com/0pR9wnJ.jpg', 
+      'https://i.imgur.com/frmYC1d.mp4', // Video 1 - aktualizováno na .mp4
+      'https://i.imgur.com/SLHUTl7.mp4', // Video 2 - aktualizováno na .mp4
       'https://i.imgur.com/rbUQMY9.jpg',
     ],
     requiredPhotos: 1, // Default, will be updated by variant/quantity
@@ -70,7 +70,7 @@ export const PRODUCTS: Product[] = [
     description: 'Originální a nezapomenutelné svatební oznámení, které hosté neztratí z očí. Vzpomínka na váš velký den, co drží!',
     imageUrl: 'https://i.imgur.com/avPJVil.jpg',
     gallery: [
-      'https://i.imgur.com/avPJVil.jpg', // Přesně 2 sloty dle požadavku
+      'https://i.imgur.com/avPJVil.jpg', 
       'https://i.imgur.com/ZteI9PG.jpg',
     ],
     requiredPhotos: 1,
