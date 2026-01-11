@@ -143,9 +143,10 @@ const CheckoutPage: React.FC = () => {
     };
 
     const openBalikovnaWidget = () => {
-        // Balíkovna widget někdy potřebuje chvíli na re-inicializaci po navigaci
-        const widget = window.BalikovnaWidget || (window as any).balikovnaWidget;
-        if (widget) {
+        // Hledáme objekt v window pod různými názvy, které dopravce používá
+        const widget = window.BalikovnaWidget || (window as any).balikovnaWidget || (window as any).Balikovna;
+        
+        if (widget && typeof widget.open === 'function') {
             try {
                 widget.open((point: any) => {
                     if (point) {
@@ -154,19 +155,22 @@ const CheckoutPage: React.FC = () => {
                     }
                 });
             } catch (err) {
-                console.error("Balikovna Widget error:", err);
-                alert("Nepodařilo se otevřít výběr Balíkovny. Zkuste prosím stránku obnovit (F5).");
+                console.error("Balikovna Widget call failed:", err);
+                alert("Nepodařilo se spustit výběr Balíkovny. Prosím, zkuste to znovu.");
             }
         } else {
+            console.error("Balikovna Widget NOT FOUND on window");
             alert("Widget Balíkovny nebyl načten. Prosím, obnovte stránku (F5).");
         }
     };
 
     const openPplWidget = () => {
-        const widget = window.pplParcelShopWidget || (window as any).PPLWidget;
-        if (widget) {
+        // PPL widget může být pod různými názvy v globálním scope
+        const widget = window.pplParcelShopWidget || (window as any).PPLWidget || (window as any).pplWidget;
+        
+        if (widget && typeof widget.open === 'function') {
             try {
-                // Novější verze PPL widgetu vyžaduje konfigurační objekt
+                // Zkusíme nejprve variantu s konfiguračním objektem (moderní PPL API)
                 widget.open({
                     onSelected: (point: any) => {
                         if (point) {
@@ -176,8 +180,7 @@ const CheckoutPage: React.FC = () => {
                     }
                 });
             } catch (err) {
-                console.error("PPL Widget error:", err);
-                // Fallback pro starší verze volání
+                // Pokud moderní volání selže, zkusíme klasický callback (starší PPL API)
                 try {
                     widget.open((point: any) => {
                         if (point) {
@@ -186,10 +189,12 @@ const CheckoutPage: React.FC = () => {
                         }
                     });
                 } catch (err2) {
-                    alert("Nepodařilo se otevřít výběr PPL. Zkuste prosím stránku obnovit (F5).");
+                    console.error("PPL Widget call failed:", err2);
+                    alert("Nepodařilo se spustit výběr PPL. Prosím, zkuste to znovu.");
                 }
             }
         } else {
+            console.error("PPL Widget NOT FOUND on window");
             alert("Widget PPL nebyl načten. Prosím, obnovte stránku (F5).");
         }
     };
@@ -480,7 +485,9 @@ const CheckoutPage: React.FC = () => {
                                 <RadioCard name="shipping" value="balikovna_point" title="Na výdejní místo" price={shippingCosts['balikovna_point'] === 0 ? "Zdarma" : `${shippingCosts['balikovna_point']} Kč`} checked={shippingMethod === 'balikovna_point'} onChange={(e: any) => setShippingMethod(e.target.value)} />
                                 {shippingMethod === 'balikovna_point' && (
                                     <div className="ml-8 mt-2">
-                                        <button type="button" onClick={openBalikovnaWidget} className="text-brand-purple hover:underline font-medium">{balikovnaPoint ? `Vybráno: ${balikovnaPoint.name}` : 'Vybrat výdejní místo Balíkovny'}</button>
+                                        <button type="button" onClick={openBalikovnaWidget} className="text-brand-purple hover:underline font-medium decoration-brand-purple">
+                                            {balikovnaPoint ? `Vybráno: ${balikovnaPoint.name}` : 'Vybrat výdejní místo Balíkovny'}
+                                        </button>
                                         {formErrors.balikovnaPoint && <p className="text-red-500 text-sm mt-1">{formErrors.balikovnaPoint}</p>}
                                     </div>
                                 )}
@@ -492,7 +499,9 @@ const CheckoutPage: React.FC = () => {
                                 <RadioCard name="shipping" value="zasilkovna_point" title="Na výdejní místo (Z-Point / Z-Box)" price={shippingCosts['zasilkovna_point'] === 0 ? "Zdarma" : `${shippingCosts['zasilkovna_point']} Kč`} checked={shippingMethod === 'zasilkovna_point'} onChange={(e: any) => setShippingMethod(e.target.value)} />
                                 {shippingMethod === 'zasilkovna_point' && (
                                     <div className="ml-8 mt-2">
-                                        <button type="button" onClick={openPacketaWidget} className="text-brand-purple hover:underline font-medium">{packetaPoint ? `Vybráno: ${packetaPoint.name}` : 'Vybrat výdejní místo Zásilkovny'}</button>
+                                        <button type="button" onClick={openPacketaWidget} className="text-brand-purple hover:underline font-medium">
+                                            {packetaPoint ? `Vybráno: ${packetaPoint.name}` : 'Vybrat výdejní místo Zásilkovny'}
+                                        </button>
                                         {formErrors.packetaPoint && <p className="text-red-500 text-sm mt-1">{formErrors.packetaPoint}</p>}
                                     </div>
                                 )}
@@ -504,7 +513,9 @@ const CheckoutPage: React.FC = () => {
                                 <RadioCard name="shipping" value="ppl_point" title="Na výdejní místo (Parcelshop / Parcelbox)" price={shippingCosts['ppl_point'] === 0 ? "Zdarma" : `${shippingCosts['ppl_point']} Kč`} checked={shippingMethod === 'ppl_point'} onChange={(e: any) => setShippingMethod(e.target.value)} />
                                 {shippingMethod === 'ppl_point' && (
                                     <div className="ml-8 mt-2">
-                                        <button type="button" onClick={openPplWidget} className="text-brand-purple hover:underline font-medium">{pplPoint ? `Vybráno: ${pplPoint.name}` : 'Vybrat výdejní místo PPL'}</button>
+                                        <button type="button" onClick={openPplWidget} className="text-brand-purple hover:underline font-medium">
+                                            {pplPoint ? `Vybráno: ${pplPoint.name}` : 'Vybrat výdejní místo PPL'}
+                                        </button>
                                         {formErrors.pplPoint && <p className="text-red-500 text-sm mt-1">{formErrors.pplPoint}</p>}
                                     </div>
                                 )}
