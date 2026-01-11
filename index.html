@@ -70,10 +70,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- Style Fix for Delivery Widgets -->
+    <style>
+        #balikovna-widget-container, 
+        .ppl-widget-modal, 
+        #packeta-widget,
+        [id*="balikovna-widget"],
+        [id*="ppl-widget"] {
+            z-index: 10000 !important;
+        }
+    </style>
+
     <!-- External Widgets -->
-    <script src="https://widget.packeta.com/v6/www/js/library.js"></script>
-    <script src="https://widget.balikovna.cz/v1/lib/balikovna-widget.js"></script>
-    <script src="https://www.ppl.cz/sources/map/widget.js"></script>
+    <script src="https://widget.packeta.com/v6/www/js/library.js" defer></script>
+    <script src="https://widget.balikovna.cz/v1/lib/balikovna-widget.js" defer></script>
+    <script src="https://mapa.ppl.cz/widget.js" defer></script>
     
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script type="importmap">
