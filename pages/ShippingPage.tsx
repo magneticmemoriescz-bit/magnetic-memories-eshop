@@ -14,9 +14,9 @@ const ShippingPage: React.FC = () => (
         <SectionTitle>Možnosti dopravy</SectionTitle>
         <div className="space-y-6">
             <div>
-                <h3 className="font-bold text-dark-gray mb-2">Balíkovna</h3>
+                <h3 className="font-bold text-dark-gray mb-2">Česká pošta</h3>
                 <ul className="list-disc pl-6 space-y-1">
-                    <li>Doručení na adresu: <strong>88 Kč</strong></li>
+                    <li>Doporučeně (Doručení na adresu): <strong>88 Kč</strong></li>
                 </ul>
             </div>
             <div>
