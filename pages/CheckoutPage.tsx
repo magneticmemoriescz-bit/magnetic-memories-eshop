@@ -21,8 +21,6 @@ interface OrderDetails {
     shipping: string;
     payment: string;
     packetaPoint: any | null;
-    balikovnaPoint: any | null;
-    pplPoint: any | null;
     items: CartItem[];
     total: number;
     subtotal: number;
@@ -54,8 +52,6 @@ const CheckoutPage: React.FC = () => {
     const [shippingMethod, setShippingMethod] = useState<string | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<string | null>('prevodem'); 
     const [packetaPoint, setPacketaPoint] = useState<any | null>(null);
-    const [balikovnaPoint, setBalikovnaPoint] = useState<any | null>(null);
-    const [pplPoint, setPplPoint] = useState<any | null>(null);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
 
     const [couponCode, setCouponCode] = useState('');
@@ -101,11 +97,9 @@ const CheckoutPage: React.FC = () => {
     const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
 
     const shippingCosts: { [key: string]: number } = {
-        'balikovna_point': isFreeShipping ? 0 : 61,
         'balikovna_address': isFreeShipping ? 0 : 88,
         'zasilkovna_point': isFreeShipping ? 0 : 79,
         'zasilkovna_address': isFreeShipping ? 0 : 99,
-        'ppl_point': isFreeShipping ? 0 : 79,
         'osobne': 0
     };
     
@@ -115,10 +109,6 @@ const CheckoutPage: React.FC = () => {
     const paymentCost = paymentMethod ? paymentCosts[paymentMethod] : 0;
     const total = discountedSubtotal + shippingCost + paymentCost;
     
-    const handleRemoveItem = (id: string) => {
-        dispatch({ type: 'REMOVE_ITEM', payload: { id } });
-    };
-
     const openPacketaWidget = () => {
         const PACKETA_API_KEY = '15e63288a4805214';
         if (window.Packeta && window.Packeta.Widget) {
@@ -130,59 +120,6 @@ const CheckoutPage: React.FC = () => {
             }, { country: 'cz', language: 'cs' });
         } else {
             alert("Widget Zásilkovny se nepodařilo načíst. Zkuste prosím obnovit stránku.");
-        }
-    };
-
-    const openBalikovnaWidget = () => {
-        const widget = window.BalikovnaWidget || window.balikovnaWidget;
-        if (widget && typeof widget.open === 'function') {
-            try {
-                widget.open((point: any) => {
-                    if (point) {
-                        setBalikovnaPoint(point);
-                        setFormErrors(prev => ({...prev, balikovnaPoint: ''}));
-                    }
-                });
-            } catch (err) {
-                console.error("Balikovna Widget error:", err);
-                alert("Při otevírání Balíkovny došlo k chybě.");
-            }
-        } else {
-            alert("Widget Balíkovny nebyl nalezen. Zkuste prosím obnovit stránku.");
-        }
-    };
-
-    const openPplWidget = () => {
-        // Find available PPL widget object
-        const widget = window.pplParcelShopWidget || window.pplWidget || window.PPLWidget;
-        
-        if (widget && typeof widget.open === 'function') {
-            try {
-                // Some versions use callback directly, others config object
-                widget.open((point: any) => {
-                    if (point) {
-                        setPplPoint(point);
-                        setFormErrors(prev => ({...prev, pplPoint: ''}));
-                    }
-                });
-            } catch (err) {
-                try {
-                    // Fallback to config object
-                    widget.open({
-                        onSelected: (point: any) => {
-                            if (point) {
-                                setPplPoint(point);
-                                setFormErrors(prev => ({...prev, pplPoint: ''}));
-                            }
-                        }
-                    });
-                } catch (err2) {
-                    console.error("PPL Widget error:", err2);
-                    alert("Widget PPL se nepodařilo spustit.");
-                }
-            }
-        } else {
-            alert("Widget PPL nebyl nalezen. Zkuste prosím obnovit stránku.");
         }
     };
     
@@ -238,8 +175,6 @@ const CheckoutPage: React.FC = () => {
         
         let shippingPointInfo = '';
         if (order.shipping === 'zasilkovna_point' && order.packetaPoint) shippingPointInfo = ` (${order.packetaPoint.name})`;
-        else if (order.shipping === 'balikovna_point' && order.balikovnaPoint) shippingPointInfo = ` (${order.balikovnaPoint.name})`;
-        else if (order.shipping === 'ppl_point' && order.pplPoint) shippingPointInfo = ` (${order.pplPoint.name})`;
 
         itemsHtml += `<tr><td style="${styleTd}">Doprava: ${order.shipping}${shippingPointInfo}</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice}">${formatPrice(order.shippingCost)} Kč</td></tr>`;
         itemsHtml += `<tr><td style="${styleTd}">Platba: ${order.payment}</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice}">${formatPrice(order.paymentCost)} Kč</td></tr>`;
@@ -288,8 +223,6 @@ const CheckoutPage: React.FC = () => {
         if (!formData.phone) errors.phone = 'Povinné';
         if (!shippingMethod) errors.shipping = 'Vyberte dopravu';
         if (shippingMethod === 'zasilkovna_point' && !packetaPoint) errors.packetaPoint = 'Vyberte místo';
-        if (shippingMethod === 'balikovna_point' && !balikovnaPoint) errors.balikovnaPoint = 'Vyberte místo';
-        if (shippingMethod === 'ppl_point' && !pplPoint) errors.pplPoint = 'Vyberte místo';
         if (!termsAccepted) errors.terms = 'Souhlas s podmínkami';
         
         if (Object.keys(errors).length > 0) { setFormErrors(errors); window.scrollTo(0, 0); return; }
@@ -298,7 +231,7 @@ const CheckoutPage: React.FC = () => {
         try {
             const orderNumber = generateOrderNumber();
             const orderDetails: OrderDetails = {
-                contact: formData, shipping: shippingMethod!, payment: paymentMethod!, packetaPoint, balikovnaPoint, pplPoint,
+                contact: formData, shipping: shippingMethod!, payment: paymentMethod!, packetaPoint,
                 items, total, subtotal, discountAmount, couponCode: appliedCoupon?.code, shippingCost, paymentCost, orderNumber, marketingConsent
             };
             await sendEmailNotifications(orderDetails);
@@ -340,18 +273,10 @@ const CheckoutPage: React.FC = () => {
                         <h2 className="text-xl font-medium text-dark-gray mb-6 border-b pb-2">2. Doprava</h2>
                         <div className="space-y-4">
                             <p className="text-xs font-bold text-gray-400 uppercase">Balíkovna</p>
-                            <RadioCard name="shipping" value="balikovna_point" title="Na výdejní místo" price={shippingCosts['balikovna_point'] === 0 ? "Zdarma" : `${shippingCosts['balikovna_point']} Kč`} checked={shippingMethod === 'balikovna_point'} onChange={(e: any) => setShippingMethod(e.target.value)} />
-                            {shippingMethod === 'balikovna_point' && (
-                                <div className="ml-8 mt-2">
-                                    <button type="button" onClick={openBalikovnaWidget} className="text-brand-purple hover:underline font-bold text-left">
-                                        {balikovnaPoint ? `Vybráno: ${balikovnaPoint.name}` : 'Klikněte pro výběr místa Balíkovny'}
-                                    </button>
-                                    {formErrors.balikovnaPoint && <p className="text-red-500 text-sm mt-1">{formErrors.balikovnaPoint}</p>}
-                                </div>
-                            )}
+                            <RadioCard name="shipping" value="balikovna_address" title="Doručení na adresu" price={shippingCosts['balikovna_address'] === 0 ? "Zdarma" : `${shippingCosts['balikovna_address']} Kč`} checked={shippingMethod === 'balikovna_address'} onChange={(e: any) => setShippingMethod(e.target.value)} />
                             
                             <p className="text-xs font-bold text-gray-400 uppercase pt-4">Zásilkovna</p>
-                            <RadioCard name="shipping" value="zasilkovna_point" title="Z-Point / Z-Box" price={shippingCosts['zasilkovna_point'] === 0 ? "Zdarma" : `${shippingCosts['zasilkovna_point']} Kč`} checked={shippingMethod === 'zasilkovna_point'} onChange={(e: any) => setShippingMethod(e.target.value)} />
+                            <RadioCard name="shipping" value="zasilkovna_point" title="Na výdejní místo (Z-Point / Z-Box)" price={shippingCosts['zasilkovna_point'] === 0 ? "Zdarma" : `${shippingCosts['zasilkovna_point']} Kč`} checked={shippingMethod === 'zasilkovna_point'} onChange={(e: any) => setShippingMethod(e.target.value)} />
                             {shippingMethod === 'zasilkovna_point' && (
                                 <div className="ml-8 mt-2">
                                     <button type="button" onClick={openPacketaWidget} className="text-brand-purple hover:underline font-bold text-left">
@@ -360,17 +285,10 @@ const CheckoutPage: React.FC = () => {
                                     {formErrors.packetaPoint && <p className="text-red-500 text-sm mt-1">{formErrors.packetaPoint}</p>}
                                 </div>
                             )}
+                            <RadioCard name="shipping" value="zasilkovna_address" title="Doručení na adresu" price={shippingCosts['zasilkovna_address'] === 0 ? "Zdarma" : `${shippingCosts['zasilkovna_address']} Kč`} checked={shippingMethod === 'zasilkovna_address'} onChange={(e: any) => setShippingMethod(e.target.value)} />
 
-                            <p className="text-xs font-bold text-gray-400 uppercase pt-4">PPL</p>
-                            <RadioCard name="shipping" value="ppl_point" title="Parcelshop / Parcelbox" price={shippingCosts['ppl_point'] === 0 ? "Zdarma" : `${shippingCosts['ppl_point']} Kč`} checked={shippingMethod === 'ppl_point'} onChange={(e: any) => setShippingMethod(e.target.value)} />
-                            {shippingMethod === 'ppl_point' && (
-                                <div className="ml-8 mt-2">
-                                    <button type="button" onClick={openPplWidget} className="text-brand-purple hover:underline font-bold text-left">
-                                        {pplPoint ? `Vybráno: ${pplPoint.name}` : 'Klikněte pro výběr PPL'}
-                                    </button>
-                                    {formErrors.pplPoint && <p className="text-red-500 text-sm mt-1">{formErrors.pplPoint}</p>}
-                                </div>
-                            )}
+                            <p className="text-xs font-bold text-gray-400 uppercase pt-4">Ostatní</p>
+                            <RadioCard name="shipping" value="osobne" title="Osobní odběr - Turnov (Po domluvě)" price="Zdarma" checked={shippingMethod === 'osobne'} onChange={(e: any) => setShippingMethod(e.target.value)} />
                         </div>
                     </section>
                 </div>
