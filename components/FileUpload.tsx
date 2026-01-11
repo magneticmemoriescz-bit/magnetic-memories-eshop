@@ -19,10 +19,10 @@ interface FileUploadProps {
 }
 
 /**
- * Vlastní komponenta pro nahrávání fotografií
- * - Provádí kompresi na straně klienta
- * - Nahrává přímo do Cloudinary
- * - Umožňuje duplikovat jednu fotku do více kusů
+ * Vlastní komponenta pro nahrávání fotografií a videí
+ * - Provádí kompresi na straně klienta pro obrázky
+ * - Nahrává přímo do Cloudinary (detekuje typ souboru)
+ * - Umožňuje duplikovat jednu položku do více kusů
  */
 export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange, uploadedFilesInfo, isReorderable = false }) => {
   const { photos } = uploadedFilesInfo;
@@ -34,7 +34,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
 
-  const compressImage = (file: File): Promise<Blob> => {
+  const isVideoUrl = (url: string) => {
+    if (!url) return false;
+    const path = url.split(/[?#]/)[0].toLowerCase();
+    const videoExtensions = ['.mp4', '.webm', '.mov', '.m4v', '.ogv', '.gifv'];
+    return videoExtensions.some(ext => path.endsWith(ext)) || url.includes('/video/upload/');
+  };
+
+  const compressImage = (file: File): Promise<Blob | File> => {
+    if (!file.type.startsWith('image/')) return Promise.resolve(file);
+    
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -79,7 +88,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
   const handleFiles = async (files: FileList | File[]) => {
     const filesArray = Array.from(files);
     if (photos.length + filesArray.length > maxFiles) {
-      alert(`Můžete nahrát maximálně ${maxFiles} fotografií.`);
+      alert(`Můžete nahrát maximálně ${maxFiles} souborů.`);
       return;
     }
 
@@ -90,16 +99,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
     try {
       for (let i = 0; i < filesArray.length; i++) {
         const file = filesArray[i];
-        if (!file.type.startsWith('image/')) continue;
+        const isVideo = file.type.startsWith('video/');
+        const isImage = file.type.startsWith('image/');
+        
+        if (!isImage && !isVideo) continue;
 
-        const compressedBlob = await compressImage(file);
+        const uploadData = isImage ? await compressImage(file) : file;
         
         const formData = new FormData();
-        formData.append('file', compressedBlob);
+        formData.append('file', uploadData);
         formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
         formData.append('folder', 'magnetic_memories');
 
-        const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        // Cloudinary vyžaduje jiný endpoint pro videa
+        const resourceType = isVideo ? 'video' : 'image';
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`, {
           method: 'POST',
           body: formData,
         });
@@ -134,7 +148,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
       return;
     }
     const newPhotos = [...photos];
-    // Vložíme kopii hned za původní fotku
     newPhotos.splice(index + 1, 0, { ...photos[index] });
     onFilesChange({ photos: newPhotos, groupId: uploadedFilesInfo.groupId });
   };
@@ -192,7 +205,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
                 ref={fileInputRef}
                 type="file" 
                 multiple 
-                accept="image/*" 
+                accept="image/*,video/*" 
                 className="hidden" 
                 onChange={(e) => e.target.files && handleFiles(e.target.files)}
             />
@@ -201,15 +214,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
                 {isUploading ? (
                     <div className="w-full">
                         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-purple mx-auto"></div>
-                        <p className="mt-4 font-medium text-brand-purple">Optimalizace a nahrávání ({uploadProgress}%)</p>
+                        <p className="mt-4 font-medium text-brand-purple">Zpracování a nahrávání ({uploadProgress}%)</p>
                     </div>
                 ) : (
                     <>
                         <svg className="h-12 w-12 text-brand-purple mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                         </svg>
-                        <p className="text-sm font-semibold text-gray-800">Klikněte nebo přetáhněte fotky sem</p>
-                        <p className="mt-1 text-xs text-gray-500">Zvolte až {maxFiles} fotografií najednou.</p>
+                        <p className="text-sm font-semibold text-gray-800">Klikněte nebo přetáhněte soubory sem</p>
+                        <p className="mt-1 text-xs text-gray-500">Zvolte až {maxFiles} fotek nebo videí najednou.</p>
                     </>
                 )}
             </div>
@@ -221,9 +234,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
             </span>
             <div className="flex flex-col items-end">
                 {isReorderable && photos.length > 1 && (
-                    <span className="text-xs text-gray-400 italic">Přetáhněte fotky pro změnu pořadí v kalendáři</span>
+                    <span className="text-xs text-gray-400 italic">Přetáhněte položky pro změnu pořadí</span>
                 )}
-                <span className="text-xs text-brand-purple font-medium">U fotek klikněte na + pro přidání dalšího kusu téže fotky.</span>
+                <span className="text-xs text-brand-purple font-medium">U položek klikněte na + pro přidání dalšího kusu.</span>
             </div>
         </div>
 
@@ -242,17 +255,26 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
                             ${isReorderable ? 'cursor-move' : ''}
                         `}
                     >
-                        <img 
-                            src={photo.url.replace('/upload/', '/upload/w_200,c_fill,g_auto/')} 
-                            alt={photo.name} 
-                            className="w-full h-full object-cover"
-                        />
+                        {isVideoUrl(photo.url) ? (
+                            <video 
+                                src={photo.url} 
+                                className="w-full h-full object-cover bg-black"
+                                muted
+                                playsInline
+                            />
+                        ) : (
+                            <img 
+                                src={photo.url.replace('/upload/', '/upload/w_200,c_fill,g_auto/')} 
+                                alt={photo.name} 
+                                className="w-full h-full object-cover"
+                            />
+                        )}
                         
-                        {/* Ovládací prvky nad fotkou */}
+                        {/* Ovládací prvky nad náhledem */}
                         <div className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                                 type="button"
-                                title="Přidat další kus této fotky"
+                                title="Přidat další kus"
                                 onClick={(e) => { e.stopPropagation(); duplicatePhoto(index); }}
                                 className="bg-brand-purple text-white p-1 rounded-full hover:bg-brand-purple/80 shadow-md"
                             >
@@ -262,7 +284,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
                             </button>
                             <button
                                 type="button"
-                                title="Odstranit tento kus"
+                                title="Odstranit"
                                 onClick={(e) => { e.stopPropagation(); removeFile(index); }}
                                 className="bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-md"
                             >
@@ -271,6 +293,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
                                 </svg>
                             </button>
                         </div>
+
+                        {isVideoUrl(photo.url) && (
+                            <div className="absolute bottom-1 left-1 bg-black/50 text-white p-0.5 rounded text-[10px]">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                                </svg>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
