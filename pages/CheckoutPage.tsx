@@ -143,10 +143,11 @@ const CheckoutPage: React.FC = () => {
     };
 
     const openBalikovnaWidget = () => {
-        if (window.BalikovnaWidget) {
+        // Balíkovna widget někdy potřebuje chvíli na re-inicializaci po navigaci
+        const widget = window.BalikovnaWidget || (window as any).balikovnaWidget;
+        if (widget) {
             try {
-                // Balíkovna v1 obvykle přijímá callback přímo
-                window.BalikovnaWidget.open((point: any) => {
+                widget.open((point: any) => {
                     if (point) {
                         setBalikovnaPoint(point);
                         setFormErrors(prev => ({...prev, balikovnaPoint: ''}))
@@ -154,7 +155,7 @@ const CheckoutPage: React.FC = () => {
                 });
             } catch (err) {
                 console.error("Balikovna Widget error:", err);
-                alert("Nepodařilo se otevřít výběr Balíkovny.");
+                alert("Nepodařilo se otevřít výběr Balíkovny. Zkuste prosím stránku obnovit (F5).");
             }
         } else {
             alert("Widget Balíkovny nebyl načten. Prosím, obnovte stránku (F5).");
@@ -162,10 +163,11 @@ const CheckoutPage: React.FC = () => {
     };
 
     const openPplWidget = () => {
-        if (window.pplParcelShopWidget) {
+        const widget = window.pplParcelShopWidget || (window as any).PPLWidget;
+        if (widget) {
             try {
-                // PPL widget vyžaduje objekt s onSelected callbackem
-                window.pplParcelShopWidget.open({
+                // Novější verze PPL widgetu vyžaduje konfigurační objekt
+                widget.open({
                     onSelected: (point: any) => {
                         if (point) {
                             setPplPoint(point);
@@ -175,16 +177,16 @@ const CheckoutPage: React.FC = () => {
                 });
             } catch (err) {
                 console.error("PPL Widget error:", err);
-                // Fallback pro starší verze pokud by nastala chyba
+                // Fallback pro starší verze volání
                 try {
-                    window.pplParcelShopWidget.open((point: any) => {
+                    widget.open((point: any) => {
                         if (point) {
                             setPplPoint(point);
                             setFormErrors(prev => ({...prev, pplPoint: ''}))
                         }
                     });
                 } catch (err2) {
-                    alert("Nepodařilo se otevřít výběr PPL.");
+                    alert("Nepodařilo se otevřít výběr PPL. Zkuste prosím stránku obnovit (F5).");
                 }
             }
         } else {
