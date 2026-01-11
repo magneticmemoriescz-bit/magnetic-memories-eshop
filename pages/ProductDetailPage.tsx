@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProducts } from '../context/ProductContext';
 import { useCart } from '../context/CartContext';
@@ -16,7 +16,6 @@ const ProductDetailPage: React.FC = () => {
     const product = products.find(p => p.id === id);
     const { dispatch } = useCart();
     const navigate = useNavigate();
-    const videoRef = useRef<HTMLVideoElement>(null);
     
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(product?.variants?.[0]);
     const [uploadedPhotoInfo, setUploadedPhotoInfo] = useState<UploadedFilesInfo>({ photos: [], groupId: null });
@@ -62,21 +61,9 @@ const ProductDetailPage: React.FC = () => {
     const isVideo = (url: string) => {
         if (!url) return false;
         const path = url.split(/[?#]/)[0].toLowerCase();
-        return path.endsWith('.mp4') || path.endsWith('.webm') || path.endsWith('.mov') || path.endsWith('.m4v') || path.endsWith('.ogv');
+        const videoExtensions = ['.mp4', '.webm', '.mov', '.m4v', '.ogv', '.gifv'];
+        return videoExtensions.some(ext => path.endsWith(ext)) || url.includes('/video/upload/');
     };
-
-    // Robust video autoplay handler
-    useEffect(() => {
-        if (videoRef.current) {
-            videoRef.current.muted = true;
-            const playPromise = videoRef.current.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(err => {
-                    console.debug("Autoplay prevented on Detail:", err);
-                });
-            }
-        }
-    }, [activeImageIndex]);
 
     if (!product) {
         return <div className="text-center py-20">Produkt nenalezen.</div>;
@@ -197,7 +184,6 @@ const ProductDetailPage: React.FC = () => {
                         <div className="bg-gray-50 overflow-hidden sm:rounded-lg h-[600px] sm:h-[850px] flex items-center justify-center relative border border-gray-100 shadow-inner">
                             {isVideo(currentDisplayImage) ? (
                                 <video 
-                                    ref={videoRef}
                                     key={currentDisplayImage}
                                     src={currentDisplayImage} 
                                     className={imageClass} 
