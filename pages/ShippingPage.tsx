@@ -16,7 +16,6 @@ const ShippingPage: React.FC = () => (
             <div>
                 <h3 className="font-bold text-dark-gray mb-2">Balíkovna</h3>
                 <ul className="list-disc pl-6 space-y-1">
-                    <li>Na výdejní místo: <strong>61 Kč</strong></li>
                     <li>Doručení na adresu: <strong>88 Kč</strong></li>
                 </ul>
             </div>
@@ -25,12 +24,6 @@ const ShippingPage: React.FC = () => (
                 <ul className="list-disc pl-6 space-y-1">
                     <li>Na výdejní místo (Z-Point / Z-Box): <strong>79 Kč</strong></li>
                     <li>Doručení na adresu: <strong>99 Kč</strong></li>
-                </ul>
-            </div>
-            <div>
-                <h3 className="font-bold text-dark-gray mb-2">PPL</h3>
-                <ul className="list-disc pl-6 space-y-1">
-                    <li>Na výdejní místo (Parcelshop / Parcelbox): <strong>79 Kč</strong></li>
                 </ul>
             </div>
             <div>
