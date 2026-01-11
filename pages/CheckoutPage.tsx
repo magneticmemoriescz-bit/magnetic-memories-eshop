@@ -272,8 +272,8 @@ const CheckoutPage: React.FC = () => {
                     <section>
                         <h2 className="text-xl font-medium text-dark-gray mb-6 border-b pb-2">2. Doprava</h2>
                         <div className="space-y-4">
-                            <p className="text-xs font-bold text-gray-400 uppercase">Balíkovna</p>
-                            <RadioCard name="shipping" value="balikovna_address" title="Doručení na adresu" price={shippingCosts['balikovna_address'] === 0 ? "Zdarma" : `${shippingCosts['balikovna_address']} Kč`} checked={shippingMethod === 'balikovna_address'} onChange={(e: any) => setShippingMethod(e.target.value)} />
+                            <p className="text-xs font-bold text-gray-400 uppercase">Česká pošta</p>
+                            <RadioCard name="shipping" value="balikovna_address" title="Doporučeně (Doručení na adresu)" price={shippingCosts['balikovna_address'] === 0 ? "Zdarma" : `${shippingCosts['balikovna_address']} Kč`} checked={shippingMethod === 'balikovna_address'} onChange={(e: any) => setShippingMethod(e.target.value)} />
                             
                             <p className="text-xs font-bold text-gray-400 uppercase pt-4">Zásilkovna</p>
                             <RadioCard name="shipping" value="zasilkovna_point" title="Na výdejní místo (Z-Point / Z-Box)" price={shippingCosts['zasilkovna_point'] === 0 ? "Zdarma" : `${shippingCosts['zasilkovna_point']} Kč`} checked={shippingMethod === 'zasilkovna_point'} onChange={(e: any) => setShippingMethod(e.target.value)} />
