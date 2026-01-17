@@ -126,6 +126,10 @@ const CheckoutPage: React.FC = () => {
         }
     };
     
+    /**
+     * Generuje unikátní chronologické číslo objednávky.
+     * Formát: YYMMDDHHMM (Rok, Měsíc, Den, Hodina, Minuta)
+     */
     const generateOrderNumber = (): string => {
         const now = new Date();
         const year = now.getFullYear().toString().slice(-2);
@@ -203,7 +207,7 @@ const CheckoutPage: React.FC = () => {
             'balikovna_address': 'Česká pošta - Doručení na adresu',
             'zasilkovna_point': 'Zásilkovna - Výdejní místo',
             'zasilkovna_address': 'Zásilkovna - Doručení na adresu',
-            'osobne': 'Osobní odběr (Turnov)'
+            'osobne': 'Osobní odběr (Liberec nebo Turnov - dle individuální domluvy)'
         };
 
         const customerInfoHtml = `
@@ -399,7 +403,7 @@ const CheckoutPage: React.FC = () => {
                             <RadioCard name="shipping" value="zasilkovna_address" title="Doručení na adresu" price={shippingCosts['zasilkovna_address'] === 0 ? "Zdarma" : `${shippingCosts['zasilkovna_address']} Kč`} checked={shippingMethod === 'zasilkovna_address'} onChange={(e: any) => setShippingMethod(e.target.value)} />
 
                             <p className="text-xs font-bold text-gray-400 uppercase pt-4">Ostatní</p>
-                            <RadioCard name="shipping" value="osobne" title="Osobní odběr - Turnov (Po domluvě)" price="Zdarma" checked={shippingMethod === 'osobne'} onChange={(e: any) => setShippingMethod(e.target.value)} />
+                            <RadioCard name="shipping" value="osobne" title="Osobní odběr - Liberec nebo Turnov (Dle domluvy)" price="Zdarma" checked={shippingMethod === 'osobne'} onChange={(e: any) => setShippingMethod(e.target.value)} />
                         </div>
                     </section>
                 </div>
