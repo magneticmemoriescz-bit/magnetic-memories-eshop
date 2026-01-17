@@ -30,6 +30,7 @@ interface OrderDetails {
     paymentCost: number;
     orderNumber: string;
     marketingConsent: boolean;
+    additionalInfo: string;
 }
 
 const VALID_COUPONS: { [key: string]: number } = {
@@ -123,15 +124,17 @@ const CheckoutPage: React.FC = () => {
         }
     };
     
+    /**
+     * Generuje variabilní symbol (číslo objednávky) o délce 10 číslic.
+     * Formát: YYMMDD + 4 náhodné číslice pro zajištění unikátnosti.
+     */
     const generateOrderNumber = (): string => {
         const now = new Date();
         const year = now.getFullYear().toString().slice(-2);
         const month = (now.getMonth() + 1).toString().padStart(2, '0');
         const day = now.getDate().toString().padStart(2, '0');
-        const hours = now.getHours().toString().padStart(2, '0');
-        const minutes = now.getMinutes().toString().padStart(2, '0');
-        const seconds = now.getSeconds().toString().padStart(2, '0');
-        return `${year}${month}${day}${hours}${minutes}${seconds}`;
+        const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        return `${year}${month}${day}${random}`;
     };
 
     const sendEmailNotifications = async (order: OrderDetails) => {
@@ -141,7 +144,7 @@ const CheckoutPage: React.FC = () => {
         const styleTh = 'text-align: left; padding: 12px; background-color: #f3f4f6; color: #374151; border-bottom: 2px solid #e5e7eb; font-weight: bold;';
         const styleTd = 'padding: 12px; border-bottom: 1px solid #e5e7eb; color: #4b5563; vertical-align: top;';
         const styleTdPrice = 'padding: 12px; border-bottom: 1px solid #e5e7eb; color: #111827; text-align: right; font-weight: bold; white-space: nowrap;';
-        const styleBox = 'background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-top: 20px;';
+        const styleBox = 'background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-top: 20px; margin-bottom: 20px;';
         const styleTdTotal = 'padding: 12px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: bold; background-color: #f9fafb;';
 
         let paymentDetailsHtml = '';
@@ -182,6 +185,57 @@ const CheckoutPage: React.FC = () => {
 
         const fullName = `${order.contact.firstName} ${order.contact.lastName}`;
         const fullAddress = `${order.contact.street}, ${order.contact.city}, ${order.contact.zip}`;
+        const shippingNameMap: {[key: string]: string} = {
+            'balikovna_address': 'Česká pošta - Doručení na adresu',
+            'zasilkovna_point': 'Zásilkovna - Výdejní místo',
+            'zasilkovna_address': 'Zásilkovna - Doručení na adresu',
+            'osobne': 'Osobní odběr (Turnov)'
+        };
+
+        const customerInfoHtml = `
+            <div style="${styleBox}">
+                <h3 style="margin-top: 0; color: #EA5C9D; font-size: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 15px;">Informace o zákazníkovi a doručení</h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <tr>
+                        <td style="padding: 5px 0; color: #6b7280; width: 140px;"><strong>Zákazník:</strong></td>
+                        <td style="padding: 5px 0; color: #111827;">${fullName}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; color: #6b7280;"><strong>Email:</strong></td>
+                        <td style="padding: 5px 0; color: #111827;">${order.contact.email}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; color: #6b7280;"><strong>Telefon:</strong></td>
+                        <td style="padding: 5px 0; color: #111827;">${order.contact.phone}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 15px 0 5px 0; color: #6b7280;" colspan="2"><hr style="border: 0; border-top: 1px solid #f3f4f6;"></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; color: #6b7280;"><strong>Adresa:</strong></td>
+                        <td style="padding: 5px 0; color: #111827;">${fullAddress}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; color: #6b7280;"><strong>Způsob dopravy:</strong></td>
+                        <td style="padding: 5px 0; color: #111827;">${shippingNameMap[order.shipping] || order.shipping}${shippingPointInfo}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 15px 0 5px 0; color: #6b7280;" colspan="2"><hr style="border: 0; border-top: 1px solid #f3f4f6;"></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; color: #6b7280;"><strong>Souhlas se zveřejněním:</strong></td>
+                        <td style="padding: 5px 0; color: ${order.marketingConsent ? '#059669' : '#dc2626'}; font-weight: bold;">
+                            ${order.marketingConsent ? 'ANO - SOUHLASÍ' : 'NE - NESOUHLASÍ'}
+                        </td>
+                    </tr>
+                    ${order.additionalInfo ? `
+                    <tr>
+                        <td style="padding: 5px 0; color: #6b7280; vertical-align: top;"><strong>Poznámka:</strong></td>
+                        <td style="padding: 5px 0; color: #111827; background-color: #ffffff; border: 1px dashed #e5e7eb; padding: 10px;">${order.additionalInfo}</td>
+                    </tr>` : ''}
+                </table>
+            </div>
+        `;
 
         const templateParams = {
             subject: `Objednávka č. ${order.orderNumber}`,
@@ -193,7 +247,7 @@ const CheckoutPage: React.FC = () => {
             total_price: formatPrice(order.total) + ' Kč',
             items_html: itemsHtml, 
             payment_details: paymentDetailsHtml,
-            customer_header: `<div style="padding: 15px; background: #f3f4f6; border-left: 4px solid #EA5C9D; margin-bottom: 20px;"><strong>Zákazník:</strong> ${fullName}<br><strong>Email:</strong> ${order.contact.email}<br><strong>Telefon:</strong> ${order.contact.phone}<br><strong>Adresa:</strong> ${fullAddress}</div>`
+            customer_header: customerInfoHtml
         };
         
         try {
@@ -206,8 +260,11 @@ const CheckoutPage: React.FC = () => {
         try {
             const payload = {
                 orderNumber: order.orderNumber,
+                name: `${order.contact.firstName} ${order.contact.lastName}`,
                 email: order.contact.email,
                 total: order.total,
+                marketingConsent: order.marketingConsent,
+                additionalInfo: order.additionalInfo,
                 items: order.items.map(i => ({ name: i.product.name, qty: i.quantity, price: i.price }))
             };
             await fetch(MAKE_WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -232,7 +289,9 @@ const CheckoutPage: React.FC = () => {
             const orderNumber = generateOrderNumber();
             const orderDetails: OrderDetails = {
                 contact: formData, shipping: shippingMethod!, payment: paymentMethod!, packetaPoint,
-                items, total, subtotal, discountAmount, couponCode: appliedCoupon?.code, shippingCost, paymentCost, orderNumber, marketingConsent
+                items, total, subtotal, discountAmount, couponCode: appliedCoupon?.code, shippingCost, paymentCost, orderNumber, 
+                marketingConsent,
+                additionalInfo: formData.additionalInfo
             };
             await sendEmailNotifications(orderDetails);
             await sendToMakeWebhook(orderDetails);
@@ -267,6 +326,10 @@ const CheckoutPage: React.FC = () => {
                             </div>
                             <FormInput name="city" label="Město" value={formData.city} onChange={handleFormChange} required />
                             <FormInput name="zip" label="PSČ" value={formData.zip} onChange={handleFormChange} required />
+                            <div className="sm:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700">Poznámka k objednávce (volitelné)</label>
+                                <textarea name="additionalInfo" rows={3} value={formData.additionalInfo} onChange={handleFormChange} className="mt-1 block w-full border border-brand-purple/20 bg-brand-purple/10 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-purple focus:border-brand-purple sm:text-sm bg-brand-purple/10 placeholder-gray-500" placeholder="Máte speciální přání?" />
+                            </div>
                         </div>
                     </section>
                     <section>
@@ -309,15 +372,21 @@ const CheckoutPage: React.FC = () => {
 
                         <div className="mt-8">
                             <label className="block text-sm font-medium text-gray-700 mb-2">Slevový kód</label>
-                            <div className="flex space-x-2">
+                            <div className="flex items-stretch rounded-md overflow-hidden border border-brand-purple/20 bg-brand-purple/10 shadow-sm focus-within:ring-2 focus-within:ring-brand-purple focus-within:border-brand-purple transition-all">
                                 <input 
                                     type="text" 
                                     value={couponCode} 
                                     onChange={(e) => setCouponCode(e.target.value)}
-                                    placeholder="Kód" 
-                                    className="flex-grow border border-gray-300 rounded-md py-2 px-3 focus:ring-brand-purple focus:border-brand-purple sm:text-sm uppercase"
+                                    placeholder="ZADEJTE KÓD" 
+                                    className="flex-grow bg-transparent border-none py-2 px-3 focus:ring-0 sm:text-sm uppercase placeholder-gray-400"
                                 />
-                                <button type="button" onClick={handleApplyCoupon} className="bg-dark-gray text-white px-4 py-2 rounded-md hover:bg-black transition-colors">Uplatnit</button>
+                                <button 
+                                    type="button" 
+                                    onClick={handleApplyCoupon} 
+                                    className="bg-brand-purple text-white px-5 py-2 text-sm font-bold hover:bg-opacity-90 transition-colors"
+                                >
+                                    UPLATNIT
+                                </button>
                             </div>
                             {couponMessage && (
                                 <p className={`mt-2 text-xs font-medium ${couponMessage.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
@@ -329,7 +398,7 @@ const CheckoutPage: React.FC = () => {
                             )}
                         </div>
 
-                        <div className="mt-8 space-y-3">
+                        <div className="mt-8 space-y-4">
                              <div className="flex items-start">
                                 <div className="flex items-center h-5">
                                     <input id="terms" type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="h-4 w-4 text-brand-purple focus:ring-brand-purple border-gray-300 rounded" />
@@ -339,6 +408,15 @@ const CheckoutPage: React.FC = () => {
                                 </label>
                             </div>
                             {formErrors.terms && <p className="text-red-500 text-xs ml-7">{formErrors.terms}</p>}
+
+                            <div className="flex items-start">
+                                <div className="flex items-center h-5">
+                                    <input id="marketing" type="checkbox" checked={marketingConsent} onChange={(e) => setMarketingConsent(e.target.checked)} className="h-4 w-4 text-brand-purple focus:ring-brand-purple border-gray-300 rounded" />
+                                </div>
+                                <label htmlFor="marketing" className="ml-3 text-sm text-gray-600">
+                                    Zákazník SOUHLASÍ se zveřejněním produktů pro reklamní účely
+                                </label>
+                            </div>
                         </div>
 
                         <button type="submit" disabled={isSubmitting} className="w-full mt-6 bg-brand-pink py-4 rounded-md text-white font-bold hover:opacity-90 transition-opacity disabled:opacity-50 text-lg shadow-md">
