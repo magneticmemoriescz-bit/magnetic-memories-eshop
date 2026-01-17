@@ -42,23 +42,26 @@ export const PRODUCTS: Product[] = [
     price: 350,
     shortDescription: 'Vytvořte si roční kalendář s vlastními fotografiemi.',
     description: 'Proměňte své nejoblíbenější momenty v praktický a krásný kalendář. Každý měsíc nová vzpomínka přímo na vaší lednici!',
-    imageUrl: 'https://i.imgur.com/15AsAmb.jpg',
+    imageUrl: 'https://i.imgur.com/XrxO1dH.jpg',
     gallery: [
-        'https://i.imgur.com/15AsAmb.jpg',
-        'https://i.imgur.com/9hQdyx2.jpg',
+        'https://i.imgur.com/XrxO1dH.jpg',
+        'https://i.imgur.com/m0OIhVk.jpg',
     ],
-    imageUrl_portrait: 'https://i.imgur.com/15AsAmb.jpg',
+    imageUrl_portrait: 'https://i.imgur.com/XrxO1dH.jpg',
     gallery_portrait: [
-        'https://i.imgur.com/15AsAmb.jpg',
+        'https://i.imgur.com/XrxO1dH.jpg',
+        'https://i.imgur.com/m0OIhVk.jpg',
     ],
-    imageUrl_landscape: 'https://i.imgur.com/9hQdyx2.jpg',
+    imageUrl_landscape: 'https://i.imgur.com/XrxO1dH.jpg',
     gallery_landscape: [
-        'https://i.imgur.com/9hQdyx2.jpg',
+        'https://i.imgur.com/XrxO1dH.jpg',
+        'https://i.imgur.com/m0OIhVk.jpg',
     ],
     requiredPhotos: 12,
     variants: [
       { id: '8x10', name: '8x10 cm', photoCount: 12, itemCount: 1, price: 350 },
-      { id: 'a5', name: 'A5', photoCount: 12, itemCount: 1, price: 600 },
+      { id: 'a6', name: 'A6', photoCount: 12, itemCount: 1, price: 550 },
+      { id: 'a5', name: 'A5', photoCount: 12, itemCount: 1, price: 680 },
       { id: 'a4', name: 'A4', photoCount: 12, itemCount: 1, price: 900 },
     ]
   },
@@ -77,16 +80,16 @@ export const PRODUCTS: Product[] = [
     hasTextFields: false,
     variants: [
         // A5 Variants
-        { id: 'a5-10-pcs', name: '10 ks', photoCount: 1, itemCount: 10, price: 800 },
-        { id: 'a5-20-pcs', name: '20 ks', photoCount: 1, itemCount: 20, price: 1550 },
-        { id: 'a5-50-pcs', name: '50 ks', photoCount: 1, itemCount: 50, price: 3850 },
-        { id: 'a5-100-pcs', name: '100 ks', photoCount: 1, itemCount: 100, price: 7650 },
+        { id: 'a5-10-pcs', name: '10 ks', photoCount: 1, itemCount: 10, price: 600 },
+        { id: 'a5-20-pcs', name: '20 ks', photoCount: 1, itemCount: 20, price: 1150 },
+        { id: 'a5-50-pcs', name: '50 ks', photoCount: 1, itemCount: 50, price: 2900 },
+        { id: 'a5-100-pcs', name: '100 ks', photoCount: 1, itemCount: 100, price: 5500 },
         
         // A6 Variants
         { id: 'a6-10-pcs', name: '10 ks', photoCount: 1, itemCount: 10, price: 400 },
         { id: 'a6-20-pcs', name: '20 ks', photoCount: 1, itemCount: 20, price: 775 },
-        { id: 'a6-50-pcs', name: '50 ks', photoCount: 1, itemCount: 50, price: 1925 },
-        { id: 'a6-100-pcs', name: '100 ks', photoCount: 1, itemCount: 100, price: 3825 },
+        { id: 'a6-50-pcs', name: '50 ks', photoCount: 1, itemCount: 50, price: 1900 },
+        { id: 'a6-100-pcs', name: '100 ks', photoCount: 1, itemCount: 100, price: 3750 },
     ]
   }
 ];
