@@ -18,6 +18,7 @@ const DIRECT_MAILING_FEE = 100;
 
 interface OrderDetails {
     contact: { [key: string]: string };
+    ico?: string;
     shipping: string;
     payment: string;
     packetaPoint: any | null;
@@ -48,8 +49,9 @@ const CheckoutPage: React.FC = () => {
     const [submitError, setSubmitError] = useState('');
     
     const [formData, setFormData] = useState({
-        firstName: '', lastName: '', email: '', phone: '', street: '', city: '', zip: '', additionalInfo: '',
+        firstName: '', lastName: '', email: '', phone: '', street: '', city: '', zip: '', ico: '', additionalInfo: '',
     });
+    const [isCompany, setIsCompany] = useState(false);
     const [shippingMethod, setShippingMethod] = useState<string | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<string | null>('prevodem'); 
     const [packetaPoint, setPacketaPoint] = useState<any | null>(null);
@@ -124,10 +126,6 @@ const CheckoutPage: React.FC = () => {
         }
     };
     
-    /**
-     * Generuje variabilní symbol (číslo objednávky) o délce 10 číslic.
-     * Formát: YYMMDD + 4 náhodné číslice pro zajištění unikátnosti.
-     */
     const generateOrderNumber = (): string => {
         const now = new Date();
         const year = now.getFullYear().toString().slice(-2);
@@ -200,6 +198,7 @@ const CheckoutPage: React.FC = () => {
                         <td style="padding: 5px 0; color: #6b7280; width: 140px;"><strong>Zákazník:</strong></td>
                         <td style="padding: 5px 0; color: #111827;">${fullName}</td>
                     </tr>
+                    ${order.ico ? `<tr><td style="padding: 5px 0; color: #6b7280;"><strong>IČO:</strong></td><td style="padding: 5px 0; color: #111827;">${order.ico}</td></tr>` : ''}
                     <tr>
                         <td style="padding: 5px 0; color: #6b7280;"><strong>Email:</strong></td>
                         <td style="padding: 5px 0; color: #111827;">${order.contact.email}</td>
@@ -262,6 +261,7 @@ const CheckoutPage: React.FC = () => {
                 orderNumber: order.orderNumber,
                 name: `${order.contact.firstName} ${order.contact.lastName}`,
                 email: order.contact.email,
+                ico: order.ico,
                 total: order.total,
                 marketingConsent: order.marketingConsent,
                 additionalInfo: order.additionalInfo,
@@ -278,6 +278,11 @@ const CheckoutPage: React.FC = () => {
         if (!formData.lastName) errors.lastName = 'Povinné';
         if (!formData.email) errors.email = 'Povinné';
         if (!formData.phone) errors.phone = 'Povinné';
+        if (!formData.street) errors.street = 'Povinné';
+        if (!formData.city) errors.city = 'Povinné';
+        if (!formData.zip) errors.zip = 'Povinné';
+        if (isCompany && !formData.ico) errors.ico = 'Povinné při nákupu na IČO';
+        
         if (!shippingMethod) errors.shipping = 'Vyberte dopravu';
         if (shippingMethod === 'zasilkovna_point' && !packetaPoint) errors.packetaPoint = 'Vyberte místo';
         if (!termsAccepted) errors.terms = 'Souhlas s podmínkami';
@@ -288,7 +293,7 @@ const CheckoutPage: React.FC = () => {
         try {
             const orderNumber = generateOrderNumber();
             const orderDetails: OrderDetails = {
-                contact: formData, shipping: shippingMethod!, payment: paymentMethod!, packetaPoint,
+                contact: formData, ico: isCompany ? formData.ico : undefined, shipping: shippingMethod!, payment: paymentMethod!, packetaPoint,
                 items, total, subtotal, discountAmount, couponCode: appliedCoupon?.code, shippingCost, paymentCost, orderNumber, 
                 marketingConsent,
                 additionalInfo: formData.additionalInfo
@@ -316,16 +321,29 @@ const CheckoutPage: React.FC = () => {
                 <div className="lg:col-span-7 space-y-10">
                     <section>
                         <h2 className="text-xl font-medium text-dark-gray mb-6 border-b pb-2">1. Kontaktní údaje</h2>
+                        
+                        <div className="mb-8 p-4 bg-brand-purple/5 border border-brand-purple/20 rounded-lg">
+                            <div className="flex items-center h-5">
+                                <input id="isCompany" type="checkbox" checked={isCompany} onChange={(e) => setIsCompany(e.target.checked)} className="h-4 w-4 text-brand-purple focus:ring-brand-purple border-gray-300 rounded" />
+                                <label htmlFor="isCompany" className="ml-3 text-sm font-medium text-gray-700">Nakupuji na IČO</label>
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                            {isCompany && (
+                                <div className="sm:col-span-2 animate-in fade-in duration-300">
+                                    <FormInput name="ico" label="IČO" value={formData.ico} onChange={handleFormChange} error={formErrors.ico} required />
+                                </div>
+                            )}
                             <FormInput name="firstName" label="Jméno" value={formData.firstName} onChange={handleFormChange} error={formErrors.firstName} required />
                             <FormInput name="lastName" label="Příjmení" value={formData.lastName} onChange={handleFormChange} error={formErrors.lastName} required />
                             <FormInput name="email" label="Email" type="email" value={formData.email} onChange={handleFormChange} error={formErrors.email} required />
                             <FormInput name="phone" label="Telefon" type="tel" value={formData.phone} onChange={handleFormChange} error={formErrors.phone} required />
                             <div className="sm:col-span-2">
-                                <FormInput name="street" label="Ulice" value={formData.street} onChange={handleFormChange} required />
+                                <FormInput name="street" label="Ulice" value={formData.street} onChange={handleFormChange} error={formErrors.street} required />
                             </div>
-                            <FormInput name="city" label="Město" value={formData.city} onChange={handleFormChange} required />
-                            <FormInput name="zip" label="PSČ" value={formData.zip} onChange={handleFormChange} required />
+                            <FormInput name="city" label="Město" value={formData.city} onChange={handleFormChange} error={formErrors.city} required />
+                            <FormInput name="zip" label="PSČ" value={formData.zip} onChange={handleFormChange} error={formErrors.zip} required />
                             <div className="sm:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700">Poznámka k objednávce (volitelné)</label>
                                 <textarea name="additionalInfo" rows={3} value={formData.additionalInfo} onChange={handleFormChange} className="mt-1 block w-full border border-brand-purple/20 bg-brand-purple/10 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-brand-purple focus:border-brand-purple sm:text-sm bg-brand-purple/10 placeholder-gray-500" placeholder="Máte speciální přání?" />
@@ -378,12 +396,12 @@ const CheckoutPage: React.FC = () => {
                                     value={couponCode} 
                                     onChange={(e) => setCouponCode(e.target.value)}
                                     placeholder="ZADEJTE KÓD" 
-                                    className="flex-grow bg-transparent border-none py-2 px-3 focus:ring-0 sm:text-sm uppercase placeholder-gray-400"
+                                    className="flex-grow bg-transparent border-none py-2 px-3 focus:ring-0 sm:text-sm uppercase placeholder-gray-400 min-w-0"
                                 />
                                 <button 
                                     type="button" 
                                     onClick={handleApplyCoupon} 
-                                    className="bg-brand-purple text-white px-5 py-2 text-sm font-bold hover:bg-opacity-90 transition-colors"
+                                    className="bg-brand-purple text-white px-4 py-2 text-sm font-bold hover:bg-opacity-90 transition-colors flex-shrink-0 whitespace-nowrap"
                                 >
                                     UPLATNIT
                                 </button>
@@ -404,7 +422,7 @@ const CheckoutPage: React.FC = () => {
                                     <input id="terms" type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="h-4 w-4 text-brand-purple focus:ring-brand-purple border-gray-300 rounded" />
                                 </div>
                                 <label htmlFor="terms" className="ml-3 text-sm text-gray-600">
-                                    Souhlasím s <Link to="/obchodni-podminky" className="text-brand-purple hover:underline" target="_blank">obchodními podmínkami</Link>
+                                    Souhlasím s <Link to="/obchodni-podminky" className="text-brand-purple hover:underline" target="_blank">obchodními podmínkami</Link> <span className="text-red-500">*</span>
                                 </label>
                             </div>
                             {formErrors.terms && <p className="text-red-500 text-xs ml-7">{formErrors.terms}</p>}
