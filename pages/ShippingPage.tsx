@@ -29,7 +29,7 @@ const ShippingPage: React.FC = () => (
             <div>
                 <h3 className="font-bold text-dark-gray mb-2">Ostatní</h3>
                 <ul className="list-disc pl-6 space-y-1">
-                    <li><strong>Osobní odběr - Turnov:</strong> Zdarma (Po předchozí domluvě)</li>
+                    <li><strong>Osobní odběr - Liberec nebo Turnov:</strong> Zdarma (Dle individuální domluvy)</li>
                 </ul>
             </div>
         </div>
