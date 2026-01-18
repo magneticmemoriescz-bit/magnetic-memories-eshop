@@ -22,7 +22,7 @@ const ShippingPage: React.FC = () => (
             <div>
                 <h3 className="font-bold text-dark-gray mb-2">Zásilkovna</h3>
                 <ul className="list-disc pl-6 space-y-1">
-                    <li>Na výdejní místo (Z-Point / Z-Box): <strong>79 Kč</strong></li>
+                    <li>Na výdejní místo (Z-Point / Z-Box): <strong>89 Kč</strong></li>
                     <li>Doručení na adresu: <strong>99 Kč</strong></li>
                 </ul>
             </div>
