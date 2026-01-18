@@ -78,9 +78,13 @@ const ProductDetailPage: React.FC = () => {
     let basePriceTotal = unitPrice * quantity;
     
     if (isPhotomagnets) {
-        if (quantity === 9) basePriceTotal -= 10;
-        else if (quantity === 15) basePriceTotal -= 20;
-        else if (quantity === 30) basePriceTotal -= 50;
+        // Updated discount logic:
+        // Sada 9 ks: zdražení o 35 kč oproti staré ceně 170 => nová cena 205 (225 - 20)
+        // Sada 15 ks: cena za 14 ks
+        // Sada 30 ks: cena za 28 ks
+        if (quantity === 9) basePriceTotal = (unitPrice * 9) - 20;
+        else if (quantity === 15) basePriceTotal = (unitPrice * 14);
+        else if (quantity === 30) basePriceTotal = (unitPrice * 28);
     }
     
     // Calculate total physical pieces for mailing fee
@@ -274,14 +278,19 @@ const ProductDetailPage: React.FC = () => {
                             {visibleVariants && (
                                 <div className="mt-10 space-y-6">
                                     <div>
-                                        <h3 className="text-sm text-dark-gray font-medium mb-4">
+                                        <h3 className="text-sm text-dark-gray font-medium">
                                             {isPhotomagnets ? 'Vyberte rozměr magnetek' : 'Varianta'}
                                         </h3>
-                                        <div className="flex items-center space-x-4 flex-wrap gap-y-4">
+                                        {isPhotomagnets && (
+                                            <p className="text-xs text-brand-purple italic mb-4 mt-1">
+                                                Pokud vaše fotka přesně neodpovídá vybranému formátu, nevadí, upravíme ji.
+                                            </p>
+                                        )}
+                                        <div className={`grid gap-4 items-start ${isPhotomagnets ? 'grid-cols-2 sm:grid-cols-4' : 'flex items-center space-x-4 flex-wrap gap-y-4'}`}>
                                             {visibleVariants.map((variant) => (
                                                 <label key={variant.id} className={`relative border rounded-md px-4 py-2 flex items-center justify-center text-sm font-medium uppercase cursor-pointer focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-purple ${selectedVariant?.id === variant.id ? 'bg-brand-purple border-transparent text-white hover:opacity-90' : 'bg-white border-gray-200 text-dark-gray hover:bg-gray-50'}`}>
                                                     <input type="radio" name="variant-option" value={variant.id} className="sr-only" checked={selectedVariant?.id === variant.id} onChange={() => handleVariantChange(variant)}/>
-                                                    <span>{variant.name}</span>
+                                                    <span className="text-center">{variant.name}</span>
                                                 </label>
                                             ))}
                                         </div>
@@ -324,7 +333,7 @@ const ProductDetailPage: React.FC = () => {
                             
                             {/* Quantity and Sets Section */}
                             <div className="mt-10 flex flex-col space-y-4">
-                                <div className="flex flex-col sm:flex-row sm:items-end gap-6">
+                                <div className="flex flex-col sm:flex-row sm:items-start gap-6">
                                     <div className="flex-shrink-0">
                                         <h3 className="text-sm text-dark-gray font-medium mb-3">Počet kusů</h3>
                                         <select
@@ -341,10 +350,22 @@ const ProductDetailPage: React.FC = () => {
                                     {isPhotomagnets && (
                                         <div className="flex-grow">
                                             <h3 className="text-sm text-dark-gray font-medium mb-3">Nebo zvolte zvýhodněnou sadu</h3>
-                                            <div className="flex items-center gap-2 flex-wrap">
+                                            <div className="grid grid-cols-3 gap-2 items-stretch">
                                                 {[9, 15, 30].map((setQty) => {
-                                                    const discount = setQty === 9 ? 10 : setQty === 15 ? 20 : 50;
-                                                    const setPrice = (unitPrice * setQty) - discount;
+                                                    // Updated labels and discount calculation
+                                                    let setLabel = `Sada ${setQty} ks`;
+                                                    let setPrice = unitPrice * setQty;
+                                                    
+                                                    if (setQty === 9) {
+                                                        setPrice -= 20;
+                                                    } else if (setQty === 15) {
+                                                        setPrice = unitPrice * 14;
+                                                        setLabel = `14 + 1 ks zdarma`;
+                                                    } else if (setQty === 30) {
+                                                        setPrice = unitPrice * 28;
+                                                        setLabel = `28 ks + 2 ks zdarma`;
+                                                    }
+                                                    
                                                     const isActive = quantity === setQty;
                                                     
                                                     return (
@@ -352,9 +373,9 @@ const ProductDetailPage: React.FC = () => {
                                                             key={setQty}
                                                             type="button"
                                                             onClick={() => setQuantity(setQty)}
-                                                            className={`relative border rounded-md px-3 py-2 flex flex-col items-center justify-center text-xs font-semibold uppercase transition-all focus:outline-none focus:ring-2 focus:ring-brand-purple ${isActive ? 'bg-brand-pink border-transparent text-white' : 'bg-gray-100 border-gray-200 text-dark-gray hover:bg-gray-200'}`}
+                                                            className={`relative border rounded-md px-2 py-2 flex flex-col items-center justify-center min-h-[56px] text-[10px] sm:text-xs font-semibold uppercase transition-all focus:outline-none focus:ring-2 focus:ring-brand-purple ${isActive ? 'bg-brand-pink border-transparent text-white' : 'bg-gray-100 border-gray-200 text-dark-gray hover:bg-gray-200'}`}
                                                         >
-                                                            <span>Sada {setQty} ks</span>
+                                                            <span className="text-center leading-tight mb-1">{setLabel}</span>
                                                             <span className={isActive ? 'text-white/90' : 'text-brand-pink'}>{formatPrice(setPrice)} Kč</span>
                                                         </button>
                                                     );
