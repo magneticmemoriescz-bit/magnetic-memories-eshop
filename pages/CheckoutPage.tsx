@@ -34,9 +34,15 @@ interface OrderDetails {
     additionalInfo: string;
 }
 
-const VALID_COUPONS: { [key: string]: number } = {
-    'VANOCE10': 0.10,
-    'LASKA10': 0.10
+interface CouponRule {
+    rate: number;
+    minSubtotal?: number;
+}
+
+const COUPON_RULES: { [key: string]: CouponRule } = {
+    'VANOCE10': { rate: 0.10 },
+    'LASKA10': { rate: 0.10, minSubtotal: 300 },
+    'SOUTEZ30': { rate: 0.30, minSubtotal: 300 }
 };
 
 const FREE_SHIPPING_THRESHOLD = 800;
@@ -80,9 +86,20 @@ const CheckoutPage: React.FC = () => {
     const handleApplyCoupon = () => {
         const normalizedCode = couponCode.trim().toUpperCase();
         if (!normalizedCode) return;
-        if (VALID_COUPONS[normalizedCode]) {
-            setAppliedCoupon({ code: normalizedCode, rate: VALID_COUPONS[normalizedCode] });
-            setCouponMessage({ text: `Kód ${normalizedCode} byl úspěšně uplatněn.`, type: 'success' });
+        
+        const rule = COUPON_RULES[normalizedCode];
+        
+        if (rule) {
+            if (rule.minSubtotal && subtotal < rule.minSubtotal) {
+                setAppliedCoupon(null);
+                setCouponMessage({ 
+                    text: `Kód lze uplatnit pouze při nákupu nad ${rule.minSubtotal} Kč.`, 
+                    type: 'error' 
+                });
+            } else {
+                setAppliedCoupon({ code: normalizedCode, rate: rule.rate });
+                setCouponMessage({ text: `Kód ${normalizedCode} byl úspěšně uplatněn.`, type: 'success' });
+            }
         } else {
             setAppliedCoupon(null);
             setCouponMessage({ text: 'Neplatný slevový kód.', type: 'error' });
@@ -101,7 +118,7 @@ const CheckoutPage: React.FC = () => {
 
     const shippingCosts: { [key: string]: number } = {
         'balikovna_address': isFreeShipping ? 0 : 88,
-        'zasilkovna_point': isFreeShipping ? 0 : 79,
+        'zasilkovna_point': isFreeShipping ? 0 : 89,
         'zasilkovna_address': isFreeShipping ? 0 : 99,
         'osobne': 0
     };
@@ -126,10 +143,6 @@ const CheckoutPage: React.FC = () => {
         }
     };
     
-    /**
-     * Generuje unikátní chronologické číslo objednávky.
-     * Formát: YYMMDDHHMM (Rok, Měsíc, Den, Hodina, Minuta)
-     */
     const generateOrderNumber = (): string => {
         const now = new Date();
         const year = now.getFullYear().toString().slice(-2);
@@ -144,7 +157,6 @@ const CheckoutPage: React.FC = () => {
         const vs = order.orderNumber;
         const currentDate = new Date().toLocaleDateString('cs-CZ');
         
-        // CSS styly pro email
         const styleTable = 'width: 100%; border-collapse: collapse; font-family: Helvetica, Arial, sans-serif; font-size: 14px;';
         const styleTh = 'text-align: left; padding: 12px; background-color: #f3f4f6; color: #374151; border-bottom: 2px solid #e5e7eb; font-weight: bold;';
         const styleTd = 'padding: 12px; border-bottom: 1px solid #e5e7eb; color: #4b5563; vertical-align: top;';
@@ -152,7 +164,6 @@ const CheckoutPage: React.FC = () => {
         const styleBox = 'background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-top: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);';
         const styleTdTotal = 'padding: 12px; border-bottom: 1px solid #e5e7eb; color: #111827; font-weight: bold; background-color: #f9fafb;';
 
-        // Platební instrukce
         let paymentDetailsHtml = '';
         if (order.payment === 'prevodem') {
             paymentDetailsHtml = `
@@ -166,7 +177,6 @@ const CheckoutPage: React.FC = () => {
                 </div>`;
         }
 
-        // Seznam produktů
         let totalItemsQuantity = 0;
         let totalItemsPrice = 0;
         let itemsHtml = `<table style="${styleTable}"><thead><tr><th style="${styleTh}">Produkt</th><th style="${styleTh} text-align: center;">Ks</th><th style="${styleTh} text-align: right;">Cena</th></tr></thead><tbody>`;
@@ -196,58 +206,34 @@ const CheckoutPage: React.FC = () => {
             shippingPointInfo = `<br><span style="color: #8D7EEF; font-weight: bold;">Výdejní místo:</span> ${order.packetaPoint.name}<br><span style="color: #8D7EEF; font-weight: bold;">Adresa:</span> ${order.packetaPoint.street}, ${order.packetaPoint.city}`;
         }
 
-        itemsHtml += `<tr><td style="${styleTd}">Doprava: ${order.shipping}${shippingPointInfo}</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice}">${formatPrice(order.shippingCost)} Kč</td></tr>`;
-        itemsHtml += `<tr><td style="${styleTd}">Platba: ${order.payment}</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice}">${formatPrice(order.paymentCost)} Kč</td></tr>`;
-        itemsHtml += `<tr style="background-color: #fdf2f8;"><td colspan="2" style="padding: 16px 12px; text-align: right; font-weight: bold;">CELKEM K ÚHRADĚ</td><td style="padding: 16px 12px; text-align: right; font-weight: bold; font-size: 20px; color: #831843;">${formatPrice(order.total)} Kč</td></tr></tbody></table>`;
-
-        // Kontaktní údaje a adresa
-        const fullName = `${order.contact.firstName} ${order.contact.lastName}`;
-        const fullAddress = `${order.contact.street}, ${order.contact.city}, ${order.contact.zip}`;
         const shippingNameMap: {[key: string]: string} = {
             'balikovna_address': 'Česká pošta - Doručení na adresu',
             'zasilkovna_point': 'Zásilkovna - Výdejní místo',
             'zasilkovna_address': 'Zásilkovna - Doručení na adresu',
-            'osobne': 'Osobní odběr (Liberec nebo Turnov - dle individuální domluvy)'
+            'osobne': 'Osobní odběr (Liberec nebo Turnov - dle domluvy)'
         };
+
+        itemsHtml += `<tr><td style="${styleTd}">Doprava: ${shippingNameMap[order.shipping] || order.shipping}${shippingPointInfo}</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice}">${formatPrice(order.shippingCost)} Kč</td></tr>`;
+        itemsHtml += `<tr><td style="${styleTd}">Platba: ${order.payment}</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice}">${formatPrice(order.paymentCost)} Kč</td></tr>`;
+        itemsHtml += `<tr style="background-color: #fdf2f8;"><td colspan="2" style="padding: 16px 12px; text-align: right; font-weight: bold;">CELKEM K ÚHRADĚ</td><td style="padding: 16px 12px; text-align: right; font-weight: bold; font-size: 20px; color: #831843;">${formatPrice(order.total)} Kč</td></tr></tbody></table>`;
+
+        const fullName = `${order.contact.firstName} ${order.contact.lastName}`;
+        const fullAddress = `${order.contact.street}, ${order.contact.city}, ${order.contact.zip}`;
 
         const customerInfoHtml = `
             <div style="${styleBox}">
                 <h3 style="margin-top: 0; color: #EA5C9D; font-size: 18px; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; margin-bottom: 15px;">Údaje o doručení a zákazníkovi</h3>
                 <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                    <tr>
-                        <td style="padding: 6px 0; color: #6b7280; width: 160px;"><strong>Jméno a příjmení:</strong></td>
-                        <td style="padding: 6px 0; color: #111827; font-weight: bold;">${fullName}</td>
-                    </tr>
+                    <tr><td style="padding: 6px 0; color: #6b7280; width: 160px;"><strong>Jméno a příjmení:</strong></td><td style="padding: 6px 0; color: #111827; font-weight: bold;">${fullName}</td></tr>
                     ${order.ico ? `<tr><td style="padding: 6px 0; color: #6b7280;"><strong>IČO (Firma):</strong></td><td style="padding: 6px 0; color: #111827; font-weight: bold;">${order.ico}</td></tr>` : ''}
-                    <tr>
-                        <td style="padding: 6px 0; color: #6b7280;"><strong>Email:</strong></td>
-                        <td style="padding: 6px 0; color: #111827;">${order.contact.email}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 6px 0; color: #6b7280;"><strong>Telefon:</strong></td>
-                        <td style="padding: 6px 0; color: #111827;">${order.contact.phone}</td>
-                    </tr>
+                    <tr><td style="padding: 6px 0; color: #6b7280;"><strong>Email:</strong></td><td style="padding: 6px 0; color: #111827;">${order.contact.email}</td></tr>
+                    <tr><td style="padding: 6px 0; color: #6b7280;"><strong>Telefon:</strong></td><td style="padding: 6px 0; color: #111827;">${order.contact.phone}</td></tr>
                     <tr><td colspan="2" style="padding: 10px 0;"><hr style="border: 0; border-top: 1px solid #e5e7eb;"></td></tr>
-                    <tr>
-                        <td style="padding: 6px 0; color: #6b7280;"><strong>Adresa doručení:</strong></td>
-                        <td style="padding: 6px 0; color: #111827; font-weight: bold;">${fullAddress}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 6px 0; color: #6b7280;"><strong>Způsob dopravy:</strong></td>
-                        <td style="padding: 6px 0; color: #111827;">${shippingNameMap[order.shipping] || order.shipping} ${order.shipping === 'zasilkovna_point' && order.packetaPoint ? `(${order.packetaPoint.name})` : ''}</td>
-                    </tr>
+                    <tr><td style="padding: 6px 0; color: #6b7280;"><strong>Adresa doručení:</strong></td><td style="padding: 6px 0; color: #111827; font-weight: bold;">${fullAddress}</td></tr>
+                    <tr><td style="padding: 6px 0; color: #6b7280;"><strong>Způsob dopravy:</strong></td><td style="padding: 6px 0; color: #111827;">${shippingNameMap[order.shipping] || order.shipping} ${order.shipping === 'zasilkovna_point' && order.packetaPoint ? `(${order.packetaPoint.name})` : ''}</td></tr>
                     <tr><td colspan="2" style="padding: 10px 0;"><hr style="border: 0; border-top: 1px solid #e5e7eb;"></td></tr>
-                    <tr>
-                        <td style="padding: 6px 0; color: #6b7280;"><strong>Souhlas se zveřejněním:</strong></td>
-                        <td style="padding: 6px 0; font-weight: bold; color: ${order.marketingConsent ? '#059669' : '#dc2626'};">
-                            ${order.marketingConsent ? 'SOUHLASÍM (ANO)' : 'NESOUHLASÍM (NE)'}
-                        </td>
-                    </tr>
-                    ${order.additionalInfo ? `
-                    <tr>
-                        <td style="padding: 10px 0; color: #6b7280; vertical-align: top;"><strong>Poznámka:</strong></td>
-                        <td style="padding: 10px 0; color: #4b5563; background-color: #fff9fc; border: 1px dashed #EA5C9D; padding: 10px; border-radius: 4px;">${order.additionalInfo}</td>
-                    </tr>` : ''}
+                    <tr><td style="padding: 6px 0; color: #6b7280;"><strong>Souhlas se zveřejněním:</strong></td><td style="padding: 6px 0; font-weight: bold; color: ${order.marketingConsent ? '#059669' : '#dc2626'};">${order.marketingConsent ? 'SOUHLASÍM (ANO)' : 'NESOUHLASÍM (NE)'}</td></tr>
+                    ${order.additionalInfo ? `<tr><td style="padding: 10px 0; color: #6b7280; vertical-align: top;"><strong>Poznámka:</strong></td><td style="padding: 10px 0; color: #4b5563; background-color: #fff9fc; border: 1px dashed #EA5C9D; padding: 10px; border-radius: 4px;">${order.additionalInfo}</td></tr>` : ''}
                 </table>
             </div>
         `;
@@ -274,21 +260,48 @@ const CheckoutPage: React.FC = () => {
         };
         
         try {
-            // Odeslání zákazníkovi
             await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_USER, templateParams);
-            // Odeslání adminovi (obsahuje stejné params)
-            await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, { 
-                ...templateParams, 
-                to_name: 'Admin Magnetic Memories', 
-                to_email: 'magnetic.memories.cz@gmail.com' 
-            });
-        } catch (error) { 
-            console.error('Odeslání emailu selhalo:', error); 
-        }
+            await window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, { ...templateParams, to_name: 'Admin Magnetic Memories', to_email: 'magnetic.memories.cz@gmail.com' });
+        } catch (error) { console.error('Odeslání emailu selhalo:', error); }
     };
     
     const sendToMakeWebhook = async (order: OrderDetails) => {
         try {
+            const shippingNameMap: {[key: string]: string} = {
+                'balikovna_address': 'Česká pošta - Doručení na adresu',
+                'zasilkovna_point': 'Zásilkovna - Výdejní místo',
+                'zasilkovna_address': 'Zásilkovna - Doručení na adresu',
+                'osobne': 'Osobní odběr (Liberec nebo Turnov)'
+            };
+
+            const invoiceItems = order.items.map(i => {
+                const piecesInPackage = i.variant?.itemCount || 1;
+                const totalPieces = piecesInPackage * i.quantity;
+                const mailingFee = i.directMailing ? DIRECT_MAILING_FEE : 0;
+                
+                return {
+                    name: `${i.product.name}${i.variant ? ` (${i.variant.name})` : ''}`,
+                    quantity: i.quantity,
+                    unit_price: i.price + (mailingFee * piecesInPackage)
+                };
+            });
+
+            if (order.shippingCost > 0) {
+                invoiceItems.push({
+                    name: `Doprava: ${shippingNameMap[order.shipping] || order.shipping}`,
+                    quantity: 1,
+                    unit_price: order.shippingCost
+                });
+            }
+
+            if (order.discountAmount > 0) {
+                invoiceItems.push({
+                    name: `Sleva (kód: ${order.couponCode || 'Slevový kód'})`,
+                    quantity: 1,
+                    unit_price: -order.discountAmount
+                });
+            }
+
             const payload = {
                 orderNumber: order.orderNumber,
                 name: `${order.contact.firstName} ${order.contact.lastName}`,
@@ -297,11 +310,20 @@ const CheckoutPage: React.FC = () => {
                 total: order.total,
                 marketingConsent: order.marketingConsent,
                 additionalInfo: order.additionalInfo,
-                shipping: order.shipping,
+                shipping: shippingNameMap[order.shipping] || order.shipping,
                 address: `${order.contact.street}, ${order.contact.city}, ${order.contact.zip}`,
-                items: order.items.map(i => ({ name: i.product.name, qty: i.quantity, price: i.price }))
+                street: order.contact.street,
+                city: order.contact.city,
+                zip: order.contact.zip,
+                phone: order.contact.phone,
+                items: invoiceItems
             };
-            await fetch(MAKE_WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            
+            await fetch(MAKE_WEBHOOK_URL, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(payload) 
+            });
         } catch (error) { console.error('Make.com Webhook failed:', error); }
     }
 
