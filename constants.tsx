@@ -12,7 +12,7 @@ export const PRODUCTS: Product[] = [
   {
     id: 'photomagnets',
     name: 'Fotomagnety',
-    price: 20,
+    price: 25,
     shortDescription: 'Vaše fotky jako stylové magnety na lednici.',
     description: 'Vaše oblíbené fotografie ve formě magnetů. Ideální dárek nebo ozdoba pro každou lednici.',
     imageUrl: 'https://i.imgur.com/nPJfjfu.jpg', // Hlavní foto náhledu
@@ -25,15 +25,15 @@ export const PRODUCTS: Product[] = [
     ],
     requiredPhotos: 1, // Default, will be updated by variant/quantity
     variants: [
-      // Individual sizes - Prices are per 1 piece
-      { id: '5x5', name: '5x5 cm', photoCount: 1, itemCount: 1, price: 20, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
-      { id: '7x7', name: '7x7 cm', photoCount: 1, itemCount: 1, price: 25, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
-      { id: '5x10', name: '5x10 cm', photoCount: 1, itemCount: 1, price: 25, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
-      { id: '10x10', name: '10x10 cm', photoCount: 1, itemCount: 1, price: 30, imageUrl: 'https://i.imgur.com/nPJfjfu.jpg' },
-      { id: '9x13', name: '9x13 cm', photoCount: 1, itemCount: 1, price: 35, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
-      { id: 'a5-sheet', name: 'A5', photoCount: 1, itemCount: 1, price: 75, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
-      { id: 'a4-sheet', name: 'A4', photoCount: 1, itemCount: 1, price: 100, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
-      { id: 'custom-a5', name: 'Libovolný rozměr < A5', photoCount: 1, itemCount: 1, price: 55, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      // Individual sizes - Prices are per 1 piece - ALL INCREASED BY 5 CZK
+      { id: '5x5', name: '5x5 cm', photoCount: 1, itemCount: 1, price: 25, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
+      { id: '7x7', name: '7x7 cm', photoCount: 1, itemCount: 1, price: 30, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
+      { id: '5x10', name: '5x10 cm', photoCount: 1, itemCount: 1, price: 30, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: '10x10', name: '10x10 cm', photoCount: 1, itemCount: 1, price: 35, imageUrl: 'https://i.imgur.com/nPJfjfu.jpg' },
+      { id: '9x13', name: '9x13 cm', photoCount: 1, itemCount: 1, price: 40, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: 'a5-sheet', name: 'A5', photoCount: 1, itemCount: 1, price: 80, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: 'a4-sheet', name: 'A4', photoCount: 1, itemCount: 1, price: 105, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: 'custom-a5', name: 'Libovolný rozměr < A5', photoCount: 1, itemCount: 1, price: 60, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
     ]
   },
   {
