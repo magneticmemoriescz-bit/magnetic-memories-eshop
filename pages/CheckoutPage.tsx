@@ -190,13 +190,35 @@ const CheckoutPage: React.FC = () => {
             totalItemsPrice += itemPriceTotal;
 
             let variantInfo = item.variant ? `<br><span style="font-size: 12px; color: #6b7280;">Varianta: ${item.variant.name}</span>` : '';
+            
+            // Logika pro výpis vlastních textů (Oznámení)
+            let customTextsHtml = '';
+            if (item.customText) {
+                const labels: { [key: string]: string } = {
+                    text1: 'Hlavní text',
+                    text2: item.product.id === 'wedding-announcement' ? 'Jména snoubenců' : 'Datum/Období',
+                    text3: 'Datum',
+                    text4: 'Místo',
+                    comment: 'Speciální přání'
+                };
+                
+                customTextsHtml = '<div style="margin-top: 8px; border-left: 2px solid #EA5C9D; padding-left: 10px; font-size: 12px;">';
+                Object.entries(item.customText).forEach(([key, value]) => {
+                    if (value && value.trim() !== '') {
+                        const label = labels[key] || key;
+                        customTextsHtml += `<div><strong style="color: #EA5C9D;">${label}:</strong> ${value}</div>`;
+                    }
+                });
+                customTextsHtml += '</div>';
+            }
+
             let photosHtml = '<div style="margin-top: 10px;">';
             item.photos.forEach((photo, idx) => {
                 photosHtml += `<div style="margin-bottom: 5px;"><a href="${photo.url}" target="_blank" style="display: inline-block; background-color: #8D7EEF; color: #ffffff; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: bold;">ODKAZ NA FOTKU ${idx + 1}</a></div>`;
             });
             photosHtml += '</div>';
             
-            itemsHtml += `<tr><td style="${styleTd}"><strong style="color: #111827;">${item.product.name}</strong>${variantInfo}${photosHtml}</td><td style="${styleTd} text-align: center;">${item.quantity}</td><td style="${styleTdPrice}">${formatPrice(itemPriceTotal)} Kč</td></tr>`;
+            itemsHtml += `<tr><td style="${styleTd}"><strong style="color: #111827;">${item.product.name}</strong>${variantInfo}${customTextsHtml}${photosHtml}</td><td style="${styleTd} text-align: center;">${item.quantity}</td><td style="${styleTdPrice}">${formatPrice(itemPriceTotal)} Kč</td></tr>`;
         });
         
         itemsHtml += `<tr><td style="${styleTdTotal}">CELKEM ZA ZBOŽÍ</td><td style="${styleTdTotal} text-align: center;">${totalItemsQuantity}</td><td style="${styleTdTotal} text-align: right;">${formatPrice(totalItemsPrice)} Kč</td></tr>`;
@@ -279,8 +301,17 @@ const CheckoutPage: React.FC = () => {
                 const totalPieces = piecesInPackage * i.quantity;
                 const mailingFee = i.directMailing ? DIRECT_MAILING_FEE : 0;
                 
+                // Přidání textových polí do názvu položky pro Make.com
+                let itemExtraInfo = '';
+                if (i.customText) {
+                    itemExtraInfo = ' (Texty: ' + Object.entries(i.customText)
+                        .filter(([_, v]) => v && v.trim() !== '')
+                        .map(([k, v]) => `${k}: ${v}`)
+                        .join(', ') + ')';
+                }
+
                 return {
-                    name: `${i.product.name}${i.variant ? ` (${i.variant.name})` : ''}`,
+                    name: `${i.product.name}${i.variant ? ` (${i.variant.name})` : ''}${itemExtraInfo}`,
                     quantity: i.quantity,
                     unit_price: i.price + (mailingFee * piecesInPackage)
                 };
