@@ -3,6 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../types';
 import { formatPrice } from '../utils/format';
+import { isVideo } from '../utils/media';
 
 interface ProductCardProps {
   product: Product;
@@ -13,14 +14,9 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, buttonStyle }) => {
-  const isVideo = (url: string) => {
-    if (!url) return false;
-    const path = url.split(/[?#]/)[0].toLowerCase();
-    const videoExtensions = ['.mp4', '.webm', '.mov', '.m4v', '.ogv', '.gifv'];
-    return videoExtensions.some(ext => path.endsWith(ext)) || url.includes('/video/upload/');
-  };
-
-  const imageClass = "w-full h-full object-center object-cover group-hover:opacity-75 transition-opacity";
+  // Produkty, které potřebují posunout náhled nahoru (aby nebyl oříznutý vršek loga/motivu)
+  const isTopPositioned = product.id === 'in-love-magnets' || product.id === 'magnetic-merch';
+  const mediaClass = `w-full h-full ${isTopPositioned ? 'object-[center_20%]' : 'object-center'} object-cover group-hover:opacity-75 transition-opacity`;
 
   return (
     <div className="group relative bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 flex flex-col w-full">
@@ -29,7 +25,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, buttonStyle }
           <video 
             key={product.imageUrl}
             src={product.imageUrl} 
-            className={imageClass} 
+            className={mediaClass} 
             autoPlay 
             muted 
             loop 
@@ -37,7 +33,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, buttonStyle }
             preload="auto"
           />
         ) : (
-          <img src={product.imageUrl} alt={product.name} className={imageClass} />
+          <img src={product.imageUrl} alt={product.name} className={mediaClass} />
         )}
       </div>
       <div className="p-6 flex-grow">
