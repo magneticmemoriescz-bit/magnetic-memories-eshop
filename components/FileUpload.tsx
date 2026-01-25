@@ -1,6 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { UploadedPhoto } from '../types';
+import { isVideo } from '../utils/media';
 
 // --- KONFIGURACE CLOUDINARY ---
 const CLOUDINARY_CLOUD_NAME = 'dvzuwzrpm'; 
@@ -33,13 +34,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
-
-  const isVideoUrl = (url: string) => {
-    if (!url) return false;
-    const path = url.split(/[?#]/)[0].toLowerCase();
-    const videoExtensions = ['.mp4', '.webm', '.mov', '.m4v', '.ogv', '.gifv'];
-    return videoExtensions.some(ext => path.endsWith(ext)) || url.includes('/video/upload/');
-  };
 
   const compressImage = (file: File): Promise<Blob | File> => {
     if (!file.type.startsWith('image/')) return Promise.resolve(file);
@@ -99,10 +93,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
     try {
       for (let i = 0; i < filesArray.length; i++) {
         const file = filesArray[i];
-        const isVideo = file.type.startsWith('video/');
+        const isVideoFile = file.type.startsWith('video/');
         const isImage = file.type.startsWith('image/');
         
-        if (!isImage && !isVideo) continue;
+        if (!isImage && !isVideoFile) continue;
 
         const uploadData = isImage ? await compressImage(file) : file;
         
@@ -112,7 +106,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
         formData.append('folder', 'magnetic_memories');
 
         // Cloudinary vyžaduje jiný endpoint pro videa
-        const resourceType = isVideo ? 'video' : 'image';
+        const resourceType = isVideoFile ? 'video' : 'image';
         const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`, {
           method: 'POST',
           body: formData,
@@ -232,11 +226,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
             <span className={`font-medium ${photos.length === maxFiles ? 'text-green-600' : 'text-gray-700'}`}>
                 Položek: {photos.length} / {maxFiles}
             </span>
-            <div className="flex flex-col items-end">
+            <div className="flex flex-col items-end text-right">
                 {isReorderable && photos.length > 1 && (
                     <span className="text-xs text-gray-400 italic">Přetáhněte položky pro změnu pořadí</span>
                 )}
-                <span className="text-xs text-brand-purple font-medium">U položek klikněte na + pro přidání dalšího kusu.</span>
+                {maxFiles > 1 && (
+                    <span className="text-xs text-brand-purple font-medium">U položek klikněte na + pro přidání dalšího kusu.</span>
+                )}
             </div>
         </div>
 
@@ -255,7 +251,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
                             ${isReorderable ? 'cursor-move' : ''}
                         `}
                     >
-                        {isVideoUrl(photo.url) ? (
+                        {isVideo(photo.url) ? (
                             <video 
                                 src={photo.url} 
                                 className="w-full h-full object-cover bg-black"
@@ -272,16 +268,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
                         
                         {/* Ovládací prvky nad náhledem */}
                         <div className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                                type="button"
-                                title="Přidat další kus"
-                                onClick={(e) => { e.stopPropagation(); duplicatePhoto(index); }}
-                                className="bg-brand-purple text-white p-1 rounded-full hover:bg-brand-purple/80 shadow-md"
-                            >
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
-                                </svg>
-                            </button>
+                            {maxFiles > 1 && (
+                                <button
+                                    type="button"
+                                    title="Přidat další kus"
+                                    onClick={(e) => { e.stopPropagation(); duplicatePhoto(index); }}
+                                    className="bg-brand-purple text-white p-1 rounded-full hover:bg-brand-purple/80 shadow-md"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 title="Odstranit"
@@ -294,7 +292,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange,
                             </button>
                         </div>
 
-                        {isVideoUrl(photo.url) && (
+                        {isVideo(photo.url) && (
                             <div className="absolute bottom-1 left-1 bg-black/50 text-white p-0.5 rounded text-[10px]">
                                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
