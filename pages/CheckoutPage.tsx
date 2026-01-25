@@ -191,7 +191,6 @@ const CheckoutPage: React.FC = () => {
 
             let variantInfo = item.variant ? `<br><span style="font-size: 12px; color: #6b7280;">Varianta: ${item.variant.name}</span>` : '';
             
-            // Logika pro výpis vlastních textů (Oznámení)
             let customTextsHtml = '';
             if (item.customText) {
                 const labels: { [key: string]: string } = {
@@ -213,7 +212,6 @@ const CheckoutPage: React.FC = () => {
             }
 
             // --- UNIKÁTNÍ ODKAZY NA FOTKY ---
-            // Odfiltrujeme duplicitní URL adresy (např. u 50x stejného oznámení)
             const uniquePhotosMap = new Map();
             item.photos.forEach(p => {
                 if (!uniquePhotosMap.has(p.url)) {
@@ -224,7 +222,6 @@ const CheckoutPage: React.FC = () => {
 
             let photosHtml = '<div style="margin-top: 10px;">';
             uniquePhotos.forEach((photo, idx) => {
-                // Pokud je jen jedna unikátní fotka, nemusíme ji číslovat
                 const label = uniquePhotos.length === 1 ? 'ODKAZ NA FOTKU' : `ODKAZ NA FOTKU ${idx + 1}`;
                 photosHtml += `<div style="margin-bottom: 5px;"><a href="${photo.url}" target="_blank" style="display: inline-block; background-color: #8D7EEF; color: #ffffff; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: bold;">${label}</a></div>`;
             });
@@ -313,7 +310,6 @@ const CheckoutPage: React.FC = () => {
                 const totalPieces = piecesInPackage * i.quantity;
                 const mailingFee = i.directMailing ? DIRECT_MAILING_FEE : 0;
                 
-                // Přidání textových polí do názvu položky pro Make.com
                 let itemExtraInfo = '';
                 if (i.customText) {
                     itemExtraInfo = ' (Texty: ' + Object.entries(i.customText)
@@ -359,6 +355,8 @@ const CheckoutPage: React.FC = () => {
                 city: order.contact.city,
                 zip: order.contact.zip,
                 phone: order.contact.phone,
+                // Make.com fakturační moduly často vyžadují klíč 'lines' pro seznam položek
+                lines: invoiceItems,
                 items: invoiceItems
             };
             
