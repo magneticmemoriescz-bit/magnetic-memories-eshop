@@ -305,7 +305,7 @@ const CheckoutPage: React.FC = () => {
                 'osobne': 'Osobní odběr (Liberec nebo Turnov)'
             };
 
-            const invoiceItems = order.items.map(i => {
+            const invoiceLines = order.items.map(i => {
                 const piecesInPackage = i.variant?.itemCount || 1;
                 const totalPieces = piecesInPackage * i.quantity;
                 const mailingFee = i.directMailing ? DIRECT_MAILING_FEE : 0;
@@ -318,26 +318,37 @@ const CheckoutPage: React.FC = () => {
                         .join(', ') + ')';
                 }
 
+                const unitPrice = i.price + (mailingFee * piecesInPackage);
+
                 return {
                     name: `${i.product.name}${i.variant ? ` (${i.variant.name})` : ''}${itemExtraInfo}`,
                     quantity: i.quantity,
-                    unit_price: i.price + (mailingFee * piecesInPackage)
+                    unit_price: unitPrice,
+                    amount: unitPrice * i.quantity,
+                    unit: 'ks',
+                    vat_rate: 0
                 };
             });
 
             if (order.shippingCost > 0) {
-                invoiceItems.push({
+                invoiceLines.push({
                     name: `Doprava: ${shippingNameMap[order.shipping] || order.shipping}`,
                     quantity: 1,
-                    unit_price: order.shippingCost
+                    unit_price: order.shippingCost,
+                    amount: order.shippingCost,
+                    unit: 'ks',
+                    vat_rate: 0
                 });
             }
 
             if (order.discountAmount > 0) {
-                invoiceItems.push({
+                invoiceLines.push({
                     name: `Sleva (kód: ${order.couponCode || 'Slevový kód'})`,
                     quantity: 1,
-                    unit_price: -order.discountAmount
+                    unit_price: -order.discountAmount,
+                    amount: -order.discountAmount,
+                    unit: 'ks',
+                    vat_rate: 0
                 });
             }
 
@@ -355,9 +366,9 @@ const CheckoutPage: React.FC = () => {
                 city: order.contact.city,
                 zip: order.contact.zip,
                 phone: order.contact.phone,
-                // Make.com fakturační moduly často vyžadují klíč 'lines' pro seznam položek
-                lines: invoiceItems,
-                items: invoiceItems
+                // Klíč 'lines' je kritický pro Make.com moduly (Fakturoid atd.)
+                lines: invoiceLines,
+                items: invoiceLines
             };
             
             await fetch(MAKE_WEBHOOK_URL, { 
