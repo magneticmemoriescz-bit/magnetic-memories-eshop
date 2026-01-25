@@ -21,46 +21,6 @@
     </DELIVERY>
   </SHOPITEM>
   <SHOPITEM>
-    <ITEM_ID>photomagnets-7x7</ITEM_ID>
-    <PRODUCTNAME>Fotomagnety - 7x7 cm</PRODUCTNAME>
-    <PRODUCT>Fotomagnety - 7x7 cm</PRODUCT>
-    <DESCRIPTION>Vaše fotky jako stylové magnety na lednici. Vaše oblíbené fotografie ve formě magnetů. Ideální dárek nebo ozdoba pro každou lednici.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/photomagnets</URL>
-    <IMGURL>https://i.imgur.com/1oIzU4r.jpeg</IMGURL>
-    <PRICE_VAT>30</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Dárky a dekorace | Magnety na lednici</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>photomagnets-5x10</ITEM_ID>
-    <PRODUCTNAME>Fotomagnety - 5x10 cm</PRODUCTNAME>
-    <PRODUCT>Fotomagnety - 5x10 cm</PRODUCT>
-    <DESCRIPTION>Vaše fotky jako stylové magnety na lednici. Vaše oblíbené fotografie ve formě magnetů. Ideální dárek nebo ozdoba pro každou lednici.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/photomagnets</URL>
-    <IMGURL>https://i.imgur.com/miugWFP.jpg</IMGURL>
-    <PRICE_VAT>30</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Dárky a dekorace | Magnety na lednici</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
     <ITEM_ID>photomagnets-10x10</ITEM_ID>
     <PRODUCTNAME>Fotomagnety - 10x10 cm</PRODUCTNAME>
     <PRODUCT>Fotomagnety - 10x10 cm</PRODUCT>
@@ -74,265 +34,6 @@
     <DELIVERY>
       <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
       <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>photomagnets-9x13</ITEM_ID>
-    <PRODUCTNAME>Fotomagnety - 9x13 cm</PRODUCTNAME>
-    <PRODUCT>Fotomagnety - 9x13 cm</PRODUCT>
-    <DESCRIPTION>Vaše fotky jako stylové magnety na lednici. Vaše oblíbené fotografie ve formě magnetů. Ideální dárek nebo ozdoba pro každou lednici.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/photomagnets</URL>
-    <IMGURL>https://i.imgur.com/miugWFP.jpg</IMGURL>
-    <PRICE_VAT>40</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Dárky a dekorace | Magnety na lednici</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>photomagnets-a6</ITEM_ID>
-    <PRODUCTNAME>Fotomagnety - A6</PRODUCTNAME>
-    <PRODUCT>Fotomagnety - A6</PRODUCT>
-    <DESCRIPTION>Vaše fotky jako stylové magnety na lednici. Vaše oblíbené fotografie ve formě magnetů. Ideální dárek nebo ozdoba pro každou lednici.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/photomagnets</URL>
-    <IMGURL>https://i.imgur.com/miugWFP.jpg</IMGURL>
-    <PRICE_VAT>45</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Dárky a dekorace | Magnety na lednici</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>photomagnets-a5-sheet</ITEM_ID>
-    <PRODUCTNAME>Fotomagnety - A5</PRODUCTNAME>
-    <PRODUCT>Fotomagnety - A5</PRODUCT>
-    <DESCRIPTION>Vaše fotky jako stylové magnety na lednici. Vaše oblíbené fotografie ve formě magnetů. Ideální dárek nebo ozdoba pro každou lednici.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/photomagnets</URL>
-    <IMGURL>https://i.imgur.com/miugWFP.jpg</IMGURL>
-    <PRICE_VAT>90</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Dárky a dekorace | Magnety na lednici</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>photomagnets-a4-sheet</ITEM_ID>
-    <PRODUCTNAME>Fotomagnety - A4</PRODUCTNAME>
-    <PRODUCT>Fotomagnety - A4</PRODUCT>
-    <DESCRIPTION>Vaše fotky jako stylové magnety na lednici. Vaše oblíbené fotografie ve formě magnetů. Ideální dárek nebo ozdoba pro každou lednici.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/photomagnets</URL>
-    <IMGURL>https://i.imgur.com/miugWFP.jpg</IMGURL>
-    <PRICE_VAT>110</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Dárky a dekorace | Magnety na lednici</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>wedding-announcement-a6</ITEM_ID>
-    <PRODUCTNAME>Magnetické svatební oznámení - A6 (10 x 15 cm)</PRODUCTNAME>
-    <PRODUCT>Magnetické svatební oznámení - A6 (10 x 15 cm)</PRODUCT>
-    <DESCRIPTION>Originální magnetická oznámení pro váš velký den. Originální a nezapomenutelné svatební oznámení, které hosté neztratí z očí. Vzpomínka na váš velký den, co drží!</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/wedding-announcement</URL>
-    <IMGURL>https://i.imgur.com/IGtS2eZ.jpg</IMGURL>
-    <PRICE_VAT>45</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Ostatní | Svatební oznámení</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>wedding-announcement-a5</ITEM_ID>
-    <PRODUCTNAME>Magnetické svatební oznámení - A5 (15 x 21 cm)</PRODUCTNAME>
-    <PRODUCT>Magnetické svatební oznámení - A5 (15 x 21 cm)</PRODUCT>
-    <DESCRIPTION>Originální magnetická oznámení pro váš velký den. Originální a nezapomenutelné svatební oznámení, které hosté neztratí z očí. Vzpomínka na váš velký den, co drží!</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/wedding-announcement</URL>
-    <IMGURL>https://i.imgur.com/IGtS2eZ.jpg</IMGURL>
-    <PRICE_VAT>90</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Ostatní | Svatební oznámení</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>pregnancy-announcement-a6</ITEM_ID>
-    <PRODUCTNAME>Magnetické oznámení těhotenství - A6 (10 x 15 cm)</PRODUCTNAME>
-    <PRODUCT>Magnetické oznámení těhotenství - A6 (10 x 15 cm)</PRODUCT>
-    <DESCRIPTION>Originální způsob, jak oznámit radostnou novinu. Podělte se o své štěstí originálním magnetickým oznámením. Vaše rodina a přátelé si tuto krásnou zprávu mohou rovnou vystavit na lednici.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/pregnancy-announcement</URL>
-    <IMGURL>https://i.imgur.com/Gex3ZsN.jpg</IMGURL>
-    <PRICE_VAT>45</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>pregnancy-announcement-a5</ITEM_ID>
-    <PRODUCTNAME>Magnetické oznámení těhotenství - A5 (15 x 21 cm)</PRODUCTNAME>
-    <PRODUCT>Magnetické oznámení těhotenství - A5 (15 x 21 cm)</PRODUCT>
-    <DESCRIPTION>Originální způsob, jak oznámit radostnou novinu. Podělte se o své štěstí originálním magnetickým oznámením. Vaše rodina a přátelé si tuto krásnou zprávu mohou rovnou vystavit na lednici.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/pregnancy-announcement</URL>
-    <IMGURL>https://i.imgur.com/Gex3ZsN.jpg</IMGURL>
-    <PRICE_VAT>90</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>in-love-magnets-5x5</ITEM_ID>
-    <PRODUCTNAME>Zamilované magnetky - 5x5 cm</PRODUCTNAME>
-    <PRODUCT>Zamilované magnetky - 5x5 cm</PRODUCT>
-    <DESCRIPTION>Romantické motivy, které řeknou vše za vás. Dárková kolekce magnetek s láskyplnými motivy. Ideální k výročí, Valentýnu nebo jen tak z lásky. Vyberte si z našich připravených designů.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/in-love-magnets</URL>
-    <IMGURL>https://i.imgur.com/jdLvBVE.jpg</IMGURL>
-    <PRICE_VAT>25</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>in-love-magnets-7x7</ITEM_ID>
-    <PRODUCTNAME>Zamilované magnetky - 7x7 cm</PRODUCTNAME>
-    <PRODUCT>Zamilované magnetky - 7x7 cm</PRODUCT>
-    <DESCRIPTION>Romantické motivy, které řeknou vše za vás. Dárková kolekce magnetek s láskyplnými motivy. Ideální k výročí, Valentýnu nebo jen tak z lásky. Vyberte si z našich připravených designů.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/in-love-magnets</URL>
-    <IMGURL>https://i.imgur.com/jdLvBVE.jpg</IMGURL>
-    <PRICE_VAT>30</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>in-love-magnets-10x10</ITEM_ID>
-    <PRODUCTNAME>Zamilované magnetky - 10x10 cm</PRODUCTNAME>
-    <PRODUCT>Zamilované magnetky - 10x10 cm</PRODUCT>
-    <DESCRIPTION>Romantické motivy, které řeknou vše za vás. Dárková kolekce magnetek s láskyplnými motivy. Ideální k výročí, Valentýnu nebo jen tak z lásky. Vyberte si z našich připravených designů.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/in-love-magnets</URL>
-    <IMGURL>https://i.imgur.com/jdLvBVE.jpg</IMGURL>
-    <PRICE_VAT>35</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>magnetic-calendar-8x10</ITEM_ID>
-    <PRODUCTNAME>Magnetický kalendář - 8x10 cm</PRODUCTNAME>
-    <PRODUCT>Magnetický kalendář - 8x10 cm</PRODUCT>
-    <DESCRIPTION>Vytvořte si roční kalendář s vlastními fotografiemi. Proměňte své nejoblíbenější momenty v praktický a krásný kalendář. Každý měsíc nová vzpomínka přímo na vaší lednici!</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/magnetic-calendar</URL>
-    <IMGURL>https://i.imgur.com/XrxO1dH.jpg</IMGURL>
-    <PRICE_VAT>350</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Kancelářské potřeby | Kalendáře a diáře | Nástěnné kalendáře</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>magnetic-calendar-a6</ITEM_ID>
-    <PRODUCTNAME>Magnetický kalendář - A6</PRODUCTNAME>
-    <PRODUCT>Magnetický kalendář - A6</PRODUCT>
-    <DESCRIPTION>Vytvořte si roční kalendář s vlastními fotografiemi. Proměňte své nejoblíbenější momenty v praktický a krásný kalendář. Každý měsíc nová vzpomínka přímo na vaší lednici!</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/magnetic-calendar</URL>
-    <IMGURL>https://i.imgur.com/XrxO1dH.jpg</IMGURL>
-    <PRICE_VAT>550</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Kancelářské potřeby | Kalendáře a diáře | Nástěnné kalendáře</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
     </DELIVERY>
   </SHOPITEM>
   <SHOPITEM>
@@ -350,38 +51,30 @@
       <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
       <DELIVERY_PRICE>89</DELIVERY_PRICE>
     </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
   </SHOPITEM>
   <SHOPITEM>
-    <ITEM_ID>magnetic-calendar-a4</ITEM_ID>
-    <PRODUCTNAME>Magnetický kalendář - A4</PRODUCTNAME>
-    <PRODUCT>Magnetický kalendář - A4</PRODUCT>
-    <DESCRIPTION>Vytvořte si roční kalendář s vlastními fotografiemi. Proměňte své nejoblíbenější momenty v praktický a krásný kalendář. Každý měsíc nová vzpomínka přímo na vaší lednici!</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/magnetic-calendar</URL>
-    <IMGURL>https://i.imgur.com/XrxO1dH.jpg</IMGURL>
-    <PRICE_VAT>900</PRICE_VAT>
+    <ITEM_ID>wedding-announcement-a6</ITEM_ID>
+    <PRODUCTNAME>Magnetické svatební oznámení - A6 (10 x 15 cm)</PRODUCTNAME>
+    <PRODUCT>Magnetické svatební oznámení - A6 (10 x 15 cm)</PRODUCT>
+    <DESCRIPTION>Originální magnetická oznámení pro váš velký den. Originální a nezapomenutelné svatební oznámení, které hosté neztratí z očí. Vzpomínka na váš velký den, co drží!</DESCRIPTION>
+    <URL>https://magneticmemories.cz/#/produkty/wedding-announcement</URL>
+    <IMGURL>https://i.imgur.com/IGtS2eZ.jpg</IMGURL>
+    <PRICE_VAT>45</PRICE_VAT>
     <DELIVERY_DATE>5</DELIVERY_DATE>
     <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Kancelářské potřeby | Kalendáře a diáře | Nástěnné kalendáře</CATEGORYTEXT>
+    <CATEGORYTEXT>Ostatní | Svatební oznámení</CATEGORYTEXT>
     <DELIVERY>
       <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
       <DELIVERY_PRICE>89</DELIVERY_PRICE>
     </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
   </SHOPITEM>
   <SHOPITEM>
-    <ITEM_ID>magnetic-merch-5x5</ITEM_ID>
-    <PRODUCTNAME>Magnetické logo / Merch - 5x5 cm</PRODUCTNAME>
-    <PRODUCT>Magnetické logo / Merch - 5x5 cm</PRODUCT>
-    <DESCRIPTION>Vaše firemní logo nebo grafika jako stylový magnetický merch. Prezentujte svou značku originálně. Vyrobíme pro vás magnetky s logem, sloganem nebo jakoukoli firemní grafikou. Kvalitní provedení, které drží! Ideální jako dárek pro klienty nebo součást firemní identity.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/magnetic-merch</URL>
-    <IMGURL>https://i.imgur.com/TNmq31E.jpg</IMGURL>
+    <ITEM_ID>in-love-magnets-5x5</ITEM_ID>
+    <PRODUCTNAME>Zamilované magnetky - 5x5 cm</PRODUCTNAME>
+    <PRODUCT>Zamilované magnetky - 5x5 cm</PRODUCT>
+    <DESCRIPTION>Romantické motivy, které řeknou vše za vás. Dárková kolekce magnetek s láskyplnými motivy. Ideální k výročí, Valentýnu nebo jen tak z lásky.</DESCRIPTION>
+    <URL>https://magneticmemories.cz/#/produkty/in-love-magnets</URL>
+    <IMGURL>https://i.imgur.com/jdLvBVE.jpg</IMGURL>
     <PRICE_VAT>25</PRICE_VAT>
     <DELIVERY_DATE>5</DELIVERY_DATE>
     <MANUFACTURER>Magnetic Memories</MANUFACTURER>
@@ -389,150 +82,6 @@
     <DELIVERY>
       <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
       <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>magnetic-merch-7x7</ITEM_ID>
-    <PRODUCTNAME>Magnetické logo / Merch - 7x7 cm</PRODUCTNAME>
-    <PRODUCT>Magnetické logo / Merch - 7x7 cm</PRODUCT>
-    <DESCRIPTION>Vaše firemní logo nebo grafika jako stylový magnetický merch. Prezentujte svou značku originálně. Vyrobíme pro vás magnetky s logem, sloganem nebo jakoukoli firemní grafikou. Kvalitní provedení, které drží! Ideální jako dárek pro klienty nebo součást firemní identity.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/magnetic-merch</URL>
-    <IMGURL>https://i.imgur.com/TNmq31E.jpg</IMGURL>
-    <PRICE_VAT>30</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Dárky a dekorace | Magnety na lednici</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>magnetic-merch-5x10</ITEM_ID>
-    <PRODUCTNAME>Magnetické logo / Merch - 5x10 cm</PRODUCTNAME>
-    <PRODUCT>Magnetické logo / Merch - 5x10 cm</PRODUCT>
-    <DESCRIPTION>Vaše firemní logo nebo grafika jako stylový magnetický merch. Prezentujte svou značku originálně. Vyrobíme pro vás magnetky s logem, sloganem nebo jakoukoli firemní grafikou. Kvalitní provedení, které drží! Ideální jako dárek pro klienty nebo součást firemní identity.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/magnetic-merch</URL>
-    <IMGURL>https://i.imgur.com/TNmq31E.jpg</IMGURL>
-    <PRICE_VAT>30</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Dárky a dekorace | Magnety na lednici</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>magnetic-merch-10x10</ITEM_ID>
-    <PRODUCTNAME>Magnetické logo / Merch - 10x10 cm</PRODUCTNAME>
-    <PRODUCT>Magnetické logo / Merch - 10x10 cm</PRODUCT>
-    <DESCRIPTION>Vaše firemní logo nebo grafika jako stylový magnetický merch. Prezentujte svou značku originálně. Vyrobíme pro vás magnetky s logem, sloganem nebo jakoukoli firemní grafikou. Kvalitní provedení, které drží! Ideální jako dárek pro klienty nebo součást firemní identity.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/magnetic-merch</URL>
-    <IMGURL>https://i.imgur.com/TNmq31E.jpg</IMGURL>
-    <PRICE_VAT>35</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Dárky a dekorace | Magnety na lednici</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>magnetic-merch-9x13</ITEM_ID>
-    <PRODUCTNAME>Magnetické logo / Merch - 9x13 cm</PRODUCTNAME>
-    <PRODUCT>Magnetické logo / Merch - 9x13 cm</PRODUCT>
-    <DESCRIPTION>Vaše firemní logo nebo grafika jako stylový magnetický merch. Prezentujte svou značku originálně. Vyrobíme pro vás magnetky s logem, sloganem nebo jakoukoli firemní grafikou. Kvalitní provedení, které drží! Ideální jako dárek pro klienty nebo součást firemní identity.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/magnetic-merch</URL>
-    <IMGURL>https://i.imgur.com/miugWFP.jpg</IMGURL>
-    <PRICE_VAT>40</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Dárky a dekorace | Magnety na lednici</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>magnetic-merch-a6</ITEM_ID>
-    <PRODUCTNAME>Magnetické logo / Merch - A6</PRODUCTNAME>
-    <PRODUCT>Magnetické logo / Merch - A6</PRODUCT>
-    <DESCRIPTION>Vaše firemní logo nebo grafika jako stylový magnetický merch. Prezentujte svou značku originálně. Vyrobíme pro vás magnetky s logem, sloganem nebo jakoukoli firemní grafikou. Kvalitní provedení, které drží! Ideální jako dárek pro klienty nebo součást firemní identity.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/magnetic-merch</URL>
-    <IMGURL>https://i.imgur.com/miugWFP.jpg</IMGURL>
-    <PRICE_VAT>45</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Dárky a dekorace | Magnety na lednici</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>magnetic-merch-a5-sheet</ITEM_ID>
-    <PRODUCTNAME>Magnetické logo / Merch - A5</PRODUCTNAME>
-    <PRODUCT>Magnetické logo / Merch - A5</PRODUCT>
-    <DESCRIPTION>Vaše firemní logo nebo grafika jako stylový magnetický merch. Prezentujte svou značku originálně. Vyrobíme pro vás magnetky s logem, sloganem nebo jakoukoli firemní grafikou. Kvalitní provedení, které drží! Ideální jako dárek pro klienty nebo součást firemní identity.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/magnetic-merch</URL>
-    <IMGURL>https://i.imgur.com/miugWFP.jpg</IMGURL>
-    <PRICE_VAT>90</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Dárky a dekorace | Magnety na lednici</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
-    </DELIVERY>
-  </SHOPITEM>
-  <SHOPITEM>
-    <ITEM_ID>magnetic-merch-a4-sheet</ITEM_ID>
-    <PRODUCTNAME>Magnetické logo / Merch - A4</PRODUCTNAME>
-    <PRODUCT>Magnetické logo / Merch - A4</PRODUCT>
-    <DESCRIPTION>Vaše firemní logo nebo grafika jako stylový magnetický merch. Prezentujte svou značku originálně. Vyrobíme pro vás magnetky s logem, sloganem nebo jakoukoli firemní grafikou. Kvalitní provedení, které drží! Ideální jako dárek pro klienty nebo součást firemní identity.</DESCRIPTION>
-    <URL>https://magneticmemories.cz/#/produkty/magnetic-merch</URL>
-    <IMGURL>https://i.imgur.com/miugWFP.jpg</IMGURL>
-    <PRICE_VAT>110</PRICE_VAT>
-    <DELIVERY_DATE>5</DELIVERY_DATE>
-    <MANUFACTURER>Magnetic Memories</MANUFACTURER>
-    <CATEGORYTEXT>Dárky a dekorace | Magnety na lednici</CATEGORYTEXT>
-    <DELIVERY>
-      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>
-      <DELIVERY_PRICE>89</DELIVERY_PRICE>
-    </DELIVERY>
-    <DELIVERY>
-      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>
-      <DELIVERY_PRICE>88</DELIVERY_PRICE>
     </DELIVERY>
   </SHOPITEM>
 </SHOP>
