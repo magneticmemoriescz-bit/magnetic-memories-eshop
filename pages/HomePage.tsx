@@ -7,6 +7,14 @@ import { ProductCard } from '../components/ProductCard';
 import { Seo } from '../components/Seo';
 import { Logo } from '../components/Logo';
 
+const InstagramIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+);
+
+const FacebookIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+);
+
 const buttonStyles = [
     { gradient: 'bg-gradient-to-r from-brand-cyan to-brand-purple', focusRing: 'focus:ring-brand-purple/50' },
     { gradient: 'bg-gradient-to-r from-brand-purple to-brand-pink', focusRing: 'focus:ring-brand-pink/50' },
@@ -21,8 +29,18 @@ const HomePage: React.FC = () => {
         <>
             <Seo />
             {/* Hero Section */}
-            <section className="py-8 sm:py-12 bg-brand-pink/25">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <section className="py-8 sm:py-12 bg-brand-pink/25 relative overflow-hidden">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+                    {/* Social Sidebar - Desktop */}
+                    <div className="hidden lg:flex flex-col absolute right-0 top-1/2 -translate-y-1/2 space-y-6 z-10">
+                        <a href="https://www.instagram.com/magnetic_memories_cz/" target="_blank" rel="noopener noreferrer" className="bg-white/50 backdrop-blur-sm p-3 rounded-l-xl text-gray-500 hover:text-brand-pink hover:bg-white transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-x-1">
+                            <InstagramIcon />
+                        </a>
+                        <a href="https://www.facebook.com/profile.php?id=61584044016506#" target="_blank" rel="noopener noreferrer" className="bg-white/50 backdrop-blur-sm p-3 rounded-l-xl text-gray-500 hover:text-brand-purple hover:bg-white transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-x-1">
+                            <FacebookIcon />
+                        </a>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
                         {/* Left Column: Logo */}
                         <div className="flex justify-center md:col-span-4">
@@ -36,10 +54,20 @@ const HomePage: React.FC = () => {
                                 Máte telefon plný krásných fotek? Vytvořte si fotomagnetky pro radost nebo jako originální dárek.
                             </p>
 
-                            <div className="mt-6 mb-8">
+                            <div className="mt-6 mb-8 flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
                                 <Link to="/produkty" className="inline-block bg-brand-pink text-white font-bold py-4 px-10 rounded-full shadow-xl hover:opacity-90 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-brand-pink/50 text-lg">
                                     VYTVOŘIT MAGNETKY
                                 </Link>
+                                
+                                {/* Social Links - Mobile only integration */}
+                                <div className="flex lg:hidden space-x-4 mt-4 sm:mt-0 sm:ml-4">
+                                    <a href="https://www.instagram.com/magnetic_memories_cz/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-brand-pink transition-colors">
+                                        <InstagramIcon />
+                                    </a>
+                                    <a href="https://www.facebook.com/profile.php?id=61584044016506#" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-brand-purple transition-colors">
+                                        <FacebookIcon />
+                                    </a>
+                                </div>
                             </div>
 
                             <div className="flex flex-wrap justify-center md:justify-start gap-6">
@@ -78,23 +106,6 @@ const HomePage: React.FC = () => {
                                 />
                             </div>
                         ))}
-                    </div>
-
-                    <div className="mt-16 text-center border-t border-gray-200 pt-8">
-                        <p className="text-lg text-gray-600 mb-4">
-                            Hledáte dárek pro vaše klienty nebo reklamní merch?
-                        </p>
-                        <a
-                            href="https://magnetify.cz"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-brand-purple bg-brand-purple/10 hover:bg-brand-purple/20 transition-colors"
-                        >
-                            Navštívit Magnetify.cz
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                        </a>
                     </div>
                 </div>
             </section>
