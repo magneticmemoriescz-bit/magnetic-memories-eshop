@@ -3,9 +3,6 @@ import React from 'react';
 import { Product } from './types';
 
 // NOTE: Make.com webhook URL for invoice generation.
-// This is a crucial part of the automated invoicing system. When an order is completed,
-// the order data is sent to this URL, which triggers a scenario in Make.com
-// to generate an invoice via an external service like Fakturoid.
 export const MAKE_WEBHOOK_URL = 'https://hook.eu1.make.com/ka7qi8xh2kear7rhbyg2re3eg83pfybn';
 
 export const PRODUCTS: Product[] = [
@@ -15,25 +12,103 @@ export const PRODUCTS: Product[] = [
     price: 25,
     shortDescription: 'Vaše fotky jako stylové magnety na lednici.',
     description: 'Vaše oblíbené fotografie ve formě magnetů. Ideální dárek nebo ozdoba pro každou lednici.',
-    imageUrl: 'https://i.imgur.com/nPJfjfu.jpg', // Hlavní foto náhledu
+    imageUrl: 'https://i.imgur.com/nPJfjfu.jpg',
     gallery: [
-      'https://i.imgur.com/nPJfjfu.jpg', // 1. Fotka
+      'https://i.imgur.com/nPJfjfu.jpg',
+      'https://i.imgur.com/rBJoZtS.jpg', // Nová fotka na 2. slotu
       'https://i.imgur.com/0pR9wnJ.jpg', 
-      'https://i.imgur.com/frmYC1d.mp4', // Video 1 - aktualizováno na .mp4
-      'https://i.imgur.com/SLHUTl7.mp4', // Video 2 - aktualizováno na .mp4
+      'https://i.imgur.com/frmYC1d.mp4',
+      'https://i.imgur.com/SLHUTl7.mp4',
       'https://i.imgur.com/rbUQMY9.jpg',
     ],
-    requiredPhotos: 1, // Default, will be updated by variant/quantity
+    requiredPhotos: 1,
     variants: [
-      // Individual sizes - Prices are per 1 piece - ALL INCREASED BY 5 CZK
       { id: '5x5', name: '5x5 cm', photoCount: 1, itemCount: 1, price: 25, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
       { id: '7x7', name: '7x7 cm', photoCount: 1, itemCount: 1, price: 30, imageUrl: 'https://i.imgur.com/1oIzU4r.jpeg' },
       { id: '5x10', name: '5x10 cm', photoCount: 1, itemCount: 1, price: 30, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
       { id: '10x10', name: '10x10 cm', photoCount: 1, itemCount: 1, price: 35, imageUrl: 'https://i.imgur.com/nPJfjfu.jpg' },
       { id: '9x13', name: '9x13 cm', photoCount: 1, itemCount: 1, price: 40, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
-      { id: 'a5-sheet', name: 'A5', photoCount: 1, itemCount: 1, price: 80, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
-      { id: 'a4-sheet', name: 'A4', photoCount: 1, itemCount: 1, price: 105, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
-      { id: 'custom-a5', name: 'Libovolný rozměr < A5', photoCount: 1, itemCount: 1, price: 60, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: 'a6', name: 'A6', photoCount: 1, itemCount: 1, price: 45, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: 'a5-sheet', name: 'A5', photoCount: 1, itemCount: 1, price: 90, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: 'a4-sheet', name: 'A4', photoCount: 1, itemCount: 1, price: 110, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+    ]
+  },
+  {
+    id: 'wedding-announcement',
+    name: 'Magnetické svatební oznámení',
+    price: 45,
+    shortDescription: 'Originální magnetická oznámení pro váš velký den.',
+    description: 'Originální a nezapomenutelné svatební oznámení, které hosté neztratí z očí. Vzpomínka na váš velký den, co drží!',
+    imageUrl: 'https://i.imgur.com/IGtS2eZ.jpg',
+    gallery: [
+      'https://i.imgur.com/IGtS2eZ.jpg', 
+      'https://i.imgur.com/REYRIDJ.jpg',
+      'https://i.imgur.com/ECKuK8M.jpg',
+      'https://i.imgur.com/wIG8Nwe.jpg',
+      'https://i.imgur.com/ZoBD3cv.jpg',
+      'https://i.imgur.com/0qVMmVZ.jpg',
+      'https://i.imgur.com/k7OafeN.jpg',
+      'https://i.imgur.com/DCPuHNI.jpg',
+      'https://i.imgur.com/3evEhfO.jpg',
+      'https://i.imgur.com/h6UkoZf.jpg',
+      'https://i.imgur.com/d5JWep1.jpg',
+    ],
+    requiredPhotos: 1,
+    hasTextFields: true,
+    variants: [
+        { id: 'a6', name: 'A6 (10 x 15 cm)', photoCount: 1, itemCount: 1, price: 45 },
+        { id: 'a5', name: 'A5 (15 x 21 cm)', photoCount: 1, itemCount: 1, price: 90 },
+    ]
+  },
+  {
+    id: 'pregnancy-announcement',
+    name: 'Magnetické oznámení těhotenství',
+    price: 45,
+    shortDescription: 'Originální způsob, jak oznámit radostnou novinu.',
+    description: 'Podělte se o své štěstí originálním magnetickým oznámením. Vaše rodina a přátelé si tuto krásnou zprávu mohou rovnou vystavit na lednici.',
+    imageUrl: 'https://i.imgur.com/Gex3ZsN.jpg',
+    gallery: [
+      'https://i.imgur.com/Gex3ZsN.jpg',
+      'https://i.imgur.com/3hgsy6d.jpg',
+      'https://i.imgur.com/0WC6XzW.jpg',
+      'https://i.imgur.com/RpKh8Vl.jpg',
+      'https://i.imgur.com/YH8lkLp.jpg',
+    ],
+    requiredPhotos: 1,
+    hasTextFields: true,
+    variants: [
+        { id: 'a6', name: 'A6 (10 x 15 cm)', photoCount: 1, itemCount: 1, price: 45 },
+        { id: 'a5', name: 'A5 (15 x 21 cm)', photoCount: 1, itemCount: 1, price: 90 },
+    ]
+  },
+  {
+    id: 'in-love-magnets',
+    name: 'Zamilované magnetky',
+    price: 25,
+    shortDescription: 'Romantické motivy, které řeknou vše za vás.',
+    description: 'Dárková kolekce magnetek s láskyplnými motivy. Ideální k výročí, Valentýnu nebo jen tak z lásky. Vyberte si z našich připravených designů.',
+    imageUrl: 'https://i.imgur.com/jdLvBVE.jpg',
+    gallery: [
+      'https://i.imgur.com/jdLvBVE.jpg', // Úvodní foto
+      'https://i.imgur.com/7taClUR.jpg', // 100 jazyků lásky
+      'https://i.imgur.com/XAXWhjc.jpg', // potřebuju tě
+      'https://i.imgur.com/Gvj8548.jpg', // jsi můj vesmír
+      'https://i.imgur.com/TUAxRBE.jpg', // srdce
+      'https://i.imgur.com/sThMnIH.jpg', // cosmos
+      'https://i.imgur.com/5jbjvQv.jpg', // vzkaz
+      'https://i.imgur.com/0Q0B9tY.jpg', // kočička
+      'https://i.imgur.com/2zaZy2p.jpg', // forever and always
+      'https://i.imgur.com/dAW1KeU.jpg', // nápis I love you
+      'https://i.imgur.com/2nDqxWz.jpg', // I love you
+      'https://i.imgur.com/MBezi9I.jpg', // kočičky
+      'https://i.imgur.com/AwsnHVo.jpg', // puzzle
+      'https://i.imgur.com/40rE7KM.jpg', // honey bee mine
+    ],
+    requiredPhotos: 0, 
+    variants: [
+      { id: '5x5', name: '5x5 cm', photoCount: 0, itemCount: 1, price: 25 },
+      { id: '7x7', name: '7x7 cm', photoCount: 0, itemCount: 1, price: 30 },
+      { id: '10x10', name: '10x10 cm', photoCount: 0, itemCount: 1, price: 35 },
     ]
   },
   {
@@ -46,16 +121,10 @@ export const PRODUCTS: Product[] = [
     gallery: [
         'https://i.imgur.com/XrxO1dH.jpg',
         'https://i.imgur.com/m0OIhVk.jpg',
-    ],
-    imageUrl_portrait: 'https://i.imgur.com/XrxO1dH.jpg',
-    gallery_portrait: [
-        'https://i.imgur.com/XrxO1dH.jpg',
-        'https://i.imgur.com/m0OIhVk.jpg',
-    ],
-    imageUrl_landscape: 'https://i.imgur.com/XrxO1dH.jpg',
-    gallery_landscape: [
-        'https://i.imgur.com/XrxO1dH.jpg',
-        'https://i.imgur.com/m0OIhVk.jpg',
+        // 'https://i.imgur.com/15AsAmb.mp4', // 3. slot odebrán podle požadavku
+        'https://i.imgur.com/qukMjCt.mp4',
+        'https://i.imgur.com/9hQdyx2.mp4',
+        'https://i.imgur.com/df2j9WX.mp4',
     ],
     requiredPhotos: 12,
     variants: [
@@ -66,30 +135,27 @@ export const PRODUCTS: Product[] = [
     ]
   },
   {
-    id: 'wedding-announcement',
-    name: 'Magnetická svatební oznámení',
-    price: 400,
-    shortDescription: 'Originální magnetická oznámení pro váš velký den.',
-    description: 'Originální a nezapomenutelné svatební oznámení, které hosté neztratí z očí. Vzpomínka na váš velký den, co drží!',
-    imageUrl: 'https://i.imgur.com/avPJVil.jpg',
+    id: 'magnetic-merch',
+    name: 'Magnetické logo / Merch',
+    price: 25,
+    shortDescription: 'Vaše firemní logo nebo grafika jako stylový magnetický merch.',
+    description: 'Prezentujte svou značku originálně. Vyrobíme pro vás magnetky s logem, sloganem nebo jakoukoli firemní grafikou. Kvalitní provedení, které drží! Ideální jako dárek pro klienty nebo součást firemní identity.',
+    imageUrl: 'https://i.imgur.com/TNmq31E.jpg',
     gallery: [
-      'https://i.imgur.com/avPJVil.jpg', 
-      'https://i.imgur.com/ZteI9PG.jpg',
+      'https://i.imgur.com/TNmq31E.jpg',
+      'https://i.imgur.com/ef5fsG1.jpg',
+      'https://i.imgur.com/g2kFSSS.jpg', // Přidána nová fotka na konec
     ],
     requiredPhotos: 1,
-    hasTextFields: false,
     variants: [
-        // A5 Variants
-        { id: 'a5-10-pcs', name: '10 ks', photoCount: 1, itemCount: 10, price: 600 },
-        { id: 'a5-20-pcs', name: '20 ks', photoCount: 1, itemCount: 20, price: 1150 },
-        { id: 'a5-50-pcs', name: '50 ks', photoCount: 1, itemCount: 50, price: 2900 },
-        { id: 'a5-100-pcs', name: '100 ks', photoCount: 1, itemCount: 100, price: 5500 },
-        
-        // A6 Variants
-        { id: 'a6-10-pcs', name: '10 ks', photoCount: 1, itemCount: 10, price: 400 },
-        { id: 'a6-20-pcs', name: '20 ks', photoCount: 1, itemCount: 20, price: 775 },
-        { id: 'a6-50-pcs', name: '50 ks', photoCount: 1, itemCount: 50, price: 1900 },
-        { id: 'a6-100-pcs', name: '100 ks', photoCount: 1, itemCount: 100, price: 3750 },
+      { id: '5x5', name: '5x5 cm', photoCount: 1, itemCount: 1, price: 25, imageUrl: 'https://i.imgur.com/TNmq31E.jpg' },
+      { id: '7x7', name: '7x7 cm', photoCount: 1, itemCount: 1, price: 30, imageUrl: 'https://i.imgur.com/TNmq31E.jpg' },
+      { id: '5x10', name: '5x10 cm', photoCount: 1, itemCount: 1, price: 30, imageUrl: 'https://i.imgur.com/TNmq31E.jpg' },
+      { id: '10x10', name: '10x10 cm', photoCount: 1, itemCount: 1, price: 35, imageUrl: 'https://i.imgur.com/TNmq31E.jpg' },
+      { id: '9x13', name: '9x13 cm', photoCount: 1, itemCount: 1, price: 40, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: 'a6', name: 'A6', photoCount: 1, itemCount: 1, price: 45, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: 'a5-sheet', name: 'A5', photoCount: 1, itemCount: 1, price: 90, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
+      { id: 'a4-sheet', name: 'A4', photoCount: 1, itemCount: 1, price: 110, imageUrl: 'https://i.imgur.com/miugWFP.jpg' },
     ]
   }
 ];
