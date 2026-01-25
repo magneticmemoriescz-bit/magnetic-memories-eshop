@@ -3,32 +3,66 @@ import { Product } from '../types';
 
 /**
  * Generuje XML feed pro Heureku podle oficiální specifikace.
- * Dokumentace: https://sluzby.heureka.cz/napoveda/xml-feed/
  */
 export const generateHeurekaXml = (products: Product[]): string => {
   const baseUrl = 'https://magneticmemories.cz/#/produkty/';
-  const date = new Date().toISOString();
-
+  
   let xml = '<?xml version="1.0" encoding="utf-8"?>\n';
   xml += '<SHOP>\n';
 
   products.forEach((product) => {
-    // Pro Heureku je lepší mít každý produkt jako samostatný shopitem.
-    // Pokud má produkt varianty, Heureka doporučuje posílat varianty jako samostatné položky 
-    // s tagem ITEMGROUP_ID, ale pro základní implementaci pošleme hlavní produkty.
-    
-    xml += '  <SHOPITEM>\n';
-    xml += `    <ITEM_ID>${escapeXml(product.id)}</ITEM_ID>\n`;
-    xml += `    <PRODUCTNAME>${escapeXml(product.name)}</PRODUCTNAME>\n`;
-    xml += `    <PRODUCT>${escapeXml(product.name)}</PRODUCT>\n`;
-    xml += `    <DESCRIPTION>${escapeXml(product.shortDescription + ' ' + product.description.replace(/<[^>]*>?/gm, ''))}</DESCRIPTION>\n`;
-    xml += `    <URL>${baseUrl}${product.id}</URL>\n`;
-    xml += `    <IMGURL>${escapeXml(product.imageUrl)}</IMGURL>\n`;
-    xml += `    <PRICE_VAT>${product.price}</PRICE_VAT>\n`;
-    // Delivery date: 0 = skladem, číslo = počet dnů. Naše výroba je 3-5 dní.
-    xml += `    <DELIVERY_DATE>5</DELIVERY_DATE>\n`;
-    xml += `    <MANUFACTURER>Magnetic Memories</MANUFACTURER>\n`;
-    xml += '  </SHOPITEM>\n';
+    // Pro každou variantu vytvoříme samostatný ITEM, pokud existují, jinak hlavní produkt
+    const itemsToExport = product.variants && product.variants.length > 0 
+      ? product.variants.map(v => ({
+          id: `${product.id}-${v.id}`,
+          name: `${product.name} - ${v.name}`,
+          price: v.price || product.price,
+          url: `${baseUrl}${product.id}`,
+          img: v.imageUrl || product.imageUrl
+        }))
+      : [{
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          url: `${baseUrl}${product.id}`,
+          img: product.imageUrl
+        }];
+
+    itemsToExport.forEach(item => {
+      xml += '  <SHOPITEM>\n';
+      xml += `    <ITEM_ID>${escapeXml(item.id)}</ITEM_ID>\n`;
+      xml += `    <PRODUCTNAME>${escapeXml(item.name)}</PRODUCTNAME>\n`;
+      xml += `    <PRODUCT>${escapeXml(item.name)}</PRODUCT>\n`;
+      xml += `    <DESCRIPTION>${escapeXml(product.shortDescription + ' ' + product.description.replace(/<[^>]*>?/gm, ''))}</DESCRIPTION>\n`;
+      xml += `    <URL>${item.url}</URL>\n`;
+      xml += `    <IMGURL>${escapeXml(item.img)}</IMGURL>\n`;
+      xml += `    <PRICE_VAT>${item.price}</PRICE_VAT>\n`;
+      xml += `    <DELIVERY_DATE>5</DELIVERY_DATE>\n`; // Výroba 3-5 dní
+      xml += `    <MANUFACTURER>Magnetic Memories</MANUFACTURER>\n`;
+      
+      // Doplnění kategorií pro lepší párování
+      if (product.id === 'photomagnets') {
+        xml += `    <CATEGORYTEXT>Dárky a dekorace | Magnety na lednici</CATEGORYTEXT>\n`;
+      } else if (product.id === 'magnetic-calendar') {
+        xml += `    <CATEGORYTEXT>Kancelářské potřeby | Kalendáře a diáře | Nástěnné kalendáře</CATEGORYTEXT>\n`;
+      } else if (product.id === 'wedding-announcement') {
+        xml += `    <CATEGORYTEXT>Ostatní | Svatební oznámení</CATEGORYTEXT>\n`;
+      } else if (product.id === 'magnetic-merch') {
+        xml += `    <CATEGORYTEXT>Dárky a dekorace | Magnety na lednici</CATEGORYTEXT>\n`;
+      }
+
+      // Definice dopravy pro Heureku
+      xml += '    <DELIVERY>\n';
+      xml += '      <DELIVERY_ID>ZASILKOVNA</DELIVERY_ID>\n';
+      xml += '      <DELIVERY_PRICE>89</DELIVERY_PRICE>\n';
+      xml += '    </DELIVERY>\n';
+      xml += '    <DELIVERY>\n';
+      xml += '      <DELIVERY_ID>CESKA_POSTA_ADRESA</DELIVERY_ID>\n';
+      xml += '      <DELIVERY_PRICE>88</DELIVERY_PRICE>\n';
+      xml += '    </DELIVERY>\n';
+      
+      xml += '  </SHOPITEM>\n';
+    });
   });
 
   xml += '</SHOP>';
