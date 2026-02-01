@@ -1,308 +1,149 @@
-
-import React, { useState, useRef } from 'react';
+import React, { useCallback, useState } from 'react';
 import { UploadedPhoto } from '../types';
-import { isVideo } from '../utils/media';
-
-// --- KONFIGURACE CLOUDINARY ---
-const CLOUDINARY_CLOUD_NAME = 'dvzuwzrpm'; 
-const CLOUDINARY_UPLOAD_PRESET = 'magnetic_memories'; 
-
-export interface UploadedFilesInfo {
-    photos: UploadedPhoto[];
-    groupId: string | null;
-}
 
 interface FileUploadProps {
-  maxFiles: number;
-  onFilesChange: (filesInfo: UploadedFilesInfo) => void;
-  uploadedFilesInfo: UploadedFilesInfo;
-  isReorderable?: boolean;
+  onUploadComplete: (photos: UploadedPhoto[], groupId: string | null) => void;
+  requiredCount: number;
+  productName: string;
+  onUploadingChange?: (uploading: boolean) => void;
 }
 
-/**
- * Vlastní komponenta pro nahrávání fotografií a videí
- * - Provádí kompresi na straně klienta pro obrázky
- * - Nahrává přímo do Cloudinary (detekuje typ souboru)
- * - Umožňuje duplikovat jednu položku do více kusů
- */
-export const FileUpload: React.FC<FileUploadProps> = ({ maxFiles, onFilesChange, uploadedFilesInfo, isReorderable = false }) => {
-  const { photos } = uploadedFilesInfo;
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete, requiredCount, productName, onUploadingChange }) => {
+  const [uploading, setUploading] = useState(false);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [progress, setProgress] = useState(0);
 
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dropIndex, setDropIndex] = useState<number | null>(null);
+  // KONFIGURACE CLOUDINARY
+  // Pro produkční nasazení doporučuji tyto hodnoty přesunout do env proměnných nebo konstant
+  const CLOUDINARY_CLOUD_NAME = 'dpx7l7vxc'; // Nahraďte svým Cloud Name z Cloudinary konzole
+  const CLOUDINARY_UPLOAD_PRESET = 'magnetic_preset'; // Vytvořte v Cloudinary: Settings -> Upload -> Upload Presets (Unsigned)
 
-  const compressImage = (file: File): Promise<Blob | File> => {
-    if (!file.type.startsWith('image/')) return Promise.resolve(file);
-    
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target?.result as string;
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 2500;
-          const MAX_HEIGHT = 2500;
-          let width = img.width;
-          let height = img.height;
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(img, 0, 0, width, height);
-          
-          canvas.toBlob((blob) => {
-            if (blob) resolve(blob);
-            else reject(new Error('Chyba při zpracování fotky.'));
-          }, 'image/jpeg', 0.90);
-        };
-        img.onerror = reject;
-      };
-      reader.onerror = reject;
-    });
-  };
-
-  const handleFiles = async (files: FileList | File[]) => {
-    const filesArray = Array.from(files);
-    if (photos.length + filesArray.length > maxFiles) {
-      alert(`Můžete nahrát maximálně ${maxFiles} souborů.`);
+    if (requiredCount > 0 && files.length !== requiredCount && productName.toLowerCase().includes('kalendář')) {
+      alert(`Pro kalendář je potřeba vybrat přesně ${requiredCount} fotografií.`);
       return;
     }
 
-    setIsUploading(true);
-    setUploadProgress(0);
-    const newUploadedPhotos: UploadedPhoto[] = [...photos];
+    setUploading(true);
+    onUploadingChange?.(true);
+    setProgress(5);
+
+    const newPreviews = Array.from(files).map(file => URL.createObjectURL(file));
+    setPreviews(newPreviews);
 
     try {
-      for (let i = 0; i < filesArray.length; i++) {
-        const file = filesArray[i];
-        const isVideoFile = file.type.startsWith('video/');
-        const isImage = file.type.startsWith('image/');
-        
-        if (!isImage && !isVideoFile) continue;
+      const uploadedPhotos: UploadedPhoto[] = [];
+      const groupId = `cl-group-${Date.now()}`;
 
-        const uploadData = isImage ? await compressImage(file) : file;
-        
+      // Nahráváme soubory jeden po druhém (vhodnější pro sledování progresu na mobilu)
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         const formData = new FormData();
-        formData.append('file', uploadData);
+        formData.append('file', file);
         formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-        formData.append('folder', 'magnetic_memories');
+        formData.append('folder', `orders/${groupId}`); // Organizace do složek podle ID objednávky/skupiny
 
-        // Cloudinary vyžaduje jiný endpoint pro videa
-        const resourceType = isVideoFile ? 'video' : 'image';
-        const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`, {
-          method: 'POST',
-          body: formData,
-        });
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+          {
+            method: 'POST',
+            body: formData,
+          }
+        );
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error?.message || 'Nahrávání selhalo');
+          throw new Error('Chyba při nahrávání na Cloudinary');
         }
 
         const data = await response.json();
-        newUploadedPhotos.push({
+        
+        uploadedPhotos.push({
           url: data.secure_url,
           name: file.name
         });
 
-        setUploadProgress(Math.round(((i + 1) / filesArray.length) * 100));
+        // Aktualizace progresu
+        setProgress(Math.round(((i + 1) / files.length) * 100));
       }
 
-      onFilesChange({ photos: newUploadedPhotos, groupId: uploadedFilesInfo.groupId || `local-${Date.now()}` });
-    } catch (error: any) {
-      console.error("Upload error:", error);
-      alert(`Nahrávání se nezdařilo: ${error.message}.`);
+      onUploadComplete(uploadedPhotos, groupId);
+    } catch (error) {
+      console.error('Chyba při nahrávání:', error);
+      alert('Nahrávání se nezdařilo. Zkontrolujte prosím připojení nebo zkuste nahrát méně fotek najednou.');
+      setPreviews([]); // Vyčistit náhledy při chybě
     } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
+      setUploading(false);
+      onUploadingChange?.(false);
+      setProgress(0);
     }
-  };
-
-  const duplicatePhoto = (index: number) => {
-    if (photos.length >= maxFiles) {
-      alert(`Dosáhli jste maximálního počtu ${maxFiles} kusů.`);
-      return;
-    }
-    const newPhotos = [...photos];
-    newPhotos.splice(index + 1, 0, { ...photos[index] });
-    onFilesChange({ photos: newPhotos, groupId: uploadedFilesInfo.groupId });
-  };
-
-  const removeFile = (index: number) => {
-    const newPhotos = photos.filter((_, i) => i !== index);
-    onFilesChange({ photos: newPhotos, groupId: newPhotos.length === 0 ? null : uploadedFilesInfo.groupId });
-  };
-
-  const onDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const onDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFiles(e.dataTransfer.files);
-    }
-  };
-
-  const handleDragStart = (index: number) => { if (isReorderable) setDraggedIndex(index); };
-  const handleDragEnter = (index: number) => { if (isReorderable && draggedIndex !== null) setDropIndex(index); };
-  const handleDropOrder = () => {
-    if (draggedIndex === null || dropIndex === null) return;
-    const newPhotos = [...photos];
-    const item = newPhotos.splice(draggedIndex, 1)[0];
-    newPhotos.splice(dropIndex, 0, item);
-    onFilesChange({ photos: newPhotos, groupId: uploadedFilesInfo.groupId });
-    setDraggedIndex(null);
-    setDropIndex(null);
-  };
+  }, [onUploadComplete, requiredCount, productName, onUploadingChange]);
 
   return (
-    <div className="space-y-4">
-        <div 
-            className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer
-                ${dragActive ? 'border-brand-purple bg-brand-purple/5' : 'border-gray-300 hover:border-brand-purple bg-gray-50'}
-                ${isUploading ? 'pointer-events-none opacity-70' : ''}
-            `}
-            onDragEnter={onDrag}
-            onDragLeave={onDrag}
-            onDragOver={onDrag}
-            onDrop={onDrop}
-            onClick={() => fileInputRef.current?.click()}
-        >
-            <input 
-                ref={fileInputRef}
-                type="file" 
-                multiple 
-                accept="image/*,video/*" 
-                className="hidden" 
-                onChange={(e) => e.target.files && handleFiles(e.target.files)}
-            />
-            
-            <div className="flex flex-col items-center">
-                {isUploading ? (
-                    <div className="w-full">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-purple mx-auto"></div>
-                        <p className="mt-4 font-medium text-brand-purple">Zpracování a nahrávání ({uploadProgress}%)</p>
-                    </div>
-                ) : (
-                    <>
-                        <svg className="h-12 w-12 text-brand-purple mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                        </svg>
-                        <p className="text-sm font-semibold text-gray-800">Klikněte nebo přetáhněte soubory sem</p>
-                        <p className="mt-1 text-xs text-gray-500">Zvolte až {maxFiles} fotek nebo videí najednou.</p>
-                    </>
-                )}
-            </div>
-        </div>
-
-        <div className="flex justify-between items-center text-sm">
-            <span className={`font-medium ${photos.length === maxFiles ? 'text-green-600' : 'text-gray-700'}`}>
-                Položek: {photos.length} / {maxFiles}
+    <div className="mt-8 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+          {requiredCount > 0 ? `Nahrajte ${requiredCount} ${requiredCount === 1 ? 'fotku' : 'fotek'}` : 'Nahrajte své fotky'}
+        </h3>
+        {previews.length > 0 && (
+            <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">
+                Vybráno: {previews.length} ks
             </span>
-            <div className="flex flex-col items-end text-right">
-                {isReorderable && photos.length > 1 && (
-                    <span className="text-xs text-gray-400 italic">Přetáhněte položky pro změnu pořadí</span>
-                )}
-                {maxFiles > 1 && (
-                    <span className="text-xs text-brand-purple font-medium">U položek klikněte na + pro přidání dalšího kusu.</span>
-                )}
-            </div>
-        </div>
-
-        {photos.length > 0 && (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                {photos.map((photo, index) => (
-                    <div 
-                        key={`${photo.url}-${index}`}
-                        draggable={isReorderable}
-                        onDragStart={() => handleDragStart(index)}
-                        onDragEnter={() => handleDragEnter(index)}
-                        onDragEnd={handleDropOrder}
-                        className={`relative aspect-square rounded-lg overflow-hidden border shadow-sm group
-                            ${draggedIndex === index ? 'opacity-40' : ''}
-                            ${dropIndex === index && draggedIndex !== index ? 'ring-2 ring-brand-purple ring-offset-2' : ''}
-                            ${isReorderable ? 'cursor-move' : ''}
-                        `}
-                    >
-                        {isVideo(photo.url) ? (
-                            <video 
-                                src={photo.url} 
-                                className="w-full h-full object-cover bg-black"
-                                muted
-                                playsInline
-                            />
-                        ) : (
-                            <img 
-                                src={photo.url.replace('/upload/', '/upload/w_200,c_fill,g_auto/')} 
-                                alt={photo.name} 
-                                className="w-full h-full object-cover"
-                            />
-                        )}
-                        
-                        {/* Ovládací prvky nad náhledem */}
-                        <div className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {maxFiles > 1 && (
-                                <button
-                                    type="button"
-                                    title="Přidat další kus"
-                                    onClick={(e) => { e.stopPropagation(); duplicatePhoto(index); }}
-                                    className="bg-brand-purple text-white p-1 rounded-full hover:bg-brand-purple/80 shadow-md"
-                                >
-                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
-                                    </svg>
-                                </button>
-                            )}
-                            <button
-                                type="button"
-                                title="Odstranit"
-                                onClick={(e) => { e.stopPropagation(); removeFile(index); }}
-                                className="bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-md"
-                            >
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {isVideo(photo.url) && (
-                            <div className="absolute bottom-1 left-1 bg-black/50 text-white p-0.5 rounded text-[10px]">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                                </svg>
-                            </div>
-                        )}
-                    </div>
-                ))}
-            </div>
         )}
+      </div>
+
+      <label className={`relative flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-2xl cursor-pointer transition-all ${uploading ? 'bg-gray-50 border-gray-300' : 'bg-brand-purple/5 border-brand-purple/30 hover:bg-brand-purple/10'}`}>
+        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+          {uploading ? (
+            <div className="text-center w-full px-8">
+                <div className="w-12 h-12 border-4 border-brand-purple border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p className="text-sm font-bold text-brand-purple mb-2">Nahrávám vzpomínky... {progress}%</p>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-brand-purple h-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                </div>
+            </div>
+          ) : (
+            <>
+              <svg className="w-10 h-10 mb-3 text-brand-purple/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+              <p className="mb-2 text-sm text-gray-700 font-semibold text-center px-4">
+                Klikněte pro výběr fotek <br/> nebo je sem přetáhněte
+              </p>
+              <p className="text-xs text-gray-500 uppercase tracking-tighter">JPG, PNG, WEBP (Až 10MB / soubor)</p>
+            </>
+          )}
+        </div>
+        <input 
+            type="file" 
+            className="hidden" 
+            multiple={requiredCount !== 1} 
+            accept="image/*" 
+            onChange={handleFileChange}
+            disabled={uploading}
+        />
+      </label>
+
+      {previews.length > 0 && (
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mt-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+          {previews.map((url, i) => (
+            <div key={i} className="aspect-square rounded-lg overflow-hidden border bg-gray-50 shadow-sm transform hover:scale-105 transition-transform">
+              <img src={url} alt="Náhled" className="w-full h-full object-cover" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4 flex items-center justify-center space-x-4 text-[10px] text-gray-400 uppercase tracking-widest font-bold">
+        <div className="flex items-center">
+            <svg className="w-3 h-3 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"/></svg>
+            Optimalizovaný přenos
+        </div>
+        <div className="flex items-center">
+            <svg className="w-3 h-3 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/></svg>
+            Smazání po výrobě zaručeno
+        </div>
+      </div>
     </div>
   );
 };
