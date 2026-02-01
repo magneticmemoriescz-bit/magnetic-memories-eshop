@@ -86,7 +86,7 @@ const ProductDetailPage: React.FC = () => {
         const required = selectedVariant?.photoCount || product.requiredPhotos;
         // Zamilované magnetky nepotřebují nahrávat fotku (berou se z motivů)
         const skipUpload = isInLove && designMode === 'motif';
-        if (!skipUpload && (designMode === 'custom' || required > 0) && finalPhotos.length < required) {
+        if (!skipUpload && (designMode === 'custom' || required > 0 || isWedding) && finalPhotos.length < required && required > 0) {
             alert(`Prosím nahrajte všech ${required} fotografií.`); return;
         }
         const cartItem: CartItem = {
@@ -98,6 +98,9 @@ const ProductDetailPage: React.FC = () => {
         setIsAdded(true);
         setTimeout(() => navigate('/kosik'), 600);
     };
+
+    // Společné třídy pro interaktivní textová pole
+    const inputClasses = "w-full py-2.5 px-4 bg-white rounded-xl border border-gray-200 font-bold focus:ring-2 focus:ring-brand-purple focus:border-brand-purple outline-none placeholder-gray-400 text-sm transition-all";
 
     return (
         <div className="bg-white min-h-screen pb-40">
@@ -155,7 +158,7 @@ const ProductDetailPage: React.FC = () => {
                             <p className="text-gray-500 leading-relaxed text-sm">{product.shortDescription}</p>
                         </section>
 
-                        {/* 1. VYBERTE ROZMĚR - UPRAVENO NA 3 VEDLE SEBE A MENŠÍ ROZMĚRY */}
+                        {/* 1. VYBERTE ROZMĚR */}
                         <section>
                             <h2 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-4">1. Vyberte rozměr</h2>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -192,7 +195,7 @@ const ProductDetailPage: React.FC = () => {
                         <section>
                             <h2 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-4">2. Počet kusů</h2>
                             <div className="bg-gray-50 rounded-3xl p-6 space-y-4 border border-gray-100">
-                                {/* Individuální počet - Posunuto doleva */}
+                                {/* Individuální počet */}
                                 <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
                                     <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-left">Individuální počet</h3>
                                     <div className="flex justify-start">
@@ -202,15 +205,15 @@ const ProductDetailPage: React.FC = () => {
                                     </div>
                                 </div>
                                 
-                                {/* Zvýhodněné sady ks - Zvětšená tlačítka */}
+                                {/* Zvýhodněné sady ks */}
                                 {!isCalendar && (
                                     <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
                                         <h3 className="text-[10px] font-black text-brand-purple uppercase tracking-widest mb-4 text-center">Zvýhodněné sady ks</h3>
-                                        <div className="grid grid-cols-3 gap-3">
+                                        <div className="grid grid-cols-3 gap-2">
                                             {(isPregnancy || isWedding ? [10, 20, 50, 100] : [9, 15, 30]).map(q => (
-                                                <button key={q} onClick={() => setQuantity(q)} className={`py-8 px-3 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${quantity === q ? 'bg-brand-purple/5 border-brand-purple ring-1 ring-brand-purple' : 'bg-white border-gray-100 text-gray-400'}`}>
-                                                    <span className="text-sm font-black tracking-tight">{q === 15 ? '14+1' : q === 30 ? '28+2' : `${q} KS`}</span>
-                                                    <span className={`text-xs font-black mt-1 ${quantity === q ? 'text-brand-pink' : 'text-brand-pink/60'}`}>{getSetPrice(q)} Kč</span>
+                                                <button key={q} onClick={() => setQuantity(q)} className={`relative p-2.5 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${quantity === q ? 'bg-brand-purple/5 border-brand-purple ring-1 ring-brand-purple' : 'bg-white border-gray-100 text-gray-400'}`}>
+                                                    <span className="text-[11px] font-black tracking-tight leading-tight uppercase">{q === 15 ? '14+1' : q === 30 ? '28+2' : `${q} KS`}</span>
+                                                    <span className={`text-[10px] font-black mt-1 ${quantity === q ? 'text-brand-pink' : 'text-brand-pink/60'}`}>{getSetPrice(q)} Kč</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -231,7 +234,7 @@ const ProductDetailPage: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* MENŠÍ NÁHLEDY MOTIVŮ (grid-cols-3 až 5) */}
+                            {/* MENŠÍ NÁHLEDY MOTIVŮ */}
                             {(isWedding || isInLove) && designMode === 'motif' && motifs.length > 0 && (
                                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-8">
                                     {motifs.map((url, idx) => (
@@ -257,33 +260,33 @@ const ProductDetailPage: React.FC = () => {
                             )}
 
                             <div className="space-y-4 bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-                                {/* MENŠÍ TEXTOVÁ POLE */}
+                                {/* TEXTOVÁ POLE - UPRAVENÝ VZHLED */}
                                 {product.hasTextFields && !isCalendar && (
                                     <div className="grid grid-cols-1 gap-3">
-                                        <input placeholder={isWedding ? "Budeme se brát" : "Budeme tři..."} className="w-full py-2.5 px-4 bg-gray-50 rounded-xl border-none font-bold focus:ring-2 focus:ring-brand-purple placeholder-gray-300 text-sm" onChange={(e) => setCustomText(p => ({...p, t1: e.target.value}))} />
-                                        <input placeholder={isWedding ? "Eva a Adam" : "podzim 2026"} className="w-full py-2.5 px-4 bg-gray-50 rounded-xl border-none font-bold focus:ring-2 focus:ring-brand-purple placeholder-gray-300 text-sm" onChange={(e) => setCustomText(p => ({...p, t2: e.target.value}))} />
+                                        <input placeholder={isWedding ? "Budeme se brát" : "Budeme tři..."} className={inputClasses} onChange={(e) => setCustomText(p => ({...p, t1: e.target.value}))} />
+                                        <input placeholder={isWedding ? "Eva a Adam" : "podzim 2026"} className={inputClasses} onChange={(e) => setCustomText(p => ({...p, t2: e.target.value}))} />
                                         {isWedding && (
                                             <div className="grid grid-cols-2 gap-3">
-                                                <input placeholder="1. 1. 2029" className="w-full py-2.5 px-4 bg-gray-50 rounded-xl border-none font-bold focus:ring-2 focus:ring-brand-purple placeholder-gray-300 text-sm" onChange={(e) => setCustomText(p => ({...p, t3: e.target.value}))} />
-                                                <input placeholder="Místo" className="w-full py-2.5 px-4 bg-gray-50 rounded-xl border-none font-bold focus:ring-2 focus:ring-brand-purple placeholder-gray-300 text-sm" onChange={(e) => setCustomText(p => ({...p, t4: e.target.value}))} />
+                                                <input placeholder="1. 1. 2029" className={inputClasses} onChange={(e) => setCustomText(p => ({...p, t3: e.target.value}))} />
+                                                <input placeholder="Místo" className={inputClasses} onChange={(e) => setCustomText(p => ({...p, t4: e.target.value}))} />
                                             </div>
                                         )}
-                                        <textarea placeholder="Speciální přání..." className="w-full py-2.5 px-4 bg-gray-50 rounded-xl border-none font-bold focus:ring-2 focus:ring-brand-purple resize-none placeholder-gray-300 text-sm" rows={2} onChange={(e) => setCustomText(p => ({...p, msg: e.target.value}))} />
+                                        <textarea placeholder="Speciální přání..." className={inputClasses + " resize-none"} rows={2} onChange={(e) => setCustomText(p => ({...p, msg: e.target.value}))} />
                                     </div>
                                 )}
 
-                                {/* Nahrávání fotek - SKRYTO PRO ZAMILOVANÉ (POUŽÍVAJÍ MOTIVY) */}
-                                {!isInLove && (isMagnets || isCalendar || isMerch || isPregnancy || designMode === 'custom') && (
+                                {/* Nahrávání fotek - PRO SVATBU ZOBRAZENO VŽDY */}
+                                {!isInLove && (isMagnets || isCalendar || isMerch || isPregnancy || isWedding || designMode === 'custom') && (
                                     <FileUpload 
                                         onUploadComplete={(p, g) => {setFinalPhotos(p); setPhotoGroupId(g);}} 
                                         requiredCount={selectedVariant?.photoCount || product.requiredPhotos} 
                                         productName={product.name} 
                                         onUploadingChange={setUploading} 
-                                        labelHint={isPregnancy ? "(např. ultrazvuk)" : isCalendar ? "(nahrajte 12 fotek – budou použity v pořadí, v jakém jsou nahrány)" : undefined}
+                                        labelHint={isPregnancy ? "(např. ultrazvuk)" : isCalendar ? "(nahrajte 12 fotek – budou použity v pořadí, v jakém jsou nahrány)" : isWedding ? "(nahrajte vaši společnou fotku)" : undefined}
                                     />
                                 )}
 
-                                {/* Info box o náhledu – ZOBRAZEN POUZE PRO SVATEBNÍ OZNÁMENÍ */}
+                                {/* Info box o náhledu */}
                                 {isWedding && (
                                     <div className="bg-yellow-50 p-4 rounded-2xl flex items-start space-x-3">
                                         <div className="text-yellow-500 mt-0.5">ⓘ</div>
@@ -306,6 +309,13 @@ const ProductDetailPage: React.FC = () => {
                                 </label>
                             </section>
                         )}
+
+                        {/* STATICKÉ TLAČÍTKO VLOŽIT DO KOŠÍKU */}
+                        <div className="pt-6">
+                            <button onClick={handleAddToCart} disabled={isAdded || uploading} className={`w-full py-5 rounded-2xl text-white font-black text-xl uppercase tracking-widest transition-all shadow-xl ${isAdded ? 'bg-green-500' : 'bg-brand-pink hover:scale-95 active:scale-90 disabled:grayscale'}`}>
+                                {isAdded ? 'PŘIDÁNO ✓' : uploading ? 'Ukládám...' : 'VLOŽIT DO KOŠÍKU'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
