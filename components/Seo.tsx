@@ -19,10 +19,8 @@ export const Seo: React.FC<SeoProps> = ({
   availability
 }) => {
   useEffect(() => {
-    // 1. Update Document Title
     document.title = title;
 
-    // Helper to update meta tags
     const updateMeta = (selectorAttr: string, selectorValue: string, content: string) => {
         let element = document.querySelector(`meta[${selectorAttr}="${selectorValue}"]`);
         if (!element) {
@@ -30,51 +28,50 @@ export const Seo: React.FC<SeoProps> = ({
             element.setAttribute(selectorAttr, selectorValue);
             document.head.appendChild(element);
         }
-        // Always update content
         element.setAttribute('content', content);
     };
 
-    // Helper to update link tags (for canonical)
-    const updateLink = (rel: string, href: string) => {
-        let element = document.querySelector(`link[rel="${rel}"]`);
+    const updateLink = (rel: string, href: string, attributes?: {[key: string]: string}) => {
+        let element = document.querySelector(`link[rel="${rel}"][href="${href}"]`);
         if (!element) {
             element = document.createElement('link');
             element.setAttribute('rel', rel);
+            element.setAttribute('href', href);
+            if (attributes) {
+              Object.entries(attributes).forEach(([k, v]) => element!.setAttribute(k, v));
+            }
             document.head.appendChild(element);
         }
-        element.setAttribute('href', href);
     };
 
     const currentUrl = window.location.href;
-
-    // 2. Canonical URL (Important for SEO to resolve redirects/duplicates)
     updateLink('canonical', currentUrl);
 
-    // 3. Standard SEO
+    // Standard SEO & Social
     updateMeta('name', 'description', description);
-
-    // 4. Open Graph (Facebook, LinkedIn, etc.)
     updateMeta('property', 'og:title', title);
     updateMeta('property', 'og:description', description);
     updateMeta('property', 'og:image', image);
     updateMeta('property', 'og:type', type);
     updateMeta('property', 'og:url', currentUrl);
-    updateMeta('property', 'og:site_name', 'Magnetic Memories');
-    updateMeta('property', 'og:locale', 'cs_CZ');
 
-    // 5. Twitter Card
-    updateMeta('name', 'twitter:card', 'summary_large_image');
-    updateMeta('name', 'twitter:title', title);
-    updateMeta('name', 'twitter:description', description);
-    updateMeta('name', 'twitter:image', image);
-    updateMeta('name', 'twitter:url', currentUrl);
-
-    // 6. Structured Data (JSON-LD)
-    // Remove existing script to prevent duplicates if navigating back and forth
-    const existingScript = document.querySelector('script[data-type="json-ld"]');
-    if (existingScript) {
-        existingScript.remove();
+    // Preload hlavního obrázku (LCP)
+    if (image && type === 'product') {
+        const existingPreload = document.querySelector('link[rel="preload"][as="image"]');
+        if (existingPreload) existingPreload.remove();
+        
+        const preload = document.createElement('link');
+        preload.rel = 'preload';
+        preload.as = 'image';
+        preload.href = image;
+        // @ts-ignore
+        preload.fetchPriority = 'high';
+        document.head.appendChild(preload);
     }
+
+    // Structured Data (JSON-LD)
+    const existingScript = document.querySelector('script[data-type="json-ld"]');
+    if (existingScript) existingScript.remove();
 
     const script = document.createElement('script');
     script.setAttribute('type', 'application/ld+json');
@@ -87,6 +84,10 @@ export const Seo: React.FC<SeoProps> = ({
       "description": description,
       "image": image,
       "url": currentUrl,
+      "brand": {
+        "@type": "Brand",
+        "name": "Magnetic Memories"
+      }
     };
 
     if (type === 'product' && price) {
@@ -94,19 +95,18 @@ export const Seo: React.FC<SeoProps> = ({
         "@type": "Offer",
         "price": price,
         "priceCurrency": "CZK",
-        "availability": availability === 'InStock' ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+        "availability": availability === 'InStock' ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        "url": currentUrl
       };
     }
 
     script.textContent = JSON.stringify(schemaData);
     document.head.appendChild(script);
 
-    // Cleanup function not strictly necessary for meta tags as we overwrite them, 
-    // but good for the script tag.
     return () => {
-        if (document.head.contains(script)) {
-            document.head.removeChild(script);
-        }
+        if (document.head.contains(script)) document.head.removeChild(script);
+        const preload = document.querySelector('link[rel="preload"][as="image"]');
+        if (preload) preload.remove();
     };
 
   }, [title, description, image, type, price, availability]);
