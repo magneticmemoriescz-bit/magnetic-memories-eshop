@@ -1,69 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Hlavní stránky -->
   <url>
-    <loc>https://www.magneticmemories.cz</loc>
-    <lastmod>2026-02-01</lastmod>
-    <changefreq>weekly</changefreq>
+    <loc>https://www.magneticmemories.cz/</loc>
+    <lastmod>2025-02-01</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://www.magneticmemories.cz/produkty</loc>
-    <lastmod>2026-02-01</lastmod>
+    <lastmod>2025-02-01</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://www.magneticmemories.cz/jak-to-funguje</loc>
-    <lastmod>2026-02-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <lastmod>2025-02-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.magneticmemories.cz/kontakt</loc>
-    <lastmod>2026-02-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <lastmod>2025-02-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.magneticmemories.cz/doprava</loc>
-    <lastmod>2026-02-01</lastmod>
+    <lastmod>2025-02-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Produkty -->
+  <url>
+    <loc>https://www.magneticmemories.cz/produkty/photomagnets</loc>
+    <lastmod>2025-02-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.magneticmemories.cz/produkty/photomagnets</loc>
-    <lastmod>2026-02-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
     <loc>https://www.magneticmemories.cz/produkty/wedding-announcement</loc>
-    <lastmod>2026-02-01</lastmod>
+    <lastmod>2025-02-01</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.magneticmemories.cz/produkty/pregnancy-announcement</loc>
-    <lastmod>2026-02-01</lastmod>
+    <lastmod>2025-02-01</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.magneticmemories.cz/produkty/in-love-magnets</loc>
-    <lastmod>2026-02-01</lastmod>
+    <lastmod>2025-02-01</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.magneticmemories.cz/produkty/magnetic-calendar</loc>
-    <lastmod>2026-02-01</lastmod>
+    <lastmod>2025-02-01</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.magneticmemories.cz/produkty/magnetic-merch</loc>
-    <lastmod>2026-02-01</lastmod>
+    <lastmod>2025-02-01</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <priority>0.8</priority>
   </url>
 </urlset>
