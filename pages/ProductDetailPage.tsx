@@ -120,10 +120,19 @@ const ProductDetailPage: React.FC = () => {
                                 <span className="bg-brand-pink/90 backdrop-blur px-3 py-1.5 rounded-full text-[10px] font-black uppercase text-white shadow-sm">Vlastní fotky</span>
                             </div>
                         </div>
+                        {/* GALLERY THUMBNAILS */}
                         <div className="grid grid-cols-5 gap-3">
                             {allMedia.map((m, i) => (
-                                <button key={i} onClick={() => setActiveMedia(m)} className={`aspect-square rounded-xl overflow-hidden border-2 transition-all ${activeMedia === m ? 'border-brand-purple scale-95' : 'border-transparent opacity-60 hover:opacity-100'}`}>
-                                    <img src={optimizeCloudinaryUrl(m, 200)} alt="" className="w-full h-full object-cover" />
+                                <button key={i} onClick={() => setActiveMedia(m)} className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all flex items-center justify-center ${activeMedia === m ? 'border-brand-purple scale-95' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+                                    {isVideo(m) ? (
+                                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-brand-purple/40" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                    ) : (
+                                        <img src={optimizeCloudinaryUrl(m, 200)} alt="" className="w-full h-full object-cover" />
+                                    )}
                                 </button>
                             ))}
                         </div>
@@ -136,9 +145,9 @@ const ProductDetailPage: React.FC = () => {
                             <div className="bg-brand-purple/5 border border-brand-purple/10 rounded-2xl p-6 mb-4">
                                 <div className="flex items-center justify-between">
                                     <span className="text-4xl font-black text-brand-pink">{formatPrice(currentUnitPrice)} Kč</span>
-                                    <div className="flex items-center text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                                        Skladem
+                                    <div className="flex items-center text-xs font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">
+                                        <span className="w-2 h-2 rounded-full bg-green-500 mr-2 flex-shrink-0"></span>
+                                        Skladem (výroba 3-5 dní)
                                     </div>
                                 </div>
                                 <div className="mt-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">DOPRAVA ZDARMA NAD 800 KČ</div>
@@ -146,25 +155,30 @@ const ProductDetailPage: React.FC = () => {
                             <p className="text-gray-500 leading-relaxed text-sm">{product.shortDescription}</p>
                         </section>
 
-                        {/* 1. VYBERTE ROZMĚR */}
+                        {/* 1. VYBERTE ROZMĚR - UPRAVENO NA 3 VEDLE SEBE A MENŠÍ ROZMĚRY */}
                         <section>
                             <h2 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-4">1. Vyberte rozměr</h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 {product.variants?.map(v => (
                                     <button 
                                         key={v.id} 
                                         onClick={() => setSelectedVariant(v)} 
-                                        className={`relative group p-4 rounded-2xl border-2 text-left transition-all ${selectedVariant?.id === v.id ? 'bg-brand-purple border-brand-purple' : 'bg-white border-gray-100'}`}
+                                        className={`relative group p-2.5 rounded-xl border-2 text-left transition-all ${selectedVariant?.id === v.id ? 'bg-brand-purple border-brand-purple' : 'bg-white border-gray-100'}`}
                                     >
-                                        <div className={`text-sm font-black uppercase transition-colors ${selectedVariant?.id === v.id ? 'text-white' : 'text-gray-900'}`}>
+                                        <div className={`text-[11px] font-black uppercase transition-colors leading-tight ${selectedVariant?.id === v.id ? 'text-white' : 'text-gray-900'}`}>
                                             {v.name}
+                                            {isWedding && v.id === 'a6' && (
+                                                <span className="block text-[8px] font-bold normal-case mt-0.5 opacity-80 leading-tight">
+                                                    (nejběžnější)
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className={`text-xs font-bold mt-1 ${selectedVariant?.id === v.id ? 'text-white/80' : 'text-gray-400'}`}>
+                                        <div className={`text-[10px] font-bold mt-1 ${selectedVariant?.id === v.id ? 'text-white/80' : 'text-gray-400'}`}>
                                             {v.price || product.price} Kč
                                         </div>
                                         {selectedVariant?.id === v.id && (
-                                            <div className="absolute bottom-0 right-0 p-1.5 bg-brand-purple text-white rounded-tl-xl rounded-br-xl border-t border-l border-white/20">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                            <div className="absolute bottom-0 right-0 p-1 bg-brand-purple text-white rounded-tl-lg rounded-br-lg border-t border-l border-white/20">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="currentColor">
                                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                                 </svg>
                                             </div>
@@ -178,25 +192,25 @@ const ProductDetailPage: React.FC = () => {
                         <section>
                             <h2 className="text-sm font-black text-gray-800 uppercase tracking-widest mb-4">2. Počet kusů</h2>
                             <div className="bg-gray-50 rounded-3xl p-6 space-y-4 border border-gray-100">
-                                {/* Individuální počet */}
+                                {/* Individuální počet - Posunuto doleva */}
                                 <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">Individuální počet</h3>
-                                    <div className="flex justify-center">
-                                        <select value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value))} className="w-full max-w-xs bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-2 focus:ring-brand-purple outline-none text-center">
+                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-left">Individuální počet</h3>
+                                    <div className="flex justify-start">
+                                        <select value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value))} className="w-full max-w-[120px] bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-2 focus:ring-brand-purple outline-none">
                                             {[1,2,3,4,5,6,10,15,20,30,50,100].map(n => <option key={n} value={n}>{n} ks</option>)}
                                         </select>
                                     </div>
                                 </div>
                                 
-                                {/* Zvýhodněné sady */}
+                                {/* Zvýhodněné sady ks - Zvětšená tlačítka */}
                                 {!isCalendar && (
                                     <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-                                        <h3 className="text-[10px] font-black text-brand-purple uppercase tracking-widest mb-4 text-center">Zvýhodněné sady</h3>
+                                        <h3 className="text-[10px] font-black text-brand-purple uppercase tracking-widest mb-4 text-center">Zvýhodněné sady ks</h3>
                                         <div className="grid grid-cols-3 gap-3">
                                             {(isPregnancy || isWedding ? [10, 20, 50, 100] : [9, 15, 30]).map(q => (
-                                                <button key={q} onClick={() => setQuantity(q)} className={`py-4 px-2 rounded-xl border-2 flex flex-col items-center transition-all ${quantity === q ? 'bg-brand-purple/5 border-brand-purple ring-1 ring-brand-purple' : 'bg-white border-gray-100 text-gray-400'}`}>
-                                                    <span className="text-xs font-black tracking-tight">{q === 15 ? '14+1' : q === 30 ? '28+2' : `${q} KS`}</span>
-                                                    <span className={`text-[11px] font-bold mt-1 ${quantity === q ? 'text-brand-pink' : 'text-brand-pink/60'}`}>{getSetPrice(q)} Kč</span>
+                                                <button key={q} onClick={() => setQuantity(q)} className={`py-8 px-3 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${quantity === q ? 'bg-brand-purple/5 border-brand-purple ring-1 ring-brand-purple' : 'bg-white border-gray-100 text-gray-400'}`}>
+                                                    <span className="text-sm font-black tracking-tight">{q === 15 ? '14+1' : q === 30 ? '28+2' : `${q} KS`}</span>
+                                                    <span className={`text-xs font-black mt-1 ${quantity === q ? 'text-brand-pink' : 'text-brand-pink/60'}`}>{getSetPrice(q)} Kč</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -217,23 +231,24 @@ const ProductDetailPage: React.FC = () => {
                                 </div>
                             )}
 
+                            {/* MENŠÍ NÁHLEDY MOTIVŮ (grid-cols-3 až 5) */}
                             {(isWedding || isInLove) && designMode === 'motif' && motifs.length > 0 && (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-8">
                                     {motifs.map((url, idx) => (
                                         <button key={idx} onClick={() => setActiveMedia(url)} className="group flex flex-col items-center">
-                                            <div className={`relative aspect-square w-full rounded-2xl overflow-hidden border-2 transition-all ${activeMedia === url ? 'border-brand-purple ring-4 ring-brand-purple/10' : 'border-gray-100'}`}>
-                                                <img src={optimizeCloudinaryUrl(url, 400)} className="w-full h-full object-cover" alt="" />
+                                            <div className={`relative aspect-square w-full rounded-xl overflow-hidden border-2 transition-all ${activeMedia === url ? 'border-brand-purple ring-2 ring-brand-purple/10 scale-95' : 'border-gray-100'}`}>
+                                                <img src={optimizeCloudinaryUrl(url, 300)} className="w-full h-full object-cover" alt="" />
                                                 {activeMedia === url && (
-                                                    <div className="absolute inset-0 flex items-center justify-center bg-brand-purple/10">
-                                                        <div className="bg-brand-purple text-white p-2 rounded-full shadow-lg">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-brand-purple/5">
+                                                        <div className="bg-brand-purple text-white p-1 rounded-full shadow-lg">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                                             </svg>
                                                         </div>
                                                     </div>
                                                 )}
                                             </div>
-                                            <span className={`mt-2 text-[10px] font-bold text-center uppercase tracking-wider transition-colors ${activeMedia === url ? 'text-brand-purple' : 'text-gray-400'}`}>
+                                            <span className={`mt-1.5 text-[8px] font-bold text-center uppercase tracking-wider transition-colors leading-tight ${activeMedia === url ? 'text-brand-purple' : 'text-gray-400'}`}>
                                                 {isWedding ? weddingMotifNames[idx] : isInLove ? inLoveMotifNames[idx] : 'Motiv'}
                                             </span>
                                         </button>
@@ -242,18 +257,18 @@ const ProductDetailPage: React.FC = () => {
                             )}
 
                             <div className="space-y-4 bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-                                {/* Textová pole pouze pro oznámení */}
+                                {/* MENŠÍ TEXTOVÁ POLE */}
                                 {product.hasTextFields && !isCalendar && (
-                                    <div className="grid grid-cols-1 gap-4">
-                                        <input placeholder={isWedding ? "Budeme se brát" : "Budeme tři..."} className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold focus:ring-2 focus:ring-brand-purple placeholder-gray-300" onChange={(e) => setCustomText(p => ({...p, t1: e.target.value}))} />
-                                        <input placeholder={isWedding ? "Eva a Adam" : "podzim 2026"} className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold focus:ring-2 focus:ring-brand-purple placeholder-gray-300" onChange={(e) => setCustomText(p => ({...p, t2: e.target.value}))} />
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <input placeholder={isWedding ? "Budeme se brát" : "Budeme tři..."} className="w-full py-2.5 px-4 bg-gray-50 rounded-xl border-none font-bold focus:ring-2 focus:ring-brand-purple placeholder-gray-300 text-sm" onChange={(e) => setCustomText(p => ({...p, t1: e.target.value}))} />
+                                        <input placeholder={isWedding ? "Eva a Adam" : "podzim 2026"} className="w-full py-2.5 px-4 bg-gray-50 rounded-xl border-none font-bold focus:ring-2 focus:ring-brand-purple placeholder-gray-300 text-sm" onChange={(e) => setCustomText(p => ({...p, t2: e.target.value}))} />
                                         {isWedding && (
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <input placeholder="1. 1. 2029" className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold focus:ring-2 focus:ring-brand-purple placeholder-gray-300" onChange={(e) => setCustomText(p => ({...p, t3: e.target.value}))} />
-                                                <input placeholder="Místo" className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold focus:ring-2 focus:ring-brand-purple placeholder-gray-300" onChange={(e) => setCustomText(p => ({...p, t4: e.target.value}))} />
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <input placeholder="1. 1. 2029" className="w-full py-2.5 px-4 bg-gray-50 rounded-xl border-none font-bold focus:ring-2 focus:ring-brand-purple placeholder-gray-300 text-sm" onChange={(e) => setCustomText(p => ({...p, t3: e.target.value}))} />
+                                                <input placeholder="Místo" className="w-full py-2.5 px-4 bg-gray-50 rounded-xl border-none font-bold focus:ring-2 focus:ring-brand-purple placeholder-gray-300 text-sm" onChange={(e) => setCustomText(p => ({...p, t4: e.target.value}))} />
                                             </div>
                                         )}
-                                        <textarea placeholder="Speciální přání..." className="w-full p-4 bg-gray-50 rounded-2xl border-none font-bold focus:ring-2 focus:ring-brand-purple resize-none placeholder-gray-300" rows={2} onChange={(e) => setCustomText(p => ({...p, msg: e.target.value}))} />
+                                        <textarea placeholder="Speciální přání..." className="w-full py-2.5 px-4 bg-gray-50 rounded-xl border-none font-bold focus:ring-2 focus:ring-brand-purple resize-none placeholder-gray-300 text-sm" rows={2} onChange={(e) => setCustomText(p => ({...p, msg: e.target.value}))} />
                                     </div>
                                 )}
 
@@ -264,7 +279,7 @@ const ProductDetailPage: React.FC = () => {
                                         requiredCount={selectedVariant?.photoCount || product.requiredPhotos} 
                                         productName={product.name} 
                                         onUploadingChange={setUploading} 
-                                        labelHint={isPregnancy ? "(např. ultrazvuk)" : isCalendar ? "(nahrajte 12 fotek)" : undefined}
+                                        labelHint={isPregnancy ? "(např. ultrazvuk)" : isCalendar ? "(nahrajte 12 fotek – budou použity v pořadí, v jakém jsou nahrány)" : undefined}
                                     />
                                 )}
 
