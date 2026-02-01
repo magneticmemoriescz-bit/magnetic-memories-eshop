@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../types';
 import { formatPrice } from '../utils/format';
 import { isVideo } from '../utils/media';
+import { optimizeCloudinaryUrl } from '../utils/cloudinary';
 
 interface ProductCardProps {
   product: Product;
@@ -18,6 +18,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, buttonStyle }
   const isTopPositioned = product.id === 'in-love-magnets' || product.id === 'magnetic-merch';
   const mediaClass = `w-full h-full ${isTopPositioned ? 'object-[center_20%]' : 'object-center'} object-cover group-hover:opacity-75 transition-opacity`;
 
+  // Optimalizovaná URL pro náhled v kartě (šířka 600px stačí)
+  const optimizedImageUrl = optimizeCloudinaryUrl(product.imageUrl, 600);
+
   return (
     <div className="group relative bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 flex flex-col w-full">
       <div className="w-full h-72 bg-gray-200 overflow-hidden relative">
@@ -30,10 +33,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, buttonStyle }
             muted 
             loop 
             playsInline
-            preload="auto"
+            preload="metadata"
+            /* Fix: 'loading' attribute is not valid for video elements in React/HTML */
           />
         ) : (
-          <img src={product.imageUrl} alt={product.name} className={mediaClass} />
+          <img 
+            src={optimizedImageUrl} 
+            alt={product.name} 
+            className={mediaClass} 
+            loading="lazy"
+            decoding="async"
+          />
         )}
       </div>
       <div className="p-6 flex-grow">
