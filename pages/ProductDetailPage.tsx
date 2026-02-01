@@ -7,6 +7,7 @@ import { Seo } from '../components/Seo';
 import { formatPrice } from '../utils/format';
 import { trackAddToCart } from '../utils/gtag';
 import { optimizeCloudinaryUrl } from '../utils/cloudinary';
+import { FileUpload } from '../components/FileUpload';
 
 const ProductDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -19,14 +20,12 @@ const ProductDetailPage: React.FC = () => {
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>();
     const [quantity, setQuantity] = useState(1);
     const [isAdded, setIsAdded] = useState(false);
+    // Added uploading state to fix the error and manage button state
+    const [uploading, setUploading] = useState(false);
     const [finalPhotos, setFinalPhotos] = useState<UploadedPhoto[]>([]);
+    const [photoGroupId, setPhotoGroupId] = useState<string | null>(null);
     const [customText, setCustomText] = useState<{ [key: string]: string }>({});
-    const [directMailing, setDirectMailing] = useState(false);
     
-    const [uploadedPhotoInfo] = useState({ groupId: null as string | null });
-    const [selectedTheme] = useState({ id: 'default' });
-    const [designSource] = useState('theme');
-
     useEffect(() => {
         if (product && !selectedVariant && product.variants && product.variants.length > 0) {
             setSelectedVariant(product.variants[0]);
@@ -37,16 +36,25 @@ const ProductDetailPage: React.FC = () => {
         return <div className="min-h-screen flex items-center justify-center font-bold">Produkt nenalezen.</div>;
     }
 
-    const isInLoveMagnets = product.id === 'in-love-magnets';
-    const isWeddingAnnouncement = product.id === 'wedding-announcement';
-    const isAnyAnnouncement = product.id.toLowerCase().includes('announcement');
-    const reqMax = product.requiredPhotos;
     const basePriceTotal = (selectedVariant?.price || product.price) * quantity;
-
-    // Optimalizace hlavního obrázku pro mobil (600px) a desktop (1200px)
     const optimizedMainImage = optimizeCloudinaryUrl(product.imageUrl, window.innerWidth < 768 ? 600 : 1200);
 
+    const handleUploadComplete = (photos: UploadedPhoto[], groupId: string | null) => {
+        setFinalPhotos(photos);
+        setPhotoGroupId(groupId);
+    };
+
+    const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setCustomText(prev => ({ ...prev, [name]: value }));
+    };
+
     const handleAddToCart = () => {
+        if (product.requiredPhotos > 0 && finalPhotos.length === 0) {
+            alert('Prosím nahrajte nejdříve své fotografie.');
+            return;
+        }
+
         trackAddToCart(product, selectedVariant, quantity, basePriceTotal / quantity);
 
         const cartItem: CartItem = {
@@ -56,9 +64,8 @@ const ProductDetailPage: React.FC = () => {
             price: basePriceTotal / quantity, 
             variant: selectedVariant, 
             photos: finalPhotos,
-            photoGroupId: (isInLoveMagnets || (isWeddingAnnouncement && designSource === 'theme' && reqMax === 0)) ? `theme-${selectedTheme.id}` : uploadedPhotoInfo.groupId,
-            customText, 
-            directMailing: isAnyAnnouncement ? directMailing : undefined,
+            photoGroupId: photoGroupId,
+            customText: Object.keys(customText).length > 0 ? customText : undefined,
         };
         
         dispatch({ type: 'ADD_ITEM', payload: cartItem });
@@ -84,7 +91,7 @@ const ProductDetailPage: React.FC = () => {
                             src={optimizedMainImage} 
                             alt={product.name} 
                             className="w-full h-full object-center object-cover"
-                            /* @ts-ignore - fetchpriority is a valid experimental attribute */
+                            /* @ts-ignore */
                             fetchpriority="high"
                             decoding="async"
                         />
@@ -94,11 +101,12 @@ const ProductDetailPage: React.FC = () => {
                     <div className="mt-10 lg:mt-0">
                         <h1 className="text-3xl font-extrabold text-gray-900">{product.name}</h1>
                         <p className="mt-4 text-3xl text-brand-pink font-black">{formatPrice(basePriceTotal)} Kč</p>
+                        <p className="mt-6 text-gray-500 leading-relaxed">{product.description}</p>
                         
                         <div className="mt-8 border-t border-gray-100 pt-8">
                             {product.variants && product.variants.length > 0 && (
                                 <div className="mb-8">
-                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Vyberte velikost</h3>
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Vyberte variantu</h3>
                                     <div className="grid grid-cols-2 gap-3">
                                         {product.variants.map(v => (
                                             <button
@@ -113,8 +121,42 @@ const ProductDetailPage: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className="mb-10">
-                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Množství</h3>
+                            {/* Text Fields for Announcements */}
+                            {product.hasTextFields && (
+                                <div className="mb-8 space-y-4">
+                                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Texty na produkt</h3>
+                                    <input 
+                                        name="text1" 
+                                        placeholder="Hlavní text (např. Budeme se brát!)" 
+                                        className="w-full px-4 py-3 border rounded-xl focus:ring-brand-purple"
+                                        onChange={handleTextChange}
+                                    />
+                                    <input 
+                                        name="text2" 
+                                        placeholder="Jména / Datum" 
+                                        className="w-full px-4 py-3 border rounded-xl focus:ring-brand-purple"
+                                        onChange={handleTextChange}
+                                    />
+                                    <textarea 
+                                        name="comment" 
+                                        placeholder="Speciální přání nebo poznámka" 
+                                        rows={3}
+                                        className="w-full px-4 py-3 border rounded-xl focus:ring-brand-purple"
+                                        onChange={handleTextChange}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Upload Section */}
+                            <FileUpload 
+                                onUploadComplete={handleUploadComplete} 
+                                requiredCount={product.requiredPhotos}
+                                productName={product.name}
+                                onUploadingChange={setUploading}
+                            />
+
+                            <div className="mt-10 mb-8">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Počet kusů (sad)</h3>
                                 <div className="flex items-center space-x-6 bg-gray-50 w-max p-2 rounded-2xl">
                                     <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-12 h-12 bg-white shadow-sm rounded-xl flex items-center justify-center text-xl font-bold hover:text-brand-pink transition-colors">-</button>
                                     <span className="text-2xl font-black min-w-[2.5rem] text-center">{quantity}</span>
@@ -124,16 +166,11 @@ const ProductDetailPage: React.FC = () => {
 
                             <button 
                                 onClick={handleAddToCart}
-                                disabled={isAdded}
+                                disabled={isAdded || uploading}
                                 className={`w-full py-5 rounded-2xl text-white font-black text-xl shadow-2xl transition-all ${isAdded ? 'bg-green-500' : 'bg-gradient-to-r from-brand-pink to-brand-orange hover:opacity-90 transform hover:-translate-y-1 active:scale-95'}`}
                             >
-                                {isAdded ? '✓ PŘIDÁNO DO KOŠÍKU' : 'VYTVOŘIT A KOUPIT'}
+                                {isAdded ? '✓ PŘIDÁNO DO KOŠÍKU' : 'VLOŽIT DO KOŠÍKU'}
                             </button>
-                            
-                            <div className="mt-6 flex items-center justify-center space-x-4 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                                <span className="flex items-center"><svg className="w-3 h-3 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"/></svg> Zabezpečené nahrávání</span>
-                                <span className="flex items-center"><svg className="w-3 h-3 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/></svg> Fotky po výrobě mažeme</span>
-                            </div>
                         </div>
                     </div>
                 </div>
