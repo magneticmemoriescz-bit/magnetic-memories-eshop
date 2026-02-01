@@ -27,14 +27,18 @@ const ProductDetailPage: React.FC = () => {
     const [photoGroupId, setPhotoGroupId] = useState<string | null>(null);
     const [customText, setCustomText] = useState<{ [key: string]: string }>({});
     
-    // Deduplikace galerie pro zamezení opakování první fotky
+    // Pro svatby a těhotenství: Volba mezi naším motivem a vlastní fotkou
+    const [designMode, setDesignMode] = useState<'motif' | 'custom'>(
+        product?.requiredPhotos === 0 ? 'motif' : 'custom'
+    );
+
     const allMedia = useMemo(() => {
         if (!product) return [];
-        const combined = [product.imageUrl, ...product.gallery];
-        return Array.from(new Set(combined));
+        // Odstranění duplicity hlavní fotky v galerii
+        const filteredGallery = product.gallery.filter(url => url !== product.imageUrl);
+        return [product.imageUrl, ...filteredGallery];
     }, [product]);
 
-    // Inicializace varianty a hlavního média
     useEffect(() => {
         if (product) {
             if (!selectedVariant && product.variants && product.variants.length > 0) {
@@ -46,20 +50,29 @@ const ProductDetailPage: React.FC = () => {
         }
     }, [product, selectedVariant, activeMedia]);
 
-    // Automatické přepnutí motivu při výběru varianty (pokud má varianta vlastní fotku)
     useEffect(() => {
         if (selectedVariant?.imageUrl) {
             setActiveMedia(selectedVariant.imageUrl);
         }
     }, [selectedVariant]);
 
-    if (!product) {
-        return <div className="min-h-screen flex items-center justify-center font-bold text-xl">Produkt nenalezen.</div>;
-    }
+    if (!product) return <div className="min-h-screen flex items-center justify-center font-bold text-xl">Produkt nenalezen.</div>;
 
     const currentUnitPrice = selectedVariant?.price || product.price;
     const basePriceTotal = currentUnitPrice * quantity;
-    
+
+    const handleNextMedia = () => {
+        const idx = allMedia.indexOf(activeMedia);
+        const next = (idx + 1) % allMedia.length;
+        setActiveMedia(allMedia[next]);
+    };
+
+    const handlePrevMedia = () => {
+        const idx = allMedia.indexOf(activeMedia);
+        const prev = (idx - 1 + allMedia.length) % allMedia.length;
+        setActiveMedia(allMedia[prev]);
+    };
+
     const handleUploadComplete = (photos: UploadedPhoto[], groupId: string | null) => {
         setFinalPhotos(photos);
         setPhotoGroupId(groupId);
@@ -71,15 +84,15 @@ const ProductDetailPage: React.FC = () => {
     };
 
     const handleAddToCart = () => {
-        // Pokud produkt vyžaduje fotky a žádné nejsou nahrané
-        if (product.requiredPhotos > 0 && finalPhotos.length === 0) {
-            alert('Prosím nahrajte nejdříve své fotografie.');
+        // Kontrola nahrání fotek u "custom" módu
+        if (designMode === 'custom' && product.requiredPhotos > 0 && finalPhotos.length === 0) {
+            alert('Prosím nahrajte své fotografie nebo přepněte na volbu motivu.');
             return;
         }
 
-        // Pokud jde o produkt bez nahrávání (motivy), přiložíme vybraný motiv jako "fotku"
         let cartPhotos = finalPhotos;
-        if (product.requiredPhotos === 0 && activeMedia) {
+        // Pokud je vybrán motiv, pošleme ho jako URL fotky
+        if (designMode === 'motif' || product.requiredPhotos === 0) {
             cartPhotos = [{ url: activeMedia, name: 'Vybraný motiv' }];
         }
 
@@ -87,12 +100,8 @@ const ProductDetailPage: React.FC = () => {
 
         const cartItem: CartItem = {
             id: `${product.id}-${selectedVariant?.id || 'default'}-${Date.now()}`,
-            product, 
-            quantity, 
-            price: currentUnitPrice, 
-            variant: selectedVariant, 
-            photos: cartPhotos,
-            photoGroupId: photoGroupId,
+            product, quantity, price: currentUnitPrice, variant: selectedVariant, 
+            photos: cartPhotos, photoGroupId,
             customText: Object.keys(customText).length > 0 ? customText : undefined,
         };
         
@@ -101,72 +110,54 @@ const ProductDetailPage: React.FC = () => {
         setTimeout(() => navigate('/kosik'), 800);
     };
 
+    const isWedding = product.id === 'wedding-announcement';
+    const isPregnancy = product.id === 'pregnancy-announcement';
+
     return (
         <div className="bg-white">
             <Seo 
                 title={`${product.name} | Magnetic Memories`} 
                 description={product.shortDescription}
                 image={optimizeCloudinaryUrl(product.imageUrl, 1200)}
-                type="product"
-                price={basePriceTotal}
-                availability="InStock"
+                type="product" price={basePriceTotal} availability="InStock"
             />
             <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 lg:py-12">
                 <div className="lg:grid lg:grid-cols-2 lg:gap-x-12 lg:items-start">
                     
-                    {/* LEVÁ STRANA: Galerie a náhled */}
+                    {/* LEVÁ STRANA: Galerie */}
                     <div className="flex flex-col">
-                        <div className="aspect-square rounded-2xl overflow-hidden bg-gray-50 shadow-inner border border-gray-100 relative group">
+                        <div className="aspect-square rounded-3xl overflow-hidden bg-gray-50 shadow-inner border border-gray-100 relative group">
                             {isVideo(activeMedia) ? (
-                                <video 
-                                    key={activeMedia}
-                                    src={activeMedia} 
-                                    className="w-full h-full object-cover"
-                                    autoPlay 
-                                    muted 
-                                    loop 
-                                    playsInline 
-                                />
+                                <video key={activeMedia} src={activeMedia} className="w-full h-full object-cover" autoPlay muted loop playsInline />
                             ) : (
-                                <img 
-                                    src={optimizeCloudinaryUrl(activeMedia, 1000)} 
-                                    alt={product.name} 
-                                    className="w-full h-full object-center object-cover transition-transform duration-700 group-hover:scale-110"
-                                />
+                                <img src={optimizeCloudinaryUrl(activeMedia, 1000)} alt="" className="w-full h-full object-center object-cover transition-all duration-700" />
                             )}
                             
-                            {/* Odznáčky na fotce */}
-                            <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none">
-                                <span className="bg-white/95 backdrop-blur-sm text-brand-purple text-[10px] font-black px-3 py-1.5 rounded-full shadow-sm uppercase tracking-widest border border-brand-purple/10">
-                                    TOP KVALITA
-                                </span>
-                                {product.requiredPhotos > 0 && (
-                                    <span className="bg-brand-pink text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg uppercase tracking-widest">
-                                        VAŠE FOTKY
-                                    </span>
-                                )}
-                            </div>
+                            {/* Navigační šipky */}
+                            <button onClick={handlePrevMedia} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 p-2.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white active:scale-90">
+                                <svg className="w-5 h-5 text-brand-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7"/></svg>
+                            </button>
+                            <button onClick={handleNextMedia} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 p-2.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white active:scale-90">
+                                <svg className="w-5 h-5 text-brand-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7"/></svg>
+                            </button>
                         </div>
 
-                        {/* Náhledy / Výběr motivu */}
+                        {/* Náhledy jako volba motivu */}
                         <div className="mt-6">
                             <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3">
-                                {product.requiredPhotos === 0 ? '1. Vyberte si motiv' : 'Galerie produktu'}
+                                {product.requiredPhotos === 0 || designMode === 'motif' ? '1. Vyberte si motiv z galerie' : 'Detaily produktu'}
                             </h3>
                             <div className="grid grid-cols-5 gap-2.5">
                                 {allMedia.map((media, idx) => (
                                     <button
                                         key={idx}
-                                        onClick={() => setActiveMedia(media)}
-                                        className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all duration-300 ${activeMedia === media ? 'border-brand-purple ring-4 ring-brand-purple/10 scale-95 shadow-md' : 'border-transparent hover:border-gray-200'}`}
+                                        onClick={() => {
+                                            setActiveMedia(media);
+                                            if (isWedding || isPregnancy) setDesignMode('motif');
+                                        }}
+                                        className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all duration-300 ${activeMedia === media ? 'border-brand-purple ring-4 ring-brand-purple/10 scale-95' : 'border-transparent hover:border-gray-200'}`}
                                     >
-                                        {isVideo(media) ? (
-                                            <div className="w-full h-full bg-gray-900 flex items-center justify-center">
-                                                <svg className="w-6 h-6 text-white opacity-80" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/></svg>
-                                            </div>
-                                        ) : (
-                                            <img src={optimizeCloudinaryUrl(media, 200)} alt="" className="w-full h-full object-cover" />
-                                        )}
+                                        <img src={optimizeCloudinaryUrl(media, 200)} alt="" className="w-full h-full object-cover" />
                                     </button>
                                 ))}
                             </div>
@@ -177,168 +168,118 @@ const ProductDetailPage: React.FC = () => {
                     <div className="mt-10 lg:mt-0">
                         <div className="flex flex-col border-b border-gray-100 pb-6">
                             <h1 className="text-3xl font-black text-gray-900 tracking-tight leading-tight">{product.name}</h1>
-                            <div className="mt-4 flex items-center justify-between bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                            <div className="mt-4 flex items-center justify-between bg-gray-50/50 p-5 rounded-3xl border border-gray-100">
                                 <div>
                                     <p className="text-3xl text-brand-pink font-black">{formatPrice(basePriceTotal)} Kč</p>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Včetně DPH, bez dopravy</p>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Doprava od 88 Kč</p>
                                 </div>
                                 <div className="text-right">
-                                    <div className="flex items-center text-green-600 font-black text-xs uppercase tracking-widest">
-                                        <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse mr-2 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
-                                        Skladem
-                                    </div>
-                                    <p className="text-[10px] text-gray-400 mt-1">Odesíláme do 3-5 dnů</p>
+                                    <span className="flex items-center text-green-600 font-black text-xs uppercase tracking-widest">
+                                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></span> Skladem
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
                         <div className="mt-8 space-y-8">
-                            <p className="text-gray-600 leading-relaxed text-base italic">{product.shortDescription}</p>
                             
-                            {/* KROK 2: Výběr varianty / Velikosti */}
+                            {/* Volba varianty / Rozměru */}
                             {product.variants && product.variants.length > 0 && (
                                 <div className="pt-2">
-                                    <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
-                                        {product.requiredPhotos === 0 ? '2. Vyberte rozměr' : '1. Vyberte rozměr / balení'}
-                                    </h3>
+                                    <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Vyberte rozměr / Balení</h3>
                                     <div className="grid grid-cols-2 gap-3">
                                         {product.variants.map(v => (
                                             <button
                                                 key={v.id}
                                                 onClick={() => setSelectedVariant(v)}
-                                                className={`flex flex-col p-4 rounded-2xl border-2 text-left transition-all relative overflow-hidden group ${selectedVariant?.id === v.id ? 'bg-brand-purple/5 border-brand-purple shadow-[0_8px_20px_rgba(141,126,239,0.15)]' : 'bg-white border-gray-100 hover:border-gray-200'}`}
+                                                className={`flex flex-col p-4 rounded-2xl border-2 text-left transition-all relative group ${selectedVariant?.id === v.id ? 'bg-brand-purple/5 border-brand-purple shadow-sm' : 'bg-white border-gray-100 hover:border-gray-200'}`}
                                             >
-                                                <span className={`text-sm font-black uppercase tracking-wide ${selectedVariant?.id === v.id ? 'text-brand-purple' : 'text-gray-700'}`}>
-                                                    {v.name}
-                                                </span>
-                                                {v.price && (
-                                                    <span className="text-xs font-bold text-gray-400 mt-1 group-hover:text-gray-500 transition-colors">
-                                                        {formatPrice(v.price)} Kč / balení
-                                                    </span>
-                                                )}
-                                                {selectedVariant?.id === v.id && (
-                                                    <div className="absolute -right-1 -bottom-1 bg-brand-purple text-white p-1.5 rounded-tl-xl shadow-sm">
-                                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
-                                                    </div>
-                                                )}
+                                                <div className="flex justify-between items-start">
+                                                    <span className={`text-sm font-black uppercase ${selectedVariant?.id === v.id ? 'text-brand-purple' : 'text-gray-700'}`}>{v.name}</span>
+                                                    {v.id === 'a6' && isWedding && <span className="text-[9px] text-brand-purple font-black uppercase tracking-tighter bg-brand-purple/10 px-1.5 py-0.5 rounded">Běžný formát</span>}
+                                                </div>
+                                                {v.price && <span className="text-xs font-bold text-gray-400 mt-1">{formatPrice(v.price)} Kč</span>}
+                                                {v.itemCount && v.itemCount > 1 && <span className="text-[10px] text-brand-pink font-black uppercase mt-1">Balení {v.itemCount} ks</span>}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
                             )}
 
-                            {/* KROK 3: Nahrávání fotek (pokud jsou vyžadovány) */}
-                            {product.requiredPhotos > 0 && (
+                            {/* Volba designu (pro Svatby/Těhotenství) */}
+                            {(isWedding || isPregnancy) && (
                                 <div className="pt-2">
-                                    <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">
-                                        2. Nahrajte své fotografie
-                                    </h3>
+                                    <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Způsob návrhu</h3>
+                                    <div className="grid grid-cols-2 gap-3 bg-gray-100 p-1 rounded-2xl">
+                                        <button onClick={() => setDesignMode('motif')} className={`py-3 rounded-xl text-xs font-black uppercase transition-all ${designMode === 'motif' ? 'bg-white shadow-sm text-brand-purple' : 'text-gray-500 hover:text-gray-700'}`}>Použít náš motiv</button>
+                                        <button onClick={() => setDesignMode('custom')} className={`py-3 rounded-xl text-xs font-black uppercase transition-all ${designMode === 'custom' ? 'bg-white shadow-sm text-brand-purple' : 'text-gray-500 hover:text-gray-700'}`}>Vlastní design / fotka</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Nahrávání fotek */}
+                            {(designMode === 'custom' || product.requiredPhotos > 0) && (
+                                <div className="pt-2">
                                     <FileUpload 
                                         onUploadComplete={handleUploadComplete} 
                                         requiredCount={selectedVariant?.photoCount || product.requiredPhotos}
                                         productName={product.name}
                                         onUploadingChange={setUploading}
+                                        labelHint={isPregnancy ? "(např. ultrazvuk)" : undefined}
                                     />
                                 </div>
                             )}
 
-                            {/* KROK 4: Textová pole */}
+                            {/* Textová pole */}
                             {product.hasTextFields && (
                                 <div className="pt-2 space-y-4">
-                                    <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                                        {product.requiredPhotos === 0 ? '3. Doplnění textu' : '3. Doplnění textu'}
-                                    </h3>
-                                    <div className="space-y-3 bg-gray-50/50 p-5 rounded-3xl border border-gray-100 shadow-sm">
+                                    <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Doplnění textů na magnetku</h3>
+                                    <div className="space-y-3 bg-gray-50/50 p-5 rounded-3xl border border-gray-100">
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-black text-brand-purple uppercase ml-1">Hlavní nápis</label>
-                                            <input 
-                                                name="text1" 
-                                                placeholder="Např.: Budeme se brát!" 
-                                                className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-brand-purple/10 focus:border-brand-purple outline-none transition-all placeholder-gray-300 text-sm font-bold"
-                                                onChange={handleTextChange}
-                                            />
+                                            <input name="text1" placeholder="Např.: Budeme se brát!" className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-2xl outline-none text-sm font-bold" onChange={handleTextChange} />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-[10px] font-black text-brand-purple uppercase ml-1">
-                                                {product.id === 'wedding-announcement' ? 'Jména snoubenců' : 'Datum / Období'}
-                                            </label>
-                                            <input 
-                                                name="text2" 
-                                                placeholder={product.id === 'wedding-announcement' ? 'Adriana & Michal' : 'Léto 2024'}
-                                                className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-brand-purple/10 focus:border-brand-purple outline-none transition-all placeholder-gray-300 text-sm font-bold"
-                                                onChange={handleTextChange}
-                                            />
+                                            <label className="text-[10px] font-black text-brand-purple uppercase ml-1">Jména / Kdo oznamuje</label>
+                                            <input name="text2" placeholder="Adriana & Michal" className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-2xl outline-none text-sm font-bold" onChange={handleTextChange} />
                                         </div>
+                                        {isWedding && (
+                                            <>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[10px] font-black text-brand-purple uppercase ml-1">Datum</label>
+                                                        <input name="text3" placeholder="24. 8. 2024" className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-2xl outline-none text-sm font-bold" onChange={handleTextChange} />
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="text-[10px] font-black text-brand-purple uppercase ml-1">Místo</label>
+                                                        <input name="text4" placeholder="Zámek Sychrov" className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-2xl outline-none text-sm font-bold" onChange={handleTextChange} />
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-black text-brand-purple uppercase ml-1">Speciální přání</label>
-                                            <textarea 
-                                                name="comment" 
-                                                placeholder="Chcete jiný font? Nebo jinou barvu textu? Napište nám..." 
-                                                rows={2}
-                                                className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-brand-purple/10 focus:border-brand-purple outline-none transition-all placeholder-gray-300 text-sm font-bold resize-none"
-                                                onChange={handleTextChange}
-                                            />
+                                            <textarea name="comment" placeholder="Změna písma, barvy nebo jiné přání..." rows={2} className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-2xl outline-none text-sm font-bold resize-none" onChange={handleTextChange} />
                                         </div>
                                     </div>
                                 </div>
                             )}
 
-                            {/* FINÁLNÍ AKCE: Počet a Košík */}
-                            <div className="pt-8 border-t border-gray-100">
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                                    <div className="flex items-center space-x-2 bg-gray-100 p-1.5 rounded-2xl w-max shadow-inner">
-                                        <button 
-                                            onClick={() => setQuantity(q => Math.max(1, q - 1))} 
-                                            className="w-11 h-11 bg-white shadow-md rounded-xl flex items-center justify-center text-lg font-black hover:text-brand-pink transition-all active:scale-90 disabled:opacity-50"
-                                            disabled={quantity <= 1}
-                                        >
-                                            −
-                                        </button>
-                                        <span className="text-xl font-black min-w-[3rem] text-center text-gray-800">{quantity}</span>
-                                        <button 
-                                            onClick={() => setQuantity(q => q + 1)} 
-                                            className="w-11 h-11 bg-white shadow-md rounded-xl flex items-center justify-center text-lg font-black hover:text-brand-pink transition-all active:scale-90"
-                                        >
-                                            +
-                                        </button>
-                                    </div>
+                            {/* Košík */}
+                            <div className="pt-8 border-t border-gray-100 flex flex-col sm:flex-row gap-4">
+                                <div className="flex items-center space-x-2 bg-gray-100 p-1.5 rounded-2xl w-max">
+                                    <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-11 h-11 bg-white shadow rounded-xl flex items-center justify-center text-lg font-black" disabled={quantity <= 1}>−</button>
+                                    <span className="text-xl font-black min-w-[3rem] text-center">{quantity}</span>
+                                    <button onClick={() => setQuantity(q => q + 1)} className="w-11 h-11 bg-white shadow rounded-xl flex items-center justify-center text-lg font-black">+</button>
+                                </div>
 
-                                    <button 
-                                        onClick={handleAddToCart}
-                                        disabled={isAdded || uploading}
-                                        className={`flex-grow py-4.5 px-8 rounded-2xl text-white font-black text-lg shadow-[0_15px_30px_-5px_rgba(234,92,157,0.3)] transition-all relative overflow-hidden group ${isAdded ? 'bg-green-500 shadow-[0_15px_30px_-5px_rgba(34,197,94,0.3)]' : 'bg-gradient-to-r from-brand-pink to-brand-orange hover:shadow-[0_20px_40px_-5px_rgba(234,92,157,0.5)] transform hover:-translate-y-1 active:scale-95 disabled:grayscale disabled:opacity-50 disabled:transform-none'}`}
-                                    >
-                                        <span className="relative z-10 flex items-center justify-center">
-                                            {uploading ? (
-                                                <>
-                                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                                    NAHRÁVÁNÍ...
-                                                </>
-                                            ) : isAdded ? '✓ PŘIDÁNO DO KOŠÍKU' : 'VLOŽIT DO KOŠÍKU'}
-                                        </span>
-                                        {!isAdded && !uploading && (
-                                            <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 skew-x-[-20deg]"></div>
-                                        )}
-                                    </button>
-                                </div>
-                                
-                                <div className="mt-6 p-4 bg-brand-purple/5 rounded-2xl border border-brand-purple/10 flex items-center justify-center">
-                                    <svg className="w-5 h-5 text-brand-purple mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/></svg>
-                                    <p className="text-[11px] text-gray-500 font-black uppercase tracking-widest">
-                                        Doprava zdarma nad 800 Kč
-                                    </p>
-                                </div>
+                                <button 
+                                    onClick={handleAddToCart} disabled={isAdded || uploading}
+                                    className={`flex-grow py-4.5 rounded-2xl text-white font-black text-lg transition-all relative overflow-hidden group ${isAdded ? 'bg-green-500' : 'bg-gradient-to-r from-brand-pink to-brand-orange shadow-lg transform hover:-translate-y-1 active:scale-95 disabled:grayscale'}`}
+                                >
+                                    {uploading ? 'NAHRÁVÁNÍ...' : isAdded ? '✓ PŘIDÁNO' : 'VLOŽIT DO KOŠÍKU'}
+                                </button>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Sekce s popisem produktu níže */}
-                <div className="mt-16 pt-16 border-t border-gray-100">
-                    <div className="max-w-3xl">
-                        <h2 className="text-2xl font-black text-gray-900 mb-6 tracking-tight">O produktu</h2>
-                        <div className="prose prose-brand text-gray-600 leading-relaxed text-lg">
-                            {product.description}
                         </div>
                     </div>
                 </div>
