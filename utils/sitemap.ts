@@ -15,7 +15,7 @@ export const generateSitemapXml = (products: Product[]): string => {
     xml += `    <loc>${baseUrl}${path}</loc>\n`;
     xml += `    <lastmod>${today}</lastmod>\n`;
     xml += '    <changefreq>weekly</changefreq>\n';
-    xml += '    <priority>${path === '' ? '1.0' : '0.8'}</priority>\n';
+    xml += `    <priority>${path === '' ? '1.0' : '0.8'}</priority>\n`;
     xml += '  </url>\n';
   });
 
