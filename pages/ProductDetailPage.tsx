@@ -83,9 +83,12 @@ const ProductDetailPage: React.FC = () => {
             if (currentWeddingMotif === 'Fialové květy' || currentWeddingMotif === 'Bílé květy') return 0;
             return 1;
         }
-        if (isInLove && designMode === 'motif') return 0;
+        
+        // PRO MAGNETKY (i zamilované s motivy): Počet fotek = Počet kusů (quantity)
+        if (isMagnets || isInLove) return quantity;
+        
         return selectedVariant?.photoCount || product?.requiredPhotos || 0;
-    }, [isWedding, designMode, currentWeddingMotif, isInLove, selectedVariant, product]);
+    }, [isWedding, designMode, currentWeddingMotif, isInLove, isMagnets, quantity, selectedVariant, product]);
 
     useEffect(() => {
         if (product) {
@@ -117,11 +120,53 @@ const ProductDetailPage: React.FC = () => {
     const baseTotal = isSet ? getSetPrice(quantity) : (currentUnitPrice * quantity);
     const finalTotal = baseTotal + (directMailing ? quantity * 100 : 0);
 
+    const handleMotifSelect = (url: string, name: string) => {
+        if (isWedding) {
+            setActiveMedia(url);
+            return;
+        }
+
+        const totalAssigned = finalPhotos.reduce((sum, p) => sum + (p.quantity || 1), 0);
+        if (totalAssigned >= quantity) {
+            alert(`Už jste vybrali všech ${quantity} ks magnetek. Pokud chcete přidat tento motiv, snižte počet u jiného motivu nebo fotky.`);
+            return;
+        }
+
+        const existingIdx = finalPhotos.findIndex(p => p.url === url);
+        if (existingIdx !== -1) {
+            const updated = [...finalPhotos];
+            updated[existingIdx].quantity = (updated[existingIdx].quantity || 1) + 1;
+            setFinalPhotos(updated);
+        } else {
+            setFinalPhotos([...finalPhotos, { url, name, quantity: 1 }]);
+        }
+        setActiveMedia(url);
+    };
+
     const handleAddToCart = () => {
         const skipUpload = effectiveRequiredPhotos === 0;
-        if (!skipUpload && finalPhotos.length < effectiveRequiredPhotos) {
-            alert(`Prosím nahrajte alespoň ${effectiveRequiredPhotos} fotografií.`); return;
+        
+        if (!skipUpload) {
+            // Pokud jde o magnetky, stačí aspoň 1 fotka, ale součet musí sedět (nebo aspoň nesmí být prázdno)
+            const isAnyMagnet = isMagnets || (isInLove && designMode === 'custom');
+            
+            if (isAnyMagnet) {
+                if (finalPhotos.length === 0) {
+                    alert("Prosím nahrajte alespoň jednu fotografii."); return;
+                }
+                const totalAssigned = finalPhotos.reduce((sum, p) => sum + (p.quantity || 1), 0);
+                if (totalAssigned !== quantity) {
+                    alert(`Váš výběr fotek neodpovídá počtu objednaných magnetek.\n\nPožadováno: ${quantity} ks\nAktuálně nahráno: ${totalAssigned} ks\n\nProsím upravte počet kusů u jednotlivých fotografií.`);
+                    return;
+                }
+            } else {
+                const minPhotos = effectiveRequiredPhotos;
+                if (finalPhotos.length < minPhotos) {
+                    alert(`Nahráli jste ${finalPhotos.length} ${finalPhotos.length === 1 ? 'fotografii' : finalPhotos.length < 5 ? 'fotografie' : 'fotografií'}.\n\nPro tento produkt je potřeba nahrát minimálně ${minPhotos} ${minPhotos === 1 ? 'fotografii' : 'fotografií'}.`); return;
+                }
+            }
         }
+
         const cartItem: CartItem = {
             id: `${product.id}-${Date.now()}`, product, quantity, price: baseTotal / quantity,
             variant: selectedVariant, photos: finalPhotos.length ? finalPhotos : [{ url: activeMedia, name: 'Motiv' }],
@@ -139,6 +184,23 @@ const ProductDetailPage: React.FC = () => {
     const selectionBtnBase = "relative px-2 py-1.5 rounded-xl border-2 text-left transition-all flex flex-col justify-center min-h-[44px]";
     const selectionBtnActive = "bg-brand-purple border-brand-purple text-white ring-2 ring-brand-purple/10 shadow-sm";
     const selectionBtnInactive = "bg-white border-gray-100 text-gray-900 hover:border-gray-200";
+
+    const currentAspect = useMemo(() => {
+        if (!selectedVariant) return 1;
+        const name = selectedVariant.name.toLowerCase();
+        if (name.includes('x')) {
+            const parts = name.split(' ')[0].split('x');
+            if (parts.length === 2) {
+                const w = parseFloat(parts[0]);
+                const h = parseFloat(parts[1]);
+                if (!isNaN(w) && !isNaN(h)) return w / h;
+            }
+        }
+        if (name.includes('a6')) return 10/15;
+        if (name.includes('a5')) return 15/21;
+        if (name.includes('a4')) return 21/29.7;
+        return 1;
+    }, [selectedVariant]);
 
     return (
         <div className="bg-white min-h-screen pb-40">
@@ -266,7 +328,7 @@ const ProductDetailPage: React.FC = () => {
                         <section>
                             <h2 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-2">3. Motiv a konfigurace</h2>
                             
-                            {isWedding && (
+                            {(isWedding || isInLove) && (
                                 <div className="grid grid-cols-2 gap-1.5 mb-4">
                                     <button onClick={() => setDesignMode('motif')} className={`py-2.5 rounded-xl border-2 font-black uppercase text-xs tracking-widest transition-all ${designMode === 'motif' ? 'bg-brand-purple border-brand-purple text-white shadow-md' : 'bg-white border-gray-100 text-gray-400'}`}>Náš motiv</button>
                                     <button onClick={() => setDesignMode('custom')} className={`py-2.5 rounded-xl border-2 font-black uppercase text-xs tracking-widest transition-all ${designMode === 'custom' ? 'bg-brand-purple border-brand-purple text-white shadow-md' : 'bg-white border-gray-100 text-gray-400'}`}>Vlastní motiv</button>
@@ -312,7 +374,11 @@ const ProductDetailPage: React.FC = () => {
                                         requiredCount={effectiveRequiredPhotos} 
                                         productName={product.name} 
                                         onUploadingChange={setUploading} 
+                                        currentPhotos={finalPhotos}
+                                        aspect={currentAspect}
+                                        sizeLabel={selectedVariant?.name}
                                         labelHint={
+                                            (isMagnets || isInLove) && designMode !== 'motif' ? `rozdělte ${quantity} ks mezi fotky` :
                                             (isWedding && designMode === 'custom') ? "vložte hotovou grafiku" :
                                             (isWedding && currentWeddingMotif === 'Film') ? "3 až 5 fotek" :
                                             isPregnancy ? "(např. ultrazvuk)" : 
