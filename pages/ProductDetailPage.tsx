@@ -25,6 +25,7 @@ const ProductDetailPage: React.FC = () => {
     const [photoGroupId, setPhotoGroupId] = useState<string | null>(null);
     const [customText, setCustomText] = useState<{ [key: string]: string }>({});
     const [directMailing, setDirectMailing] = useState(false);
+    const [validationError, setValidationError] = useState<string | null>(null);
     
     // Typy produktů
     const isWedding = id === 'wedding-announcement';
@@ -97,6 +98,10 @@ const ProductDetailPage: React.FC = () => {
         }
     }, [product]);
 
+    useEffect(() => {
+        setValidationError(null);
+    }, [finalPhotos, quantity, selectedVariant]);
+
     if (!product) return <div className="p-20 text-center font-bold">Produkt nenalezen.</div>;
 
     // Výpočet ceny
@@ -152,21 +157,22 @@ const ProductDetailPage: React.FC = () => {
             
             if (isAnyMagnet) {
                 if (finalPhotos.length === 0) {
-                    alert("Prosím nahrajte alespoň jednu fotografii."); return;
+                    setValidationError("Prosím nahrajte alespoň jednu fotografii."); return;
                 }
                 const totalAssigned = finalPhotos.reduce((sum, p) => sum + (p.quantity || 1), 0);
                 if (totalAssigned !== quantity) {
-                    alert(`Váš výběr fotek neodpovídá počtu objednaných magnetek.\n\nPožadováno: ${quantity} ks\nAktuálně nahráno: ${totalAssigned} ks\n\nProsím upravte počet kusů u jednotlivých fotografií.`);
+                    setValidationError(`Požadováno: ${quantity} ks. Aktuálně vybráno: ${totalAssigned} ks. Upravte počty u fotek.`);
                     return;
                 }
             } else {
                 const minPhotos = effectiveRequiredPhotos;
                 if (finalPhotos.length < minPhotos) {
-                    alert(`Nahráli jste ${finalPhotos.length} ${finalPhotos.length === 1 ? 'fotografii' : finalPhotos.length < 5 ? 'fotografie' : 'fotografií'}.\n\nPro tento produkt je potřeba nahrát minimálně ${minPhotos} ${minPhotos === 1 ? 'fotografii' : 'fotografií'}.`); return;
+                    setValidationError(`Nahráli jste ${finalPhotos.length} ${finalPhotos.length === 1 ? 'fotografii' : finalPhotos.length < 5 ? 'fotografie' : 'fotografií'}. Je potřeba nahrát minimálně ${minPhotos} ${minPhotos === 1 ? 'fotografii' : 'fotografií'}.`); return;
                 }
             }
         }
 
+        setValidationError(null);
         const cartItem: CartItem = {
             id: `${product.id}-${Date.now()}`, product, quantity, price: baseTotal / quantity,
             variant: selectedVariant, photos: finalPhotos.length ? finalPhotos : [{ url: activeMedia, name: 'Motiv' }],
@@ -337,16 +343,19 @@ const ProductDetailPage: React.FC = () => {
 
                             {(isWedding || isInLove) && designMode === 'motif' && motifs.length > 0 && (
                                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-4">
-                                    {motifs.map((url, idx) => (
-                                        <button key={idx} onClick={() => setActiveMedia(url)} className="group flex flex-col items-center">
-                                            <div className={`relative aspect-square w-full rounded-xl overflow-hidden border-2 transition-all ${activeMedia === url ? 'border-brand-purple ring-2 ring-brand-purple/10 scale-95' : 'border-gray-100'}`}>
-                                                <img src={optimizeCloudinaryUrl(url, 200)} className="w-full h-full object-cover" alt="" />
-                                            </div>
-                                            <span className={`mt-1 text-[10px] font-medium text-center uppercase tracking-wide transition-colors leading-tight ${activeMedia === url ? 'text-brand-purple' : 'text-black'}`}>
-                                                {isWedding ? weddingMotifNames[idx] : isInLove ? inLoveMotifNames[idx] : 'Motiv'}
-                                            </span>
-                                        </button>
-                                    ))}
+                                    {motifs.map((url, idx) => {
+                                        const motifName = isWedding ? weddingMotifNames[idx] : isInLove ? inLoveMotifNames[idx] : 'Motiv';
+                                        return (
+                                            <button key={idx} onClick={() => handleMotifSelect(url, motifName)} className="group flex flex-col items-center">
+                                                <div className={`relative aspect-square w-full rounded-xl overflow-hidden border-2 transition-all ${activeMedia === url ? 'border-brand-purple ring-2 ring-brand-purple/10 scale-95' : 'border-gray-100'}`}>
+                                                    <img src={optimizeCloudinaryUrl(url, 200)} className="w-full h-full object-cover" alt="" />
+                                                </div>
+                                                <span className={`mt-1 text-[10px] font-medium text-center uppercase tracking-wide transition-colors leading-tight ${activeMedia === url ? 'text-brand-purple' : 'text-black'}`}>
+                                                    {motifName}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             )}
 
@@ -377,10 +386,12 @@ const ProductDetailPage: React.FC = () => {
                                         currentPhotos={finalPhotos}
                                         aspect={currentAspect}
                                         sizeLabel={selectedVariant?.name}
+                                        hideUpload={isInLove && designMode === 'motif'}
                                         labelHint={
                                             (isMagnets || isInLove) && designMode !== 'motif' ? `rozdělte ${quantity} ks mezi fotky` :
                                             (isWedding && designMode === 'custom') ? "vložte hotovou grafiku" :
                                             (isWedding && currentWeddingMotif === 'Film') ? "3 až 5 fotek" :
+                                            isInLove && designMode === 'motif' ? "vyberte motivy z galerie" :
                                             isPregnancy ? "(např. ultrazvuk)" : 
                                             isCalendar ? "(12 fotek)" : 
                                             isWedding ? "(vaše fotka)" : undefined
@@ -406,6 +417,14 @@ const ProductDetailPage: React.FC = () => {
 
                         {/* STATICKÉ TLAČÍTKO VLOŽIT DO KOŠÍKU */}
                         <div className="pt-2">
+                            {validationError && (
+                                <div className="mb-3 p-3 bg-red-50 border-2 border-red-100 rounded-xl flex items-center gap-2 animate-bounce">
+                                    <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    <span className="text-[11px] font-black text-red-600 uppercase tracking-wide leading-tight">{validationError}</span>
+                                </div>
+                            )}
                             <button onClick={handleAddToCart} disabled={isAdded || uploading} className={`w-full py-4 rounded-xl text-white font-black text-xl uppercase tracking-widest transition-all shadow-lg active:scale-95 ${isAdded ? 'bg-green-500' : 'bg-brand-pink hover:opacity-95 disabled:grayscale'}`}>
                                 {isAdded ? 'PŘIDÁNO ✓' : uploading ? 'Ukládám...' : `VLOŽIT DO KOŠÍKU — ${formatPrice(finalTotal)} Kč`}
                             </button>
@@ -416,18 +435,28 @@ const ProductDetailPage: React.FC = () => {
 
             {/* FIXNÍ LIŠTA */}
             <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-2 pb-6 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.08)]">
-                <div className="max-w-4xl mx-auto flex items-center justify-between gap-4 px-2">
-                    <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-black uppercase tracking-wider block leading-none">Celkem:</span>
-                        <span className="text-xl font-black text-brand-pink leading-tight">{formatPrice(finalTotal)} Kč</span>
+                <div className="max-w-4xl mx-auto flex flex-col gap-2">
+                    {validationError && (
+                        <div className="mx-2 p-2 bg-red-50 border border-red-100 rounded-xl flex items-center justify-center gap-2">
+                            <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-[10px] font-black text-red-600 uppercase tracking-tight text-center">{validationError}</span>
+                        </div>
+                    )}
+                    <div className="flex items-center justify-between gap-4 px-2">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-bold text-black uppercase tracking-wider block leading-none">Celkem:</span>
+                            <span className="text-xl font-black text-brand-pink leading-tight">{formatPrice(finalTotal)} Kč</span>
+                        </div>
+                        <button 
+                            onClick={handleAddToCart} 
+                            disabled={isAdded || uploading} 
+                            className={`flex-grow sm:flex-grow-0 sm:min-w-[200px] py-3 rounded-xl text-white font-black text-sm uppercase tracking-widest transition-all shadow-lg active:scale-95 ${isAdded ? 'bg-green-500' : 'bg-brand-pink hover:opacity-95 disabled:grayscale'}`}
+                        >
+                            {isAdded ? 'V KOŠÍKU ✓' : uploading ? 'Ukládám...' : 'DO KOŠÍKU'}
+                        </button>
                     </div>
-                    <button 
-                        onClick={handleAddToCart} 
-                        disabled={isAdded || uploading} 
-                        className={`flex-grow sm:flex-grow-0 sm:min-w-[200px] py-3 rounded-xl text-white font-black text-sm uppercase tracking-widest transition-all shadow-lg active:scale-95 ${isAdded ? 'bg-green-500' : 'bg-brand-pink hover:opacity-95 disabled:grayscale'}`}
-                    >
-                        {isAdded ? 'V KOŠÍKU ✓' : uploading ? 'Ukládám...' : 'DO KOŠÍKU'}
-                    </button>
                 </div>
             </div>
         </div>
