@@ -5,7 +5,7 @@ import { useProducts } from '../../context/ProductContext';
 import { Header } from '../Header';
 import { Footer } from '../Footer';
 import { ProtectedRoute } from '../auth/ProtectedRoute';
-import { ExitIntentPopup } from '../ExitIntentPopup';
+import { ExitPopup } from '../ExitPopup';
 
 // Import pages
 import HomePage from '../../pages/HomePage';
@@ -84,7 +84,7 @@ export const AppLayout: React.FC = () => {
                 <Header />
                 <main className="flex-grow">
                     <ScrollToTop />
-                    <ExitIntentPopup />
+                    <ExitPopup />
                     <Routes>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/produkty" element={<ProductsPage />} />
