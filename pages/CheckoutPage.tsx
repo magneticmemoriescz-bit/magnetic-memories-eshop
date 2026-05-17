@@ -68,21 +68,7 @@ const CheckoutPage: React.FC = () => {
     const [isPplModalOpen, setIsPplModalOpen] = useState(false);
     const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
 
-    // --- PPL SCRIPT LOADING ---
-    React.useEffect(() => {
-        const scriptId = 'ppl-map-script';
-        if (!document.getElementById(scriptId)) {
-            const script = document.createElement('script');
-            script.id = scriptId;
-            script.src = 'https://www.ppl.cz/sources/map/main.js';
-            script.async = true;
-            document.body.appendChild(script);
-            
-            script.onerror = () => {
-                console.error("PPL script failed to load");
-            };
-        }
-    }, []);
+    // --- PPL SCRIPT LOADING handled on modal open ---
 
     const [couponCode, setCouponCode] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState<{code: string, rate: number} | null>(null);
@@ -104,6 +90,46 @@ const CheckoutPage: React.FC = () => {
         document.addEventListener("ppl-parcelshop-map", handlePplPoint);
         return () => document.removeEventListener("ppl-parcelshop-map", handlePplPoint);
     }, []);
+
+    React.useEffect(() => {
+        if (isPplModalOpen) {
+            // Re-mount the script to ensure fresh initialization
+            const scriptId = 'ppl-map-script';
+            const existingScript = document.getElementById(scriptId);
+            if (existingScript) {
+                existingScript.remove();
+            }
+
+            const script = document.createElement('script');
+            script.id = scriptId;
+            script.src = 'https://www.ppl.cz/sources/map/main.js';
+            script.async = true;
+            
+            script.onload = () => {
+                const initMap = () => {
+                    const win = window as any;
+                    // PPL V3 Map initialization
+                    if (win.pplParcelShopMap && typeof win.pplParcelShopMap.init === 'function') {
+                        try {
+                            win.pplParcelShopMap.init('ppl-parcelshop-map');
+                        } catch (e) {
+                            console.error("PPL Map init failed:", e);
+                        }
+                    }
+                    window.dispatchEvent(new Event('resize'));
+                };
+                
+                // Small delay to ensure DOM is ready
+                setTimeout(initMap, 500);
+            };
+
+            document.body.appendChild(script);
+
+            return () => {
+                // We keep the script but we might want to clean up if needed
+            };
+        }
+    }, [isPplModalOpen]);
 
     const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -262,17 +288,10 @@ const CheckoutPage: React.FC = () => {
                 customTextsHtml += '</div>';
             }
 
-            const uniquePhotosMap = new Map();
-            item.photos.forEach(p => {
-                if (!uniquePhotosMap.has(p.url)) {
-                    uniquePhotosMap.set(p.url, p);
-                }
-            });
-            const uniquePhotos = Array.from(uniquePhotosMap.values());
-
             let photosHtml = '<div style="margin-top: 10px;">';
-            uniquePhotos.forEach((photo, idx) => {
-                const label = uniquePhotos.length === 1 ? 'ODKAZ NA FOTKU' : `ODKAZ NA FOTKU ${idx + 1}`;
+            item.photos.forEach((photo, idx) => {
+                const qtyText = photo.quantity && photo.quantity > 1 ? ` (${photo.quantity} ks)` : '';
+                const label = item.photos.length === 1 ? 'ODKAZ NA FOTKU' : `ODKAZ NA FOTKU ${idx + 1}${qtyText}`;
                 photosHtml += `<div style="margin-bottom: 5px;"><a href="${photo.url}" target="_blank" style="display: inline-block; background-color: #8D7EEF; color: #ffffff; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: bold;">${label}</a></div>`;
             });
             photosHtml += '</div>';
@@ -370,6 +389,8 @@ const CheckoutPage: React.FC = () => {
                 const mailingFee = i.directMailing ? DIRECT_MAILING_FEE : 0;
                 
                 let itemExtraInfo = '';
+                const photosInfo = i.photos.map((p, idx) => `Foto ${idx+1}${p.quantity ? ` (${p.quantity}x)` : ''}: ${p.url}`).join(' | ');
+                
                 if (i.customText) {
                     itemExtraInfo = ' (Texty: ' + Object.entries(i.customText)
                         .filter(([_, v]) => v && v.trim() !== '')
@@ -381,6 +402,7 @@ const CheckoutPage: React.FC = () => {
 
                 return {
                     name: `${i.product.name}${i.variant ? ` (${i.variant.name})` : ''}${itemExtraInfo}`,
+                    photos_info: photosInfo,
                     quantity: i.quantity,
                     unit_price: unitPrice,
                     amount: unitPrice * i.quantity,
@@ -392,6 +414,7 @@ const CheckoutPage: React.FC = () => {
             if (order.shippingCost > 0) {
                 invoiceLines.push({
                     name: `Doprava: ${shippingNameMap[order.shipping] || order.shipping}`,
+                    photos_info: '',
                     quantity: 1,
                     unit_price: order.shippingCost,
                     amount: order.shippingCost,
@@ -403,6 +426,7 @@ const CheckoutPage: React.FC = () => {
             if (order.discountAmount > 0) {
                 invoiceLines.push({
                     name: `Sleva (kód: ${order.couponCode || 'Slevový kód'})`,
+                    photos_info: '',
                     quantity: 1,
                     unit_price: -order.discountAmount,
                     amount: -order.discountAmount,
@@ -507,9 +531,21 @@ const CheckoutPage: React.FC = () => {
                                     </div>
                                     <div className="flex-grow">
                                         <h3 className="font-black text-gray-900 leading-tight">{item.product.name}</h3>
-                                        <p className="text-xs font-normal text-black uppercase tracking-widest mt-1">
+                                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-1">
                                             {item.variant?.name} • {item.quantity} ks
                                         </p>
+                                        
+                                        {item.photos.some(p => p.quantity && p.quantity > 1) && (
+                                            <div className="mt-2 space-y-1">
+                                                {item.photos.map((photo, pIdx) => (
+                                                    <div key={pIdx} className="text-[10px] text-gray-500 font-bold flex items-center gap-1.5">
+                                                        <span className="w-1 h-1 rounded-full bg-brand-purple"></span>
+                                                        <span>Foto {pIdx + 1}: {photo.quantity || 1} ks</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        
                                         {item.customText && Object.values(item.customText).some(v => v) && (
                                             <div className="mt-2 text-[10px] text-gray-500 bg-gray-50 p-2 rounded border border-dashed border-gray-200">
                                                 {Object.entries(item.customText).map(([key, val]) => val && (
@@ -592,31 +628,29 @@ const CheckoutPage: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* PPL MODAL */}
-                            {isPplModalOpen && (
-                                <div className="fixed inset-0 z-[200] flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
-                                    <div className="relative bg-white w-full h-full sm:h-[90vh] sm:max-w-5xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-                                        <div className="p-4 border-b flex items-center justify-between bg-white">
-                                            <h3 className="font-black text-lg text-brand-purple">Výběr PPL ParcelShopu</h3>
-                                            <button 
-                                                type="button"
-                                                onClick={() => setIsPplModalOpen(false)}
-                                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                        <div className="flex-grow relative bg-gray-100">
-                                            <div id="ppl-parcelshop-map" data-language="cs" className="w-full h-full min-h-[400px]"></div>
-                                        </div>
-                                        <div className="p-4 bg-gray-50 text-center text-xs text-gray-500">
-                                            Vyberte prosím výdejní místo přímo na mapě nebo v seznamu.
-                                        </div>
+                            {/* PPL MODAL - Always in DOM but hidden to allow initialization */}
+                            <div className={`${isPplModalOpen ? 'flex' : 'hidden'} fixed inset-0 z-[200] items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm`}>
+                                <div className="relative bg-white w-full h-full sm:h-[90vh] sm:max-w-5xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+                                    <div className="p-4 border-b flex items-center justify-between bg-white">
+                                        <h3 className="font-black text-lg text-brand-purple">Výběr PPL ParcelShopu</h3>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setIsPplModalOpen(false)}
+                                            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div className="flex-grow relative bg-gray-100 min-h-[500px]">
+                                        <div id="ppl-parcelshop-map" data-language="cs" data-id="magnetic-memories" className="absolute inset-0 w-full h-full" style={{ minHeight: '500px' }}></div>
+                                    </div>
+                                    <div className="p-4 bg-gray-50 text-center text-xs text-gray-500">
+                                        Vyberte prosím výdejní místo přímo na mapě nebo v seznamu.
                                     </div>
                                 </div>
-                            )}
+                            </div>
                             <RadioCard name="shipping" value="ppl_address" title="PPL Doručení na adresu" price={shippingCosts['ppl_address'] === 0 ? "Zdarma" : `${shippingCosts['ppl_address']} Kč`} checked={shippingMethod === 'ppl_address'} onChange={(e: any) => setShippingMethod(e.target.value)} />
 
                             <p className="text-xs font-normal text-black uppercase pt-4">Zásilkovna</p>
