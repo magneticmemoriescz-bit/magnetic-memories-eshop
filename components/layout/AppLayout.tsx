@@ -5,6 +5,7 @@ import { useProducts } from '../../context/ProductContext';
 import { Header } from '../Header';
 import { Footer } from '../Footer';
 import { ProtectedRoute } from '../auth/ProtectedRoute';
+import { ExitIntentPopup } from '../ExitIntentPopup';
 
 // Import pages
 import HomePage from '../../pages/HomePage';
@@ -17,6 +18,7 @@ import OrderConfirmationPage from '../../pages/OrderConfirmationPage';
 import TermsPage from '../../pages/TermsPage';
 import PrivacyPage from '../../pages/PrivacyPage';
 import ShippingPage from '../../pages/ShippingPage';
+import WithdrawalPage from '../../pages/WithdrawalPage';
 import AdminLoginPage from '../../pages/admin/AdminLoginPage';
 import AdminDashboardPage from '../../pages/admin/AdminDashboardPage';
 import AdminProductEditPage from '../../pages/admin/AdminProductEditPage';
@@ -82,6 +84,7 @@ export const AppLayout: React.FC = () => {
                 <Header />
                 <main className="flex-grow">
                     <ScrollToTop />
+                    <ExitIntentPopup />
                     <Routes>
                         <Route path="/" element={<HomePage />} />
                         <Route path="/produkty" element={<ProductsPage />} />
@@ -93,6 +96,7 @@ export const AppLayout: React.FC = () => {
                         <Route path="/obchodni-podminky" element={<TermsPage />} />
                         <Route path="/ochrana-udaju" element={<PrivacyPage />} />
                         <Route path="/doprava" element={<ShippingPage />} />
+                        <Route path="/odstoupeni-od-smlouvy" element={<WithdrawalPage />} />
                         
                         {/* Admin Routes */}
                         <Route path="/admin/login" element={<AdminLoginPage />} />
