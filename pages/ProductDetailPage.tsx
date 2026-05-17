@@ -1,18 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useProducts } from '../context/ProductContext';
 import { useCart } from '../context/CartContext';
-import { Product, ProductVariant, CartItem, UploadedPhoto } from '../types';
+import { ProductVariant, CartItem, UploadedPhoto } from '../types';
 import { Seo } from '../components/Seo';
 import { formatPrice } from '../utils/format';
-import { trackAddToCart } from '../utils/gtag';
 import { optimizeCloudinaryUrl } from '../utils/cloudinary';
 import { FileUpload } from '../components/FileUpload';
 import { isVideo } from '../utils/media';
 
 const ProductDetailPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
     const { products } = useProducts();
     const { dispatch } = useCart();
 
@@ -33,7 +31,6 @@ const ProductDetailPage: React.FC = () => {
     const isPregnancy = id === 'pregnancy-announcement';
     const isInLove = id === 'in-love-magnets';
     const isMagnets = id === 'photomagnets';
-    const isMerch = id === 'magnetic-merch';
     const isCalendar = id === 'magnetic-calendar';
 
     // Volba designu (Svatba a Zamilované začínají v režimu motivů)
@@ -132,14 +129,15 @@ const ProductDetailPage: React.FC = () => {
         };
         dispatch({ type: 'ADD_ITEM', payload: cartItem });
         setIsAdded(true);
-        setTimeout(() => navigate('/kosik'), 600);
+        // Reset success state after 3 seconds so user can add more or continue browsing
+        setTimeout(() => setIsAdded(false), 3000);
     };
 
-    const inputClasses = "w-full py-2.5 px-4 bg-white rounded-xl border-2 border-gray-100 font-bold focus:ring-2 focus:ring-brand-purple focus:border-brand-purple outline-none placeholder-gray-400 text-sm transition-all shadow-sm";
+    const inputClasses = "w-full py-2.5 px-4 bg-white rounded-xl border-2 border-gray-100 focus:ring-2 focus:ring-brand-purple focus:border-brand-purple outline-none placeholder-gray-400 text-sm transition-all shadow-sm";
     
     // Společné třídy pro tlačítka výběru
-    const selectionBtnBase = "relative p-2 rounded-xl border-2 text-left transition-all h-full flex flex-col justify-center";
-    const selectionBtnActive = "bg-brand-purple border-brand-purple text-white ring-2 ring-brand-purple/10";
+    const selectionBtnBase = "relative px-2 py-1.5 rounded-xl border-2 text-left transition-all flex flex-col justify-center min-h-[44px]";
+    const selectionBtnActive = "bg-brand-purple border-brand-purple text-white ring-2 ring-brand-purple/10 shadow-sm";
     const selectionBtnInactive = "bg-white border-gray-100 text-gray-900 hover:border-gray-200";
 
     return (
@@ -188,51 +186,51 @@ const ProductDetailPage: React.FC = () => {
                             <div className="bg-brand-purple/5 border border-brand-purple/10 rounded-2xl p-4 mb-3">
                                 <div className="flex items-center justify-between">
                                     <span className="text-3xl font-black text-brand-pink">{formatPrice(currentUnitPrice)} Kč</span>
-                                    <div className="flex items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">
+                                    <div className="flex items-center text-[10px] font-medium text-black uppercase tracking-widest whitespace-nowrap">
                                         <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2 flex-shrink-0"></span>
-                                        Skladem (3-5 dní)
+                                        Výroba (3-5 dní)
                                     </div>
                                 </div>
-                                <div className="mt-1.5 text-[9px] font-black text-gray-400 uppercase tracking-widest">DOPRAVA ZDARMA NAD 800 KČ</div>
+                                <div className="mt-1.5 text-[9px] font-medium text-black uppercase tracking-widest">DOPRAVA ZDARMA NAD 800 KČ</div>
                             </div>
                         </section>
 
                         {/* 1. VYBERTE ROZMĚR */}
                         <section>
-                            <h2 className="text-[11px] font-black text-gray-800 uppercase tracking-widest mb-2">1. Vyberte rozměr</h2>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                            <h2 className="text-[11px] font-medium text-gray-800 uppercase tracking-widest mb-2">1. Vyberte rozměr</h2>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
                                 {product.variants?.map(v => (
                                     <button 
                                         key={v.id} 
                                         onClick={() => setSelectedVariant(v)} 
                                         className={`${selectionBtnBase} ${selectedVariant?.id === v.id ? selectionBtnActive : selectionBtnInactive}`}
                                     >
-                                        <div className={`text-[13px] font-black uppercase leading-tight ${selectedVariant?.id === v.id ? 'text-white' : 'text-gray-900'}`}>
+                                        <div className={`text-[13px] font-medium uppercase leading-tight ${selectedVariant?.id === v.id ? 'text-white' : 'text-gray-900'}`}>
                                             {v.name}
-                                            {isWedding && v.id === 'a6' && <span className="block text-[8px] font-bold normal-case mt-0.5 opacity-80"> nejběžnější</span>}
+                                            {isWedding && v.id === 'a6' && <span className="block text-[8px] font-medium normal-case mt-0.5 opacity-80"> nejběžnější</span>}
                                         </div>
-                                        <div className={`text-[11px] font-bold mt-0.5 ${selectedVariant?.id === v.id ? 'text-white/80' : 'text-gray-400'}`}>
+                                        <div className={`text-[13px] font-bold mt-0.5 ${selectedVariant?.id === v.id ? 'text-white' : 'text-brand-pink'}`}>
                                             {v.price || product.price} Kč
                                         </div>
                                     </button>
                                 ))}
                             </div>
-                            <p className="mt-2 text-[10px] font-bold text-brand-purple uppercase tracking-tight px-1 italic">
+                            <p className="mt-2 text-[10px] font-bold text-brand-purple uppercase tracking-tight px-1">
                                 TIP: pokud vaše fotografie neodpovídá rozměru, nevadí, upravíme ji
                             </p>
                         </section>
 
                         {/* 2. POČET KUSŮ */}
                         <section>
-                            <h2 className="text-[11px] font-black text-gray-800 uppercase tracking-widest mb-2">2. Počet kusů</h2>
+                            <h2 className="text-[11px] font-medium text-gray-800 uppercase tracking-widest mb-2">2. Počet kusů</h2>
                             <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 shadow-inner space-y-3">
                                 <div>
-                                    <h3 className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 px-1">Vlastní počet</h3>
+                                    <h3 className="text-[9px] font-medium text-black uppercase tracking-widest mb-1.5 px-1">Vlastní počet</h3>
                                     <div className="relative">
                                         <select 
                                             value={quantity} 
                                             onChange={(e) => setQuantity(parseInt(e.target.value))} 
-                                            className="w-full h-[48px] bg-white border-2 border-gray-100 rounded-xl px-4 font-black text-sm focus:ring-2 focus:ring-brand-purple focus:border-brand-purple outline-none appearance-none cursor-pointer transition-all hover:border-gray-200"
+                                            className="w-full h-[48px] bg-white border-2 border-gray-100 rounded-xl px-4 font-normal text-sm focus:ring-2 focus:ring-brand-purple focus:border-brand-purple outline-none appearance-none cursor-pointer transition-all hover:border-gray-200"
                                         >
                                             {[1,2,3,4,5,6,10,15,20,30,50,100].map(n => <option key={n} value={n}>{n} ks</option>)}
                                         </select>
@@ -247,15 +245,15 @@ const ProductDetailPage: React.FC = () => {
                                 {!isCalendar && (
                                     <div>
                                         <h3 className="text-[9px] font-black text-brand-purple uppercase tracking-widest mb-1.5 px-1">Zvýhodněné sady</h3>
-                                        <div className="grid grid-cols-3 gap-1.5">
+                                        <div className="grid grid-cols-4 gap-1.5">
                                             {(isPregnancy || isWedding ? [10, 20, 50, 100] : [9, 15, 30]).map(q => (
                                                 <button 
                                                     key={q} 
                                                     onClick={() => setQuantity(q)} 
-                                                    className={`${selectionBtnBase} text-center items-center py-2.5 ${quantity === q ? selectionBtnActive : selectionBtnInactive}`}
+                                                    className={`${selectionBtnBase} text-center items-center ${quantity === q ? selectionBtnActive : selectionBtnInactive}`}
                                                 >
-                                                    <span className="text-[12px] font-black uppercase">{q === 15 ? '14+1' : q === 30 ? '28+2' : `${q} KS`}</span>
-                                                    <span className={`text-[11px] font-black mt-0.5 ${quantity === q ? 'text-white/80' : 'text-brand-pink'}`}>{getSetPrice(q)} Kč</span>
+                                                    <span className={`text-[12px] font-medium uppercase ${quantity === q ? 'text-white' : 'text-black'}`}>{q === 15 ? '14+1' : q === 30 ? '28+2' : `${q} KS`}</span>
+                                                    <span className={`text-[12px] font-bold mt-0.5 ${quantity === q ? 'text-white' : 'text-brand-pink'}`}>{getSetPrice(q)} Kč</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -266,7 +264,7 @@ const ProductDetailPage: React.FC = () => {
 
                         {/* 3. KONFIGURACE */}
                         <section>
-                            <h2 className="text-[11px] font-black text-gray-800 uppercase tracking-widest mb-2">3. Motiv a konfigurace</h2>
+                            <h2 className="text-[11px] font-medium text-gray-800 uppercase tracking-widest mb-2">3. Motiv a konfigurace</h2>
                             
                             {isWedding && (
                                 <div className="grid grid-cols-2 gap-1.5 mb-4">
@@ -282,7 +280,7 @@ const ProductDetailPage: React.FC = () => {
                                             <div className={`relative aspect-square w-full rounded-xl overflow-hidden border-2 transition-all ${activeMedia === url ? 'border-brand-purple ring-2 ring-brand-purple/10 scale-95' : 'border-gray-100'}`}>
                                                 <img src={optimizeCloudinaryUrl(url, 200)} className="w-full h-full object-cover" alt="" />
                                             </div>
-                                            <span className={`mt-1 text-[7px] font-black text-center uppercase tracking-wider transition-colors leading-tight ${activeMedia === url ? 'text-brand-purple' : 'text-gray-400'}`}>
+                                            <span className={`mt-1 text-[7px] font-normal text-center uppercase tracking-wider transition-colors leading-tight ${activeMedia === url ? 'text-brand-purple' : 'text-black'}`}>
                                                 {isWedding ? weddingMotifNames[idx] : isInLove ? inLoveMotifNames[idx] : 'Motiv'}
                                             </span>
                                         </button>
@@ -293,7 +291,7 @@ const ProductDetailPage: React.FC = () => {
                             <div className="space-y-3 bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
                                 {product.hasTextFields && !isCalendar && !(isWedding && designMode === 'custom') && (
                                     <div className="space-y-2">
-                                        <h3 className="text-[10px] font-black text-brand-purple uppercase tracking-widest px-1">Doplňte text na oznámení:</h3>
+                                        <h3 className="text-[10px] font-medium text-brand-purple uppercase tracking-widest px-1">Doplňte text na oznámení:</h3>
                                         <div className="grid grid-cols-1 gap-2">
                                             <input placeholder={isWedding ? "Budeme se brát" : "Budeme tři..."} className={inputClasses} onChange={(e) => setCustomText(p => ({...p, t1: e.target.value}))} />
                                             <input placeholder={isWedding ? "Eva a Adam" : "podzim 2026"} className={inputClasses} onChange={(e) => setCustomText(p => ({...p, t2: e.target.value}))} />
@@ -329,12 +327,12 @@ const ProductDetailPage: React.FC = () => {
                         {/* 4. ROZESLÁNÍ */}
                         {(isWedding || isPregnancy) && (
                             <section>
-                                <h2 className="text-[11px] font-black text-gray-800 uppercase tracking-widest mb-2">4. Rozeslání</h2>
+                                <h2 className="text-[11px] font-medium text-gray-800 uppercase tracking-widest mb-2">4. Rozeslání</h2>
                                 <label className={`flex items-start space-x-3 p-4 rounded-2xl border-2 cursor-pointer transition-all shadow-sm ${directMailing ? 'bg-brand-purple/5 border-brand-purple' : 'bg-white border-gray-100 hover:border-gray-200'}`}>
                                     <input type="checkbox" checked={directMailing} onChange={() => setDirectMailing(!directMailing)} className="mt-0.5 h-5 w-5 text-brand-purple rounded border-gray-300 focus:ring-brand-purple" />
                                     <div>
-                                        <p className="font-black text-gray-800 text-[13px]">Rozeslat na jednotlivé adresy</p>
-                                        <p className="text-[10px] text-gray-400 font-bold">+100 Kč / ks (adresy pak pošlete mailem)</p>
+                                        <p className="font-medium text-gray-800 text-[13px]">Rozeslat na jednotlivé adresy</p>
+                                         <p className="text-[10px] text-black font-medium">+100 Kč / ks (adresy pak pošlete mailem)</p>
                                     </div>
                                 </label>
                             </section>
@@ -354,8 +352,8 @@ const ProductDetailPage: React.FC = () => {
             <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-3 pb-8 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
                 <div className="max-w-7xl mx-auto flex flex-col items-center px-4">
                     <div className="mb-2 text-center">
-                        <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest block mb-0.5">CELKEM:</span>
-                        <span className="text-2xl font-black text-brand-purple">{formatPrice(finalTotal)} Kč</span>
+                        <span className="text-[8px] font-medium text-black uppercase tracking-widest block mb-0.5">CELKEM:</span>
+                        <span className="text-2xl font-black text-brand-pink">{formatPrice(finalTotal)} Kč</span>
                     </div>
                     <button onClick={handleAddToCart} disabled={isAdded || uploading} className={`w-full max-w-md py-4 rounded-xl text-white font-black text-base uppercase tracking-widest transition-all shadow-xl active:scale-95 ${isAdded ? 'bg-green-500' : 'bg-brand-pink hover:opacity-95 disabled:grayscale'}`}>
                         {isAdded ? 'PŘIDÁNO ✓' : uploading ? 'Ukládám...' : `PŘIDAT DO KOŠÍKU — ${formatPrice(finalTotal)} Kč`}
