@@ -233,6 +233,8 @@ const CheckoutPage: React.FC = () => {
     const sendEmailNotifications = async (order: OrderDetails) => {
         const vs = order.orderNumber;
         const currentDate = new Date().toLocaleDateString('cs-CZ');
+        const fullName = `${order.contact.firstName} ${order.contact.lastName}`;
+        const fullAddress = `${order.contact.street}, ${order.contact.city}, ${order.contact.zip}`;
         
         const styleTable = 'width: 100%; border-collapse: collapse; font-family: Helvetica, Arial, sans-serif; font-size: 14px;';
         const styleTh = 'text-align: left; padding: 12px; background-color: #f3f4f6; color: #374151; border-bottom: 2px solid #e5e7eb; font-weight: bold;';
@@ -302,14 +304,24 @@ const CheckoutPage: React.FC = () => {
         itemsHtml += `<tr><td style="${styleTdTotal}">CELKEM ZA ZBOŽÍ</td><td style="${styleTdTotal} text-align: center;">${totalItemsQuantity}</td><td style="${styleTdTotal} text-align: right;">${formatPrice(totalItemsPrice)} Kč</td></tr>`;
         
         let shippingPointInfo = '';
+        let deliveryAddressHtml = '';
+        
         if (order.shipping === 'zasilkovna_point' && order.packetaPoint) {
+            const pointInfo = `<strong>${order.packetaPoint.name}</strong><br>${order.packetaPoint.street}, ${order.packetaPoint.city}`;
             shippingPointInfo = `<br><span style="color: #8D7EEF; font-weight: bold;">Výdejní místo:</span> ${order.packetaPoint.name}<br><span style="color: #8D7EEF; font-weight: bold;">Adresa:</span> ${order.packetaPoint.street}, ${order.packetaPoint.city}`;
+            deliveryAddressHtml = `<tr><td style="padding: 6px 0; color: #6b7280;"><strong>Výdejní místo:</strong></td><td style="padding: 6px 0; color: #111827;">${pointInfo}</td></tr>`;
         } else if (order.shipping === 'ppl_parcelshop' && (order as any).pplPoint) {
             const p = (order as any).pplPoint;
+            const pointInfo = `<strong>${p.name}</strong><br>${p.street}, ${p.city}`;
             shippingPointInfo = `<br><span style="color: #8D7EEF; font-weight: bold;">PPL ParcelShop:</span> ${p.name}<br><span style="color: #8D7EEF; font-weight: bold;">Adresa:</span> ${p.street}, ${p.city}`;
+            deliveryAddressHtml = `<tr><td style="padding: 6px 0; color: #6b7280;"><strong>ParcelShop:</strong></td><td style="padding: 6px 0; color: #111827;">${pointInfo}</td></tr>`;
         } else if (order.shipping === 'balikovna_point' && (order as any).balikovnaPoint) {
             const p = (order as any).balikovnaPoint;
+            const pointInfo = `<strong>${p.name}</strong><br>${p.street}, ${p.city}`;
             shippingPointInfo = `<br><span style="color: #8D7EEF; font-weight: bold;">Balíkovna:</span> ${p.name}<br><span style="color: #8D7EEF; font-weight: bold;">Adresa:</span> ${p.street}, ${p.city}`;
+            deliveryAddressHtml = `<tr><td style="padding: 6px 0; color: #6b7280;"><strong>Balíkovna:</strong></td><td style="padding: 6px 0; color: #111827;">${pointInfo}</td></tr>`;
+        } else {
+            deliveryAddressHtml = `<tr><td style="padding: 6px 0; color: #6b7280;"><strong>Fakturační adresa:</strong></td><td style="padding: 6px 0; color: #111827; font-weight: bold;">${fullAddress}</td></tr>`;
         }
 
         const shippingNameMap: {[key: string]: string} = {
@@ -325,24 +337,27 @@ const CheckoutPage: React.FC = () => {
         itemsHtml += `<tr><td style="${styleTd}">Platba: ${order.payment}</td><td style="${styleTd} text-align: center;">1</td><td style="${styleTdPrice}">${formatPrice(order.paymentCost)} Kč</td></tr>`;
         itemsHtml += `<tr style="background-color: #fdf2f8;"><td colspan="2" style="padding: 16px 12px; text-align: right; font-weight: bold;">CELKEM K ÚHRADĚ</td><td style="padding: 16px 12px; text-align: right; font-weight: bold; font-size: 20px; color: #831843;">${formatPrice(order.total)} Kč</td></tr></tbody></table>`;
 
-        const fullName = `${order.contact.firstName} ${order.contact.lastName}`;
-        const fullAddress = `${order.contact.street}, ${order.contact.city}, ${order.contact.zip}`;
-
         const customerInfoHtml = `
             <div style="${styleBox}">
-                <h3 style="margin-top: 0; color: #EA5C9D; font-size: 18px; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; margin-bottom: 15px;">Údaje o doručení a zákazníkovi</h3>
+                <h3 style="margin-top: 0; color: #EA5C9D; font-size: 18px; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; margin-bottom: 15px;">Fakturační údaje</h3>
                 <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                    <tr><td style="padding: 6px 0; color: #6b7280; width: 160px;"><strong>Jméno a příjnamí:</strong></td><td style="padding: 6px 0; color: #111827; font-weight: bold;">${fullName}</td></tr>
-                    ${order.ico ? `<tr><td style="padding: 6px 0; color: #6b7280;"><strong>IČO (Firma):</strong></td><td style="padding: 6px 0; color: #111827; font-weight: bold;">${order.ico}</td></tr>` : ''}
+                    <tr><td style="padding: 6px 0; color: #6b7280; width: 160px;"><strong>Odběratel:</strong></td><td style="padding: 6px 0; color: #111827; font-weight: bold;">${fullName}</td></tr>
+                    ${order.ico ? `<tr><td style="padding: 6px 0; color: #6b7280;"><strong>IČO:</strong></td><td style="padding: 6px 0; color: #111827; font-weight: bold;">${order.ico}</td></tr>` : ''}
+                    <tr><td style="padding: 6px 0; color: #6b7280;"><strong>Fakturační adresa:</strong></td><td style="padding: 6px 0; color: #111827;">${fullAddress}</td></tr>
                     <tr><td style="padding: 6px 0; color: #6b7280;"><strong>Email:</strong></td><td style="padding: 6px 0; color: #111827;">${order.contact.email}</td></tr>
                     <tr><td style="padding: 6px 0; color: #6b7280;"><strong>Telefon:</strong></td><td style="padding: 6px 0; color: #111827;">${order.contact.phone}</td></tr>
-                    <tr><td colspan="2" style="padding: 10px 0;"><hr style="border: 0; border-top: 1px solid #e5e7eb;"></td></tr>
-                    <tr><td style="padding: 6px 0; color: #6b7280;"><strong>Adresa doručení:</strong></td><td style="padding: 6px 0; color: #111827; font-weight: bold;">${fullAddress}</td></tr>
-                    <tr><td style="padding: 6px 0; color: #6b7280;"><strong>Způsob dopravy:</strong></td><td style="padding: 6px 0; color: #111827;">${shippingNameMap[order.shipping] || order.shipping} ${order.shipping === 'zasilkovna_point' && order.packetaPoint ? `(${order.packetaPoint.name})` : ''}</td></tr>
-                    <tr><td colspan="2" style="padding: 10px 0;"><hr style="border: 0; border-top: 1px solid #e5e7eb;"></td></tr>
-                    <tr><td style="padding: 6px 0; color: #6b7280;"><strong>Souhlas se zveřejněním:</strong></td><td style="padding: 6px 0; font-weight: bold; color: ${order.marketingConsent ? '#059669' : '#dc2626'};">${order.marketingConsent ? 'SOUHLASÍM (ANO)' : 'NESOUHLASÍM (NE)'}</td></tr>
-                    ${order.additionalInfo ? `<tr><td style="padding: 10px 0; color: #6b7280; vertical-align: top;"><strong>Poznámka:</strong></td><td style="padding: 10px 0; color: #4b5563; background-color: #fff9fc; border: 1px dashed #EA5C9D; padding: 10px; border-radius: 4px;">${order.additionalInfo}</td></tr>` : ''}
                 </table>
+
+                <h3 style="margin-top: 20px; color: #8D7EEF; font-size: 16px; border-bottom: 1px solid #f3f4f6; padding-bottom: 5px; margin-bottom: 10px;">Doprava a doručení</h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <tr><td style="padding: 6px 0; color: #6b7280; width: 160px;"><strong>Způsob dopravy:</strong></td><td style="padding: 6px 0; color: #111827; font-weight: bold;">${shippingNameMap[order.shipping] || order.shipping}</td></tr>
+                    ${deliveryAddressHtml}
+                </table>
+
+                <div style="margin-top: 15px; border-top: 1px solid #e5e7eb; padding-top: 10px; font-size: 13px;">
+                    <span style="color: #6b7280;"><strong>Souhlas se zveřejněním:</strong></span> <span style="font-weight: bold; color: ${order.marketingConsent ? '#059669' : '#dc2626'};">${order.marketingConsent ? 'SOUHLASÍM (ANO)' : 'NESOUHLASÍM (NE)'}</span>
+                </div>
+                ${order.additionalInfo ? `<div style="margin-top: 10px; color: #4b5563; background-color: #fff9fc; border: 1px dashed #EA5C9D; padding: 10px; border-radius: 4px; font-size: 13px;"><strong>Poznámka k objednávce:</strong> ${order.additionalInfo}</div>` : ''}
             </div>
         `;
 
@@ -435,6 +450,17 @@ const CheckoutPage: React.FC = () => {
                 });
             }
 
+            let deliveryAddress = `${order.contact.street}, ${order.contact.city}, ${order.contact.zip}`;
+            if (order.shipping === 'zasilkovna_point' && order.packetaPoint) {
+                deliveryAddress = `Zásilkovna: ${order.packetaPoint.name}, ${order.packetaPoint.street}, ${order.packetaPoint.city}`;
+            } else if (order.shipping === 'ppl_parcelshop' && (order as any).pplPoint) {
+                const p = (order as any).pplPoint;
+                deliveryAddress = `PPL ParcelShop: ${p.name}, ${p.street}, ${p.city}`;
+            } else if (order.shipping === 'balikovna_point' && (order as any).balikovnaPoint) {
+                const p = (order as any).balikovnaPoint;
+                deliveryAddress = `Balíkovna: ${p.name}, ${p.street}, ${p.city}`;
+            }
+
             const payload = {
                 orderNumber: order.orderNumber,
                 name: `${order.contact.firstName} ${order.contact.lastName}`,
@@ -444,7 +470,8 @@ const CheckoutPage: React.FC = () => {
                 marketingConsent: order.marketingConsent,
                 additionalInfo: order.additionalInfo,
                 shipping: shippingNameMap[order.shipping] || order.shipping,
-                address: `${order.contact.street}, ${order.contact.city}, ${order.contact.zip}`,
+                address: deliveryAddress,
+                billing_address: `${order.contact.street}, ${order.contact.city}, ${order.contact.zip}`,
                 street: order.contact.street,
                 city: order.contact.city,
                 zip: order.contact.zip,
