@@ -57,8 +57,8 @@ export const ExitPopup: React.FC = () => {
   };
 
   const copyCode = () => {
-    navigator.clipboard.writeText('vitejte15');
-    alert('Slevový kód vitejte15 byl zkopírován!');
+    navigator.clipboard.writeText('vitejte10');
+    alert('Slevový kód vitejte10 byl zkopírován!');
     dismiss();
   };
 
@@ -90,14 +90,14 @@ export const ExitPopup: React.FC = () => {
           
           <p className="text-gray-600 mb-8 font-medium">
             Nenechte své vzpomínky jen v telefonu. <br />
-            Získejte <span className="font-black text-gray-900 text-lg">slevu 15 %</span> na váš první nákup!
+            Získejte <span className="font-black text-gray-900 text-lg">slevu 10 %</span> na váš první nákup!
           </p>
 
           <div className="bg-gray-50 border-2 border-dashed border-brand-purple/30 rounded-2xl p-6 mb-8 relative group">
             <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-4 py-0.5 text-xs font-black text-brand-purple uppercase tracking-wider border border-brand-purple/20 rounded-full">
               Váš slevový kód
             </span>
-            <div className="text-3xl font-black tracking-widest text-brand-purple">vitejte15</div>
+            <div className="text-3xl font-black tracking-widest text-brand-purple">vitejte10</div>
           </div>
 
           <button 
