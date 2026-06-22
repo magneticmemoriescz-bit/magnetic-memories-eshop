@@ -1020,4 +1020,5 @@ export const PregnancyEditorModal: React.FC<PregnancyEditorModalProps> = ({
 
       </div>
     </div>
-  
+  );
+};
