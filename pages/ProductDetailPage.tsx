@@ -54,7 +54,7 @@ const ProductDetailPage: React.FC = () => {
     // Dynamické načtení Google písem pro Polaroid a ozdobné editory
     useEffect(() => {
         const link = document.createElement('link');
-        link.href = 'https://fonts.googleapis.com/css2?family=Alex+Brush&family=Caveat:wght@400;700&family=Cinzel:wght@600&family=Dancing+Script:wght@700&family=Great+Vibes&family=Montserrat:wght@400;700&family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap';
+        link.href = 'https://fonts.googleapis.com/css2?family=Alex+Brush&family=Caveat:wght@400;700&family=Cinzel:wght@600&family=Dancing+Script:wght@700&family=Great+Vibes&family=Montserrat:wght@400;700&family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=WindSong:wght@400;500&family=Whisper&family=Mrs+Saint+Delafield&family=Monsieur+La+Doulaise&display=swap';
         link.rel = 'stylesheet';
         document.head.appendChild(link);
         return () => {
@@ -167,7 +167,24 @@ const ProductDetailPage: React.FC = () => {
         : (selectedVariant?.price || product.price);
 
     const isSet = isCalendar ? false : ((isMagnets || isInLove) ? [9, 15, 30].includes(quantity) : [10, 20, 50, 100].includes(quantity));
-    const baseTotal = isSet ? getSetPrice(quantity) : (currentUnitPrice * quantity);
+    
+    const baseTotal = useMemo(() => {
+        const hasCustomFormats = finalPhotos.some(p => p.customFormat !== undefined);
+        if ((isMagnets || isInLove) && hasCustomFormats) {
+            let total = 0;
+            finalPhotos.forEach(p => {
+                const unitPrice = p.customFormat ? p.customFormat.price : (selectedVariant?.price || product.price);
+                total += unitPrice * (p.quantity || 1);
+            });
+            const totalAssigned = finalPhotos.reduce((sum, p) => sum + (p.quantity || 1), 0);
+            if (totalAssigned < quantity) {
+                total += (selectedVariant?.price || product.price) * (quantity - totalAssigned);
+            }
+            return total;
+        }
+        return isSet ? getSetPrice(quantity) : (currentUnitPrice * quantity);
+    }, [finalPhotos, isMagnets, isInLove, isSet, quantity, selectedVariant, product, currentUnitPrice]);
+
     const finalTotal = baseTotal + (directMailing ? quantity * 100 : 0);
 
     const handleMotifSelect = (url: string, name: string) => {
