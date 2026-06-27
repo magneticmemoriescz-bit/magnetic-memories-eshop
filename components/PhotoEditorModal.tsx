@@ -5,14 +5,34 @@ interface PhotoEditorModalProps {
   image: string;
   aspect: number;
   sizeLabel?: string;
-  onConfirm: (croppedImageBlob: Blob) => void;
+  onConfirm: (
+    croppedImageBlob: Blob,
+    customFormat?: {
+      id: string;
+      name: string;
+      width: number;
+      height: number;
+      price: number;
+    }
+  ) => void;
   onCancel: () => void;
 }
 
+const STANDARD_FORMATS = [
+  { id: '5x5', name: '5x5 cm', w: 5, h: 5, price: 35 },
+  { id: '7x7', name: '7x7 cm', w: 7, h: 7, price: 40 },
+  { id: '5x10', name: '5x10 cm', w: 5, h: 10, price: 40 },
+  { id: '10x10', name: '10x10 cm', w: 10, h: 10, price: 45 },
+  { id: '9x13', name: '9x13 cm', w: 9, h: 13, price: 50 },
+  { id: 'a6', name: 'A6 (10x15 cm)', w: 10, h: 15, price: 55 },
+  { id: 'a5-sheet', name: 'A5 (15x21 cm)', w: 15, h: 21, price: 100 },
+  { id: 'a4-sheet', name: 'A4 (21x30 cm)', w: 21, h: 30, price: 120 }
+];
+
 const AVAILABLE_FONTS = [
+  { id: 'Dancing Script', label: 'Psací', fontStyle: "'Dancing Script', cursive", className: 'font-["Dancing_Script"] font-bold' },
   { id: 'Great Vibes', label: 'Něžné písmo', fontStyle: "'Great Vibes', cursive", className: 'font-["Great_Vibes"]' },
   { id: 'Pinyon Script', label: 'Kaligrafické', fontStyle: "'Pinyon Script', cursive", className: 'font-["Pinyon_Script"]' },
-  { id: 'Dancing Script', label: 'Psací', fontStyle: "'Dancing Script', cursive", className: 'font-["Dancing_Script"] font-bold' },
   { id: 'Alex Brush', label: 'Klasické ozdobné', fontStyle: "'Alex Brush', cursive", className: 'font-["Alex_Brush"]' },
   { id: 'Caveat', label: 'Ručně psané', fontStyle: "'Caveat', cursive", className: 'font-["Caveat"] font-bold' },
   { id: 'Playfair Display', label: 'Luxusní patkové', fontStyle: "'Playfair Display', Georgia, serif", className: 'font-["Playfair_Display"] italic' },
@@ -52,6 +72,79 @@ export const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
 }) => {
   // Tabs: 'adjust' (Poloha a ořez), 'text' (Nápis a styl), 'frame' (Rámeček)
   const [activeTab, setActiveTab] = useState<'adjust' | 'text' | 'frame'>('adjust');
+
+  // Format customization states
+  const [selectedFormatId, setSelectedFormatId] = useState<string>(() => {
+    if (!sizeLabel) return 'custom';
+    const cleanLabel = sizeLabel.toLowerCase();
+    const found = STANDARD_FORMATS.find(f => 
+      cleanLabel.includes(f.name.toLowerCase()) || 
+      cleanLabel.includes(f.id.toLowerCase())
+    );
+    return found ? found.id : 'custom';
+  });
+
+  const [customWidth, setCustomWidth] = useState<number>(() => {
+    if (!sizeLabel) {
+      return aspect > 1 ? 10 * aspect : 10;
+    }
+    const match = sizeLabel.match(/(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)/i);
+    if (match) {
+      return parseFloat(match[1]);
+    }
+    return 10;
+  });
+
+  const [customHeight, setCustomHeight] = useState<number>(() => {
+    if (!sizeLabel) {
+      return aspect > 1 ? 10 : 10 / aspect;
+    }
+    const match = sizeLabel.match(/(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)/i);
+    if (match) {
+      return parseFloat(match[2]);
+    }
+    return 10;
+  });
+
+  const handleWidthChange = (val: number) => {
+    setCustomWidth(Math.max(3, Math.min(30, val)));
+  };
+
+  const handleHeightChange = (val: number) => {
+    setCustomHeight(Math.max(3, Math.min(30, val)));
+  };
+
+  const currentFormatDimensions = React.useMemo(() => {
+    if (selectedFormatId !== 'custom') {
+      const f = STANDARD_FORMATS.find(x => x.id === selectedFormatId);
+      if (f) return { w: f.w, h: f.h, name: f.name, isCustom: false, basePrice: f.price, matchedFormatName: f.name };
+    }
+    const w = customWidth || 10;
+    const h = customHeight || 10;
+    
+    const fittingFormats = STANDARD_FORMATS.filter(f => 
+      (w <= f.w && h <= f.h) || (h <= f.w && w <= f.h)
+    );
+    
+    let price = 120;
+    let matchedFormatName = 'A4';
+    if (fittingFormats.length > 0) {
+      const sorted = [...fittingFormats].sort((a, b) => a.price - b.price);
+      price = sorted[0].price;
+      matchedFormatName = sorted[0].name;
+    }
+
+    return {
+      w,
+      h,
+      name: `Vlastní ${w}x${h} cm`,
+      isCustom: true,
+      basePrice: price,
+      matchedFormatName
+    };
+  }, [selectedFormatId, customWidth, customHeight]);
+
+  const editorAspect = currentFormatDimensions.w / currentFormatDimensions.h;
 
   // Core modification states
   const [photoScale, setPhotoScale] = useState<number>(100);
@@ -153,7 +246,13 @@ export const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
         throw new Error('Chyba při renderu plátna.');
       }
 
-      onConfirm(blob);
+      onConfirm(blob, {
+        id: selectedFormatId,
+        name: currentFormatDimensions.name,
+        width: currentFormatDimensions.w,
+        height: currentFormatDimensions.h,
+        price: currentFormatDimensions.basePrice
+      });
     } catch (error: any) {
       console.error(error);
       alert(`Došlo k chybě při přípravě designu: ${error.message || error}`);
@@ -171,7 +270,7 @@ export const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
           <div className="flex flex-col">
             <h3 className="font-extrabold text-neutral-900 uppercase tracking-widest text-[13px] sm:text-sm flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-brand-pink animate-pulse"></span>
-              Kreativní editor vzpomínek {sizeLabel && <span className="text-brand-purple">[{sizeLabel}]</span>}
+              Kreativní editor vzpomínek <span className="text-brand-purple">[{currentFormatDimensions.name}]</span>
             </h3>
             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Ořezávejte, přidávejte texty a barevné rámečky</p>
           </div>
@@ -209,7 +308,7 @@ export const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
                 className={`relative overflow-hidden transition-shadow photo-drag-viewport cursor-grab active:cursor-grabbing`}
                 style={{
                   width: '320px',
-                  height: `${Math.round(320 / aspect)}px`,
+                  height: `${Math.round(320 / editorAspect)}px`,
                   backgroundColor: frameColor,
                   borderRadius: hasPolaroid ? '8px' : '0px',
                   padding: hasPolaroid 
@@ -236,8 +335,8 @@ export const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
                       position: 'absolute',
                       left: '50%',
                       top: '50%',
-                      width: imgNaturalAspect !== null ? (imgNaturalAspect > aspect ? 'auto' : '100%') : '100%',
-                      height: imgNaturalAspect !== null ? (imgNaturalAspect > aspect ? '100%' : 'auto') : '100%',
+                      width: imgNaturalAspect !== null ? (imgNaturalAspect > editorAspect ? 'auto' : '100%') : '100%',
+                      height: imgNaturalAspect !== null ? (imgNaturalAspect > editorAspect ? '100%' : 'auto') : '100%',
                       transform: `translate(-50%, -50%) scale(${photoScale / 100}) translate(${photoX}%, ${photoY}%) rotate(${photoRotate}deg)`,
                       transformOrigin: 'center center',
                       transition: isDragging ? 'none' : 'transform 0.15s ease-out'
@@ -365,6 +464,80 @@ export const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
               {/* TAB 1: ADJUSTMENTS & CROPPING */}
               {activeTab === 'adjust' && (
                 <div className="space-y-5 animate-fade-in">
+
+                  {/* Nastavení rozměru magnetky */}
+                  <div className="space-y-3 bg-neutral-50/50 p-3.5 rounded-2xl border border-neutral-100">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-neutral-500">
+                      Formát magnetky (rozměr)
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {STANDARD_FORMATS.map((f) => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => setSelectedFormatId(f.id)}
+                          className={`px-2 py-1.5 text-center text-xs rounded-xl font-bold border transition-all ${
+                            selectedFormatId === f.id
+                              ? 'bg-brand-purple border-brand-purple text-white shadow-sm'
+                              : 'bg-white border-neutral-200 hover:bg-neutral-50 text-neutral-700'
+                          }`}
+                        >
+                          {f.name}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedFormatId('custom')}
+                        className={`px-2 py-1.5 text-center text-xs rounded-xl font-bold border transition-all ${
+                          selectedFormatId === 'custom'
+                            ? 'bg-brand-purple border-brand-purple text-white shadow-sm'
+                            : 'bg-white border-neutral-200 hover:bg-neutral-50 text-neutral-700'
+                        }`}
+                      >
+                        Vlastní rozměr
+                      </button>
+                    </div>
+
+                    {selectedFormatId === 'custom' && (
+                      <div className="pt-2.5 space-y-3 border-t border-dashed border-neutral-200 animate-fade-in">
+                        <div className="flex gap-3">
+                          <div className="flex-1 space-y-1">
+                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">ŠÍŘKA (cm)</span>
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="3"
+                              max="30"
+                              value={customWidth}
+                              onChange={(e) => handleWidthChange(parseFloat(e.target.value) || 10)}
+                              className="w-full text-xs font-bold border-gray-200 rounded-xl shadow-sm focus:border-brand-purple focus:ring-brand-purple px-3 py-2 border"
+                            />
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">VÝŠKA (cm)</span>
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="3"
+                              max="30"
+                              value={customHeight}
+                              onChange={(e) => handleHeightChange(parseFloat(e.target.value) || 10)}
+                              className="w-full text-xs font-bold border-gray-200 rounded-xl shadow-sm focus:border-brand-purple focus:ring-brand-purple px-3 py-2 border"
+                            />
+                          </div>
+                        </div>
+                        <div className="text-[10px] text-gray-500 font-bold bg-white p-2.5 rounded-xl border border-neutral-100 flex flex-col gap-0.5 shadow-sm">
+                          <span className="text-brand-purple font-black">POMĚR STRAN: {editorAspect.toFixed(2)}</span>
+                          <span className="text-brand-pink font-black">
+                            Cena: {currentFormatDimensions.basePrice} Kč / ks
+                          </span>
+                          <span className="text-neutral-400 font-medium">
+                            (Odpovídá formátu {currentFormatDimensions.matchedFormatName})
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   
                   {/* Photo Scale Slider */}
                   <div className="space-y-2">
