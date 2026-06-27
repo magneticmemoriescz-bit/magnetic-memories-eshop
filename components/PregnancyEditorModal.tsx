@@ -11,9 +11,9 @@ interface PregnancyEditorModalProps {
 }
 
 const AVAILABLE_FONTS = [
+  { id: 'Dancing Script', label: 'Romantické psací', fontStyle: "'Dancing Script', cursive", className: 'font-["Dancing_Script"] text-lg font-bold' },
   { id: 'Great Vibes', label: 'Něžné písmo', fontStyle: "'Great Vibes', cursive", className: 'font-["Great_Vibes"] text-2xl' },
   { id: 'Pinyon Script', label: 'Elegantní kaligrafie', fontStyle: "'Pinyon Script', cursive", className: 'font-["Pinyon_Script"] text-3xl' },
-  { id: 'Dancing Script', label: 'Romantické psací', fontStyle: "'Dancing Script', cursive", className: 'font-["Dancing_Script"] text-lg font-bold' },
   { id: 'Alex Brush', label: 'Klasické ozdobné', fontStyle: "'Alex Brush', cursive", className: 'font-["Alex_Brush"] text-2xl' },
   { id: 'Caveat', label: 'Ručně psané', fontStyle: "'Caveat', cursive", className: 'font-["Caveat"] text-xl font-bold' },
   { id: 'Playfair Display', label: 'Luxusní patkové', fontStyle: "'Playfair Display', Georgia, serif", className: 'font-["Playfair_Display"] text-sm font-semibold italic' },
@@ -552,7 +552,7 @@ export const PregnancyEditorModal: React.FC<PregnancyEditorModalProps> = ({
                   src={image} 
                   crossOrigin="anonymous"
                   alt="" 
-                  className="absolute inset-0 w-full h-full pointer-events-none select-none opacity-20 filter brightness-90 object-contain"
+                  className={`absolute inset-0 w-full h-full pointer-events-none select-none opacity-20 filter brightness-90 ${photoFit === 'cover' ? 'object-cover' : 'object-contain'}`}
                   style={{
                     transform: `scale(${parseFloat(photoScale) / 100}) translate(${photoX}%, ${photoY}%) rotate(${photoRotate}deg)`,
                     transformOrigin: 'center center',
@@ -584,8 +584,12 @@ export const PregnancyEditorModal: React.FC<PregnancyEditorModalProps> = ({
                       src={image} 
                       crossOrigin="anonymous"
                       alt="Ultrazvuk" 
-                      className="absolute inset-0 w-full h-full pointer-events-none select-none object-contain"
+                      className={`absolute pointer-events-none select-none ${photoFit === 'cover' ? 'object-cover' : 'object-contain'}`}
                       style={{
+                        left: 0,
+                        top: 0,
+                        width: `${100 / scaleXMultiplier}%`,
+                        height: `${100 / scaleYMultiplier}%`,
                         transform: `scale(${parseFloat(photoScale) / 100}) translate(${photoX}%, ${photoY}%) rotate(${photoRotate}deg)`,
                         transformOrigin: 'center center',
                         transition: activeDrag === 'photo' ? 'none' : 'transform 0.05s ease-out'
