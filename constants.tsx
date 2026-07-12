@@ -49,8 +49,8 @@ export const PRODUCTS: Product[] = [
     requiredPhotos: 1,
     hasTextFields: true,
     variants: [
-        { id: 'a6', name: 'A6 (10 x 15 cm)', photoCount: 1, itemCount: 1, price: 55 },
-        { id: 'a5', name: 'A5 (15 x 21 cm)', photoCount: 1, itemCount: 1, price: 100 },
+        { id: 'a6', name: 'A6', photoCount: 1, itemCount: 1, price: 55 },
+        { id: 'a5', name: 'A5', photoCount: 1, itemCount: 1, price: 100 },
     ]
   },
   {
@@ -76,8 +76,8 @@ export const PRODUCTS: Product[] = [
     requiredPhotos: 1,
     hasTextFields: true,
     variants: [
-        { id: 'a6', name: 'A6 (10 x 15 cm)', photoCount: 1, itemCount: 1, price: 55 },
-        { id: 'a5', name: 'A5 (15 x 21 cm)', photoCount: 1, itemCount: 1, price: 100 },
+        { id: 'a6', name: 'A6', photoCount: 1, itemCount: 1, price: 55 },
+        { id: 'a5', name: 'A5', photoCount: 1, itemCount: 1, price: 100 },
     ]
   },
   {
