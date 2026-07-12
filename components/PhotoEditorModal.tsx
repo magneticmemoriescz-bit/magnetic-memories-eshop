@@ -24,9 +24,9 @@ const STANDARD_FORMATS = [
   { id: '5x10', name: '5x10 cm', w: 5, h: 10, price: 40 },
   { id: '10x10', name: '10x10 cm', w: 10, h: 10, price: 45 },
   { id: '9x13', name: '9x13 cm', w: 9, h: 13, price: 50 },
-  { id: 'a6', name: 'A6 (10x15 cm)', w: 10, h: 15, price: 55 },
-  { id: 'a5-sheet', name: 'A5 (15x21 cm)', w: 15, h: 21, price: 100 },
-  { id: 'a4-sheet', name: 'A4 (21x30 cm)', w: 21, h: 30, price: 120 }
+  { id: 'a6', name: 'A6', w: 10, h: 15, price: 55 },
+  { id: 'a5-sheet', name: 'A5', w: 15, h: 21, price: 100 },
+  { id: 'a4-sheet', name: 'A4', w: 21, h: 30, price: 120 }
 ];
 
 const AVAILABLE_FONTS = [
@@ -227,16 +227,72 @@ export const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
         throw new Error('Nepodařilo se najít element pro vykreslení náhledu.');
       }
 
-      // Briefly disable visible border borders if needed, but the card shouldn't have active handles visible
-      const canvas = await html2canvas(renderEl, {
+      // Create a clean, off-screen container situated using absolute position at the current scroll position.
+      // This completely eliminates viewport clipping on any screen resolution and ensures no black strips or scroll-offset issues!
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.top = `${window.scrollY}px`;
+      container.style.left = `${window.scrollX}px`;
+      container.style.width = `${renderEl.offsetWidth}px`;
+      container.style.height = `${renderEl.offsetHeight}px`;
+      container.style.overflow = 'hidden';
+      container.style.zIndex = '-9999'; // Send completely to the back
+      container.style.opacity = '0.99'; // Force browser layout rendering
+      document.body.appendChild(container);
+
+      // Clone the card element and reset positioning/margin/boxShadow
+      // We set the border color to transparent rather than removing the border entirely.
+      // This preserves 100% pixel-perfect dimensions, preventing layout/coordinate/text-shifting shifts during export!
+      const clone = renderEl.cloneNode(true) as HTMLDivElement;
+      clone.style.position = 'absolute';
+      clone.style.top = '0px';
+      clone.style.left = '0px';
+      clone.style.margin = '0px';
+      clone.style.boxShadow = 'none';
+      clone.style.borderColor = 'transparent';
+      clone.style.transform = 'none';
+      clone.style.transition = 'none';
+      clone.style.animation = 'none';
+
+      // Recursively disable all CSS transitions/animations on all descendants to secure stable export position
+      const clonedDescendants = clone.querySelectorAll('*');
+      clonedDescendants.forEach((desc) => {
+        if (desc instanceof HTMLElement) {
+          desc.style.transition = 'none';
+          desc.style.animation = 'none';
+        }
+      });
+      
+      container.appendChild(clone);
+
+      // Force a synchronous reflow to ensure custom text/font styling is evaluated immediately
+      void clone.offsetHeight;
+
+      // Ensure that all custom Google fonts are completely loaded before taking screenshot
+      if (typeof document !== 'undefined' && document.fonts) {
+        await document.fonts.ready;
+      }
+
+      // Wait two frames to allow full subpixel layout rendering and CSS calculation of fonts and layout classes
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+      // Render the off-screen clone with html2canvas.
+      const canvas = await html2canvas(clone, {
         useCORS: true,
         allowTaint: false,
         scale: 4, // Super high detailed crisp rendering for prints
         backgroundColor: '#FFFFFF',
-        scrollX: window.scrollX,
-        scrollY: window.scrollY,
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
+        width: renderEl.offsetWidth,
+        height: renderEl.offsetHeight,
         logging: false
       });
+
+      // Clean up the temporary DOM nodes
+      document.body.removeChild(container);
 
       const blob = await new Promise<Blob | null>((resolve) => {
         canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.95);
@@ -347,13 +403,12 @@ export const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
                 {/* Text layout overlay */}
                 {hasText && (
                   <div
-                    className="absolute left-0 right-0 text-center pointer-events-none flex flex-col items-center justify-center px-3"
+                    className="absolute left-0 right-0 text-center pointer-events-none px-3"
                     style={{
                       zIndex: 2,
                       // If it has a polaroid frame, position it dynamically on the generous bottom margin.
                       // If normal, let it float beautifully over the bottom/center
-                      bottom: hasPolaroid ? '2.5%' : '8%',
-                      transform: `translateY(${textY}px)`,
+                      bottom: `calc(${hasPolaroid ? '2.5%' : '8%'} - ${textY}px)`,
                       color: textColor,
                     }}
                   >
@@ -361,7 +416,7 @@ export const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
                       style={{
                         fontFamily: selectedFontObj.fontStyle,
                         fontSize: `${textSize}px`,
-                        lineHeight: 1.1,
+                        lineHeight: 1.2,
                         textShadow: !hasPolaroid && textColor.toLowerCase() === '#ffffff' 
                           ? '0 1px 3px rgba(0,0,0,0.5)' 
                           : 'none'
@@ -375,7 +430,7 @@ export const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
                         style={{
                           fontFamily: selectedFontObj.fontStyle,
                           fontSize: `${textSize * 0.8}px`,
-                          lineHeight: 1.1,
+                          lineHeight: 1.2,
                           textShadow: !hasPolaroid && textColor.toLowerCase() === '#ffffff' 
                             ? '0 1px 3px rgba(0,0,0,0.5)' 
                             : 'none'
