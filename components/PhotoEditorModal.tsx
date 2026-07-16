@@ -314,7 +314,26 @@ export const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
         y: 0,
         width: renderEl.offsetWidth,
         height: renderEl.offsetHeight,
-        logging: false
+        logging: false,
+        onclone: (clonedDoc) => {
+          // Copy all stylesheet and style links from parent document to iframe context to allow Safari font resolution
+          const head = clonedDoc.head || clonedDoc.getElementsByTagName('head')[0];
+          if (head) {
+            document.head.querySelectorAll('link[rel="stylesheet"], style').forEach((node) => {
+              head.appendChild(node.cloneNode(true));
+            });
+          }
+          // Reset letter spacing inside cloned element to bypass Safari overlapping characters bug
+          const clonedCard = clonedDoc.getElementById('magnetic-render-card');
+          if (clonedCard) {
+            const textElements = clonedCard.querySelectorAll('div, p, span');
+            textElements.forEach((el) => {
+              if (el instanceof HTMLElement) {
+                el.style.letterSpacing = 'normal';
+              }
+            });
+          }
+        }
       });
 
       // Clean up the temporary DOM nodes
@@ -344,8 +363,8 @@ export const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-6 bg-neutral-950/95 backdrop-blur-xl transition-all">
-      <div className="bg-white w-full max-w-5xl rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col h-full max-h-[96vh]">
+    <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-2 sm:p-6 bg-neutral-950/95 backdrop-blur-xl transition-all overflow-y-auto">
+      <div className="bg-white w-full max-w-5xl rounded-[1.5rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col h-auto max-h-none sm:max-h-[96vh] my-auto">
         
         {/* Modal Header */}
         <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between bg-white z-10">
@@ -368,10 +387,10 @@ export const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
         </div>
 
         {/* Modal Body with 2 columns layout on desktop */}
-        <div className="flex-grow flex flex-col md:flex-row overflow-hidden min-h-0">
+        <div className="flex-grow flex flex-col md:flex-row overflow-visible sm:overflow-hidden min-h-0">
           
           {/* L: Live Design Preview Area */}
-          <div className="flex-1 bg-neutral-900/5 p-4 sm:p-8 flex flex-col items-center justify-center relative overflow-y-auto select-none">
+          <div className="flex-1 bg-neutral-900/5 p-4 sm:p-8 flex flex-col items-center justify-center relative overflow-visible sm:overflow-y-auto select-none">
             
             <div className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mb-3 text-center">
               Tažením po fotce ji posunete • Posun nápisu nastavíte v záložkách
